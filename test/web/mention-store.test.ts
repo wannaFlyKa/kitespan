@@ -84,7 +84,7 @@ function boot(opts: { draft?: DraftState; copy?: unknown; keepStorage?: boolean;
   connectWith(conn);
   conn.start();
   sock.onopen?.({});
-  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.3.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.3.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   sock.receive({ t: "chats", list: [{ chat: CHAT, title: "Fix the picker", project: PROJECT, state: "idle", needsYou: false, lastActivity: "2026-11-01T10:00:00.000Z", archived: false }] });
   act.open(CHAT);
   sock.receive({ t: "attached", chat: CHAT, epoch: EPOCH, state: "idle", seq: 3, cards: [], picks: { model: null, effort: null, mode: null }, title: null, draft: opts.draft ?? draft(), archived: false, replay: "snapshot" });

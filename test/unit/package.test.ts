@@ -47,8 +47,8 @@ describe("package.json", () => {
     expect(pkg.bin).toEqual({ kitespan: "bin/kitespan" });
     expect(pkg.files).toEqual(FILES);
   });
-  test("the SDK is pinned exactly to 0.3.312, and every dependency has an exact version", () => {
-    expect(pkg.dependencies[SDK]).toBe("0.3.312");
+  test("the SDK is pinned exactly to 0.3.322, and every dependency has an exact version", () => {
+    expect(pkg.dependencies[SDK]).toBe("0.3.322");
     expect(pkg.devDependencies["@types/bun"]).toBe("1.3.14");
     for (const [name, v] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies })) expect(`${name}@${v}`).toMatch(new RegExp(`@${EXACT.source.slice(1)}`));
   });
@@ -70,12 +70,12 @@ describe("package.json", () => {
 describe("the lockfile and the install tree", () => {
   test("bun.lock holds the pinned SDK", () => {
     const lock = readFileSync(join(ROOT, "bun.lock"), "utf8");
-    expect(lock).toContain(`"${SDK}": "0.3.312"`);
-    expect(lock).toContain(`"${SDK}": ["${SDK}@0.3.312"`);
+    expect(lock).toContain(`"${SDK}": "0.3.322"`);
+    expect(lock).toContain(`"${SDK}": ["${SDK}@0.3.322"`);
   });
-  test("the installed SDK is 0.3.312", () => {
+  test("the installed SDK is 0.3.322", () => {
     const installed = JSON.parse(readFileSync(join(ROOT, "node_modules", SDK, "package.json"), "utf8")) as { version: string };
-    expect(installed.version).toBe("0.3.312");
+    expect(installed.version).toBe("0.3.322");
   });
   test("no SDK platform package is installed: not in node_modules/@anthropic-ai, node_modules/.bun or a parent's node_modules (4.7 case 10)", () => {
     const found: string[] = [];

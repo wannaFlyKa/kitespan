@@ -85,7 +85,7 @@ export interface ClaudeFacts {
 }
 
 /**
- * A version as the label "Version" shows it: `claude --version` prints "2.1.312 (Claude Code)", and the CLI's own name
+ * A version as the label "Version" shows it: `claude --version` prints "2.1.322 (Claude Code)", and the CLI's own name
  * after the number repeats the row's label, so it goes.
  */
 export function claudeVersion(raw: string | null | undefined): string | null {

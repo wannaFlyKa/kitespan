@@ -403,6 +403,59 @@ describe("Take back", () => {
     expect(v.of("taken_back")).toEqual([]);
   });
 
+  test("SDK 0.3.322: a message that Claude Code held answers cancelled: false, and its drop later takes it back to the draft", async () => {
+    // sdk.d.ts 0.3.322 line 4901: a held message gets a cancel-pending mark; the drain drops it later, with the
+    // `command_lifecycle` frame `cancelled` (the `dropped` event).
+    const { reg, driver, store } = await setup();
+    const chat = await newChat(reg, "long task");
+    const c = driver.last;
+    const v = new RecordingViewer();
+    await reg.attach(chat, v);
+    const m2 = send(chat, "held words");
+    await apply(reg, m2);
+    await reg.draftEdit(draft(chat, "typed after"), "tab_b");
+    c.takeBackResult = { cancelled: false };
+    expect(await apply(reg, { t: "take_back", rid: rid(), chat, uuid: m2.uuid })).toEqual({ ok: true, result: { cancelled: false } });
+    expect(v.of("taken_back")).toEqual([]);
+    expect(store.queues.get(chat)?.msgs.map((m) => m.uuid)).toContain(m2.uuid);
+    c.emit({ k: "dropped", uuid: m2.uuid });
+    await settle(10);
+    expect(v.of("taken_back")).toEqual([{ k: "taken_back", uuid: m2.uuid }]);
+    expect(v.drafts[v.drafts.length - 1]).toMatchObject({ text: "held words\ntyped after", mode: "chat", by: "tab_a" });
+    expect(store.queues.get(chat)?.msgs.map((m) => m.uuid) ?? []).not.toContain(m2.uuid);
+    // It no longer waits: a turn's end that names nothing never draws it as taken in, and a second Take back finds nothing.
+    c.emit(turnEnd([]));
+    await settle(10);
+    expect(v.of("user").filter((e) => e.uuid === m2.uuid && e.queued === false)).toEqual([]);
+    expect(await apply(reg, { t: "take_back", rid: rid(), chat, uuid: m2.uuid })).toEqual({ ok: true, result: { cancelled: false } });
+    expect(v.events.some((e) => (e as { k: string }).k === "dropped")).toBe(false);
+  });
+
+  test("a drop that no Take back asked for, or one after a turn took the message in, takes nothing back", async () => {
+    const { reg, driver } = await setup();
+    const chat = await newChat(reg, "long task");
+    const c = driver.last;
+    const v = new RecordingViewer();
+    await reg.attach(chat, v);
+    const m2 = send(chat, "queued one");
+    const m3 = send(chat, "queued two");
+    await apply(reg, m2);
+    await apply(reg, m3);
+    // Nobody asked: the CLI's own drop (for example of a turn that a Stop aborted) leaves the bubble and the draft.
+    c.emit({ k: "dropped", uuid: m2.uuid });
+    await settle(10);
+    expect(v.of("taken_back")).toEqual([]);
+    // Too late: the Take back answered false and the next turn took the message in; its drop (the aborted turn) is not a
+    // Take back's.
+    c.takeBackResult = { cancelled: false };
+    expect(await apply(reg, { t: "take_back", rid: rid(), chat, uuid: m3.uuid })).toEqual({ ok: true, result: { cancelled: false } });
+    c.emit(turnEnd([]), { k: "turn_start", by: "user" }, { k: "taken_in", uuids: [m2.uuid, m3.uuid] });
+    c.emit({ k: "dropped", uuid: m3.uuid });
+    await settle(10);
+    expect(v.of("taken_back")).toEqual([]);
+    expect(reg.draftOf(chat)?.text ?? "").not.toContain("queued two");
+  });
+
   test("with a `!` or `/` command in the message box it takes nothing back; with no capability it is unsupported", async () => {
     const { reg, driver } = await setup();
     const chat = await newChat(reg, "long task");
@@ -898,6 +951,27 @@ describe("Delete (D48)", () => {
     expect(store.chats.has(chat)).toBe(true);
     expect(reg.has(chat)).toBe(true);
     expect(await apply(reg, send(chat, "still here"))).toEqual({ ok: true, result: { queued: false } });
+  });
+
+  test("SDK 0.3.322: when deleteSession removed the transcript but left the session folder (keepChat), the chat stays, and Delete again ends it", async () => {
+    const { reg, driver, store } = await setup();
+    autoReply(driver);
+    const chat = await newChat(reg, "kept");
+    await settle();
+    const del = driver.deleteSession.bind(driver);
+    let first = true;
+    driver.deleteSession = async (sid: string, cwd: string) => {
+      if (!first) return del(sid, cwd);
+      first = false;
+      // The transcript is gone already (no session info), and the driver says the chat must stay.
+      driver.sessions.delete(sid);
+      throw Object.assign(new Error("deleteSession removed the transcript, but the session folder is still on disk"), { name: "DriverError", code: "failed", keepChat: true });
+    };
+    expect(await apply(reg, { t: "delete", rid: rid(), chat })).toEqual({ ok: false, code: "failed" });
+    expect(store.chats.has(chat)).toBe(true);
+    expect(reg.has(chat)).toBe(true);
+    expect(await apply(reg, { t: "delete", rid: rid(), chat })).toEqual({ ok: true, result: null });
+    expect(store.chats.has(chat)).toBe(false);
   });
 
   test("a chat that never started has no transcript to delete; a driver with no deleteSession is not asked", async () => {

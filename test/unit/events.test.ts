@@ -1,7 +1,7 @@
 // SDK messages to ChatEvents (DESIGN.md 4.2; V-sdk C15's table): one test per message kind, the subagent routing,
 // the local output and its stream, the hidden rows, the text caps, and the history mapping and paging.
 import { describe, expect, test } from "bun:test";
-import type { SDKMessage, SessionMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { SDKMessage, SDKSessionWritesLostMessage, SessionMessage } from "@anthropic-ai/claude-agent-sdk";
 import { EventMapper, eventBytes, handbackReport, historyEvents, historyPage, localOutputs, stripAnsi, workflowSteps } from "../../server/agents/claude/events";
 import type { ChatEvent } from "../../shared/protocol";
 
@@ -12,10 +12,10 @@ const sys = (subtype: string, rest: Record<string, unknown> = {}) => map({ type:
 describe("system messages", () => {
   test("init: a session event (bypass from the chat's start) and the turn start", () => {
     const m = new EventMapper({ bypass: true, userWaiting: () => true });
-    const ev = map({ type: "system", subtype: "init", model: "claude-fake-1", permissionMode: "default", claude_code_version: "2.1.312", terminal_slash_commands: ["doctor"] }, m);
+    const ev = map({ type: "system", subtype: "init", model: "claude-fake-1", permissionMode: "default", claude_code_version: "2.1.322", terminal_slash_commands: ["doctor"] }, m);
     expect(ev).toEqual([
       { k: "turn_start", by: "user" },
-      { k: "session", sessionId: S, model: "claude-fake-1", mode: "default", version: "2.1.312", bypass: true, fastMode: null, skills: [], plugins: [], outputStyle: null },
+      { k: "session", sessionId: S, model: "claude-fake-1", mode: "default", version: "2.1.322", bypass: true, fastMode: null, skills: [], plugins: [], outputStyle: null },
     ]);
     expect(m.sessionId).toBe(S);
     expect([...m.terminalOnly]).toEqual(["doctor"]);
@@ -27,7 +27,7 @@ describe("system messages", () => {
       subtype: "init",
       model: "claude-fake-1",
       permissionMode: "default",
-      claude_code_version: "2.1.312",
+      claude_code_version: "2.1.322",
       fast_mode_state: "off",
       fast_mode_disabled_reason: "not_first_party",
       skills: ["review-notes", "pdf\u0007tools", 7],
@@ -44,7 +44,7 @@ describe("system messages", () => {
       sessionId: S,
       model: "claude-fake-1",
       mode: "default",
-      version: "2.1.312",
+      version: "2.1.322",
       bypass: false,
       fastMode: { state: "off", reason: "not_first_party" },
       // Plain labels only: a control character becomes a space; the plugin's path stays on the server.
@@ -228,7 +228,12 @@ describe("system messages", () => {
   });
 
   test("messages that show nothing: elicitation_complete, files_persisted, session_state_changed and unknown subtypes", () => {
-    for (const s of ["elicitation_complete", "files_persisted", "session_state_changed", "mirror_error", "worker_shutting_down", "something_new"]) expect(sys(s)).toEqual([]);
+    for (const s of ["elicitation_complete", "files_persisted", "session_state_changed", "mirror_error", "worker_shutting_down", "session_writes_lost", "something_new"]) expect(sys(s)).toEqual([]);
+  });
+
+  test("session_writes_lost (SDK 0.3.322's new message, sent as Claude Code exits after its last result) shows nothing", () => {
+    const lost = { type: "system", subtype: "session_writes_lost", error_code: "ENOSPC", lost: ["transcript", "global_config"], transcript_session_ids: [S], uuid: "00000000-0000-4000-8000-000000000001", session_id: S } satisfies SDKSessionWritesLostMessage;
+    expect(map(lost)).toEqual([]);
   });
 });
 
@@ -248,7 +253,7 @@ describe("assistant, user and result messages", () => {
     ]);
   });
 
-  test("a reply's answering uuids (sdk.d.ts line 3716) say which messages the turn took in, before the frame's own rows", () => {
+  test("a reply's answering uuids (sdk.d.ts 0.3.322 line 3757) say which messages the turn took in, before the frame's own rows", () => {
     const m = new EventMapper({ bypass: false, userWaiting: () => true });
     // The turn's first stream event and its first assistant record carry them; a subagent's never counts.
     expect(map({ type: "stream_event", parent_tool_use_id: null, user_message_uuid: "b", user_message_uuids: ["a", "b"], event: { type: "message_start", message: { id: "msg_1" } } }, m)).toEqual([
@@ -262,6 +267,15 @@ describe("assistant, user and result messages", () => {
     expect(map({ type: "assistant", parent_tool_use_id: "toolu_agent", user_message_uuids: ["d"], message: { id: "msg_s", content: [] } }, m)).toEqual([]);
     // No stamp, an empty list or one with no string: nothing.
     expect(map({ type: "stream_event", parent_tool_use_id: null, user_message_uuids: [7, ""], event: { type: "message_stop" } }, m)).toEqual([]);
+  });
+
+  test("Claude Code's command_lifecycle frame names a message that will not run (cancelled) as `dropped`, and nothing else", () => {
+    const m = new EventMapper({ bypass: false });
+    const frame = (state: unknown, uuid: unknown = "u1") => ({ type: "command_lifecycle", command_uuid: uuid, state, uuid: "f1", session_id: "s" });
+    expect(map(frame("cancelled"), m)).toEqual([{ k: "dropped", uuid: "u1" }]);
+    for (const state of ["queued", "started", "completed", "discarded", "refused", 3]) expect(map(frame(state), m)).toEqual([]);
+    expect(map(frame("cancelled", ""), m)).toEqual([]);
+    expect(map(frame("cancelled", 7), m)).toEqual([]);
   });
 
   test("the SubagentHandback row and its result are hidden", () => {

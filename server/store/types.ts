@@ -419,7 +419,7 @@ export const SETTINGS_DEFAULTS: Readonly<Settings> = {
 export interface LastOptionsRecord {
   v: 1;
   writtenAt: string;
-  /** The SDK version, "0.3.312". */
+  /** The SDK version, "0.3.322". */
   sdk: string;
   chat: string;
   /** Every key passed to `query()`, with its value; callbacks as "[function]". */

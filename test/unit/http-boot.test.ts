@@ -123,7 +123,7 @@ describe("a clean boot", () => {
     expect(out).toContain(`kitespan listens on ${OWN}`);
     expect(out).toContain(`ssh -L ${PORT}:127.0.0.1:${PORT}`);
     expect(out).toContain("Claude Code 2.1.311 (Claude Code)");
-    expect(out).toContain("Claude Code 2.1.311 runs here; this SDK was built for 2.1.312.");
+    expect(out).toContain("Claude Code 2.1.311 runs here; this SDK was built for 2.1.322.");
   });
 
   test("it listens on 127.0.0.1 only", async () => {
@@ -209,14 +209,14 @@ describe("a clean boot", () => {
 });
 
 test("the drift line at start", () => {
-  expect(claudeLines({ ok: true, version: "2.1.312", drift: null })).toEqual(["Claude Code 2.1.312"]);
-  expect(claudeLines({ ok: true, version: "2.1.311", drift: "Claude Code 2.1.311 runs here; this SDK was built for 2.1.312." })).toEqual([
+  expect(claudeLines({ ok: true, version: "2.1.322", drift: null })).toEqual(["Claude Code 2.1.322"]);
+  expect(claudeLines({ ok: true, version: "2.1.311", drift: "Claude Code 2.1.311 runs here; this SDK was built for 2.1.322." })).toEqual([
     "Claude Code 2.1.311",
-    "Claude Code 2.1.311 runs here; this SDK was built for 2.1.312.",
+    "Claude Code 2.1.311 runs here; this SDK was built for 2.1.322.",
   ]);
   // Below kitespan's minimum, its line takes the drift line's place (claude-minimum.test.ts has the cases).
   expect(
-    claudeLines({ ok: true, version: "2.1.250", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.312.", belowMinimum: { version: "2.1.250", minimum: "2.1.296", stock: true } }),
+    claudeLines({ ok: true, version: "2.1.250", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.322.", belowMinimum: { version: "2.1.250", minimum: "2.1.296", stock: true } }),
   ).toEqual(["Claude Code 2.1.250", "Claude Code 2.1.250 runs here; kitespan supports 2.1.296 and later. Run claude update."]);
   expect(claudeLines({ ok: false, version: null, drift: null })[0]).toContain("not available");
 });

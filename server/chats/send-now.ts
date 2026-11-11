@@ -12,7 +12,7 @@
 //   ahead of a message): a plain interrupt(), which keeps the queue, and the messages run next (item 17).
 //
 // The same watch keeps the queued state exact. Claude Code stamps the messages a turn took in on the turn's first
-// frames (sdk.d.ts 0.3.312 line 3716, the `taken_in` event) and on its result, but a message it takes in at a tool
+// frames (sdk.d.ts 0.3.322 line 3757, the `taken_in` event) and on its result, but a message it takes in at a tool
 // boundary of a typed prompt's turn shows only on the result. So the first reply frame of the main thread after a tool
 // result is the moment that the messages that waited at that result went in (item 15).
 
@@ -21,7 +21,7 @@ import type { ChatEvent, SendNowAct } from "../../shared/protocol";
 /** How long a press waits for a Bash call's task to start before it stops the turn instead (FIX-W28 section 2). */
 export const SEND_NOW_WAIT_MS = 5_000;
 
-/** The main-thread tools whose task can move to the background (sdk.d.ts 0.3.312 line 3311: Bash and subagents). */
+/** The main-thread tools whose task can move to the background (sdk.d.ts 0.3.322 line 3352: Bash and subagents). */
 const MOVABLE_TOOLS: ReadonlySet<string> = new Set(["Bash", "Agent", "Task"]);
 const MOVABLE_TASKS: ReadonlySet<string> = new Set(["local_bash", "local_agent"]);
 

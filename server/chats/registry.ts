@@ -231,6 +231,15 @@ interface PendingMsg {
   where: "cap" | "cli" | "bash";
   /** Its `user` event went out. */
   announced: boolean;
+  /**
+   * SDK 0.3.322: Claude Code answered this message's cancel_async_message with `cancelled: false` while it may still
+   * hold the message out of its queue (behind a model change or start-up work), where the answer plants a
+   * cancel-pending mark and the drain drops the message later, with a `command_lifecycle` frame (the `dropped` event).
+   * `take_back`: a page's Take back, which finishes on that event (the tab whose draft gets the text); `hold`: row 78's
+   * holdQueue, which moves the message to the server's queue on it. A message that a turn takes in leaves `pending`,
+   * and the mark with it.
+   */
+  cancelMark?: { why: "take_back"; tab: string | null } | { why: "hold" };
   /** RD-8 (R12): restored from the queue file at boot; "Not sent" until it goes (or a send or Send again starts it). */
   notSent?: boolean;
   /**
@@ -1515,6 +1524,29 @@ export class ChatRegistry {
     }
   }
 
+  /**
+   * SDK 0.3.322: Claude Code dropped a message that it held when a Take back or holdQueue asked for it (the
+   * `dropped` event, PendingMsg.cancelMark). A Take back finishes as one that Claude Code cancelled at once; holdQueue's
+   * message waits in the server's queue. A message that nobody asked to cancel, or that a turn took in, stays.
+   */
+  private async onDropped(entry: Entry, live: Live, uuid: string): Promise<void> {
+    const msg = entry.pending.get(uuid);
+    if (!msg || msg.where !== "cli" || msg.read || !msg.cancelMark || entry.live !== live) return;
+    const mark = msg.cancelMark;
+    msg.cancelMark = undefined;
+    if (mark.why === "hold") {
+      msg.where = "cap";
+      entry.waiting.push({ kind: "send", msg });
+      this.refresh(entry);
+      return;
+    }
+    entry.pending.delete(uuid);
+    this.emit(entry, { k: "taken_back", uuid });
+    this.nextBash(entry);
+    await this.returnToDraft(entry, [msg], mark.tab);
+    await entry.queue.drop([uuid]);
+  }
+
   private async takeBack(entry: Entry, uuid: string, ctx: RequestContext): Promise<Outcome> {
     const msg = entry.pending.get(uuid);
     if (!msg) return ok({ cancelled: false });
@@ -1528,7 +1560,12 @@ export class ChatRegistry {
       // U1: a message that still waits for a start mark before it reaches Claude Code's queue first.
       if (entry.inputWait) await entry.inputWait;
       const r = await live.chat.takeBack(uuid);
-      if (!r.cancelled) return ok({ cancelled: false });
+      if (!r.cancelled) {
+        // Too late, or (SDK 0.3.322) held by Claude Code and marked to be dropped: then a `dropped` event finishes this
+        // Take back (onDropped). The bubble stays until one of the two shows.
+        if (entry.pending.get(uuid) === msg && msg.where === "cli" && !msg.read) msg.cancelMark = { why: "take_back", tab: ctx.tab };
+        return ok({ cancelled: false });
+      }
     } else if (msg.where === "bash") {
       entry.bashQueue = entry.bashQueue.filter((w) => !(w.kind === "send" && w.msg === msg));
     } else {
@@ -2137,7 +2174,9 @@ export class ChatRegistry {
       try {
         await this.deps.driver.deleteSession(sid, sessionFolder(entry.ledger));
       } catch (e) {
-        if ((await this.sessionInfo(entry, sid)) !== null) {
+        // SDK 0.3.322: a transcript gone while the session's folder stays keeps the chat too (the driver's keepChat),
+        // so that Delete again can remove the folder.
+        if ((e as { keepChat?: unknown } | null)?.keepChat === true || (await this.sessionInfo(entry, sid)) !== null) {
           entry.deleting = false;
           this.refresh(entry);
           return fail(driverErrorCode(e));
@@ -2600,7 +2639,12 @@ export class ChatRegistry {
     for (const m of [...entry.pending.values()]) {
       if (m.where !== "cli") continue;
       const r = await live.chat.takeBack(m.uuid).catch(() => ({ cancelled: false }));
-      if (!r.cancelled || entry.live !== live || entry.pending.get(m.uuid) !== m || m.where !== "cli") continue;
+      if (entry.live !== live || entry.pending.get(m.uuid) !== m || m.where !== "cli") continue;
+      if (!r.cancelled) {
+        // SDK 0.3.322: one that Claude Code still holds may be dropped later (onDropped moves it then).
+        if (!m.read && m.cancelMark?.why !== "take_back") m.cancelMark = { why: "hold" };
+        continue;
+      }
       m.where = "cap";
       entry.waiting.push({ kind: "send", msg: m });
     }
@@ -3431,6 +3475,9 @@ export class ChatRegistry {
       case "taken_in":
         live.stamps = true;
         this.consumeQueued(entry, e.uuids);
+        break;
+      case "dropped":
+        void this.intake(entry, () => this.onDropped(entry, live, e.uuid));
         break;
       case "user":
         if (!entry.made.has(e.uuid)) this.emit(entry, e); // else the CLI's echo of the server's own event (D49)

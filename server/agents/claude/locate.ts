@@ -12,8 +12,8 @@ import { atLeast, CLAUDE_CODE_MINIMUM } from "./background";
 /** The repository root: where package.json and node_modules are. */
 export const INSTALL_ROOT = resolve(import.meta.dir, "..", "..", "..");
 
-/** The CLI version that SDK 0.3.312 names (`claudeCodeVersion` in its package.json), when that file cannot be read. */
-export const PINNED_CLAUDE_CODE_VERSION = "2.1.312";
+/** The CLI version that SDK 0.3.322 names (`claudeCodeVersion` in its package.json), when that file cannot be read. */
+export const PINNED_CLAUDE_CODE_VERSION = "2.1.322";
 
 const NODE_MODULES_RE = /(^|\/)node_modules(\/|$)/;
 const PLATFORM_PREFIX = "claude-agent-sdk-";

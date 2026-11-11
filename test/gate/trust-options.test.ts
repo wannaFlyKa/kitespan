@@ -22,7 +22,7 @@ mkdirSync(FOLDER, { recursive: true });
 mkdirSync(OTHER);
 mkdirSync(BIN_DIR);
 symlinkSync(FOLDER, LINK);
-writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.312 (Claude Code)'\n");
+writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.322 (Claude Code)'\n");
 chmodSync(CLAUDE, 0o755);
 
 const ctx = (over: Partial<TrustGateContext> = {}): TrustGateContext => ({ path: FOLDER, pinnedPath: CLAUDE, platformPackages: [], homes: [homedir()], ...over });

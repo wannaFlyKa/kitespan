@@ -547,7 +547,7 @@ const turns: Record<string, Turn> = {
 
 export function clickFixture(): Fixture {
   return {
-    version: "2.1.312 (Claude Code)",
+    version: "2.1.322 (Claude Code)",
     model: "claude-opus-5-5",
     transcript: true,
     initialize: {

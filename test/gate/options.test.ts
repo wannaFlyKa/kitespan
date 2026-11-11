@@ -26,7 +26,7 @@ const BIN_DIR = join(ROOT, "bin");
 const CLAUDE = join(BIN_DIR, "claude");
 mkdirSync(PROJECT);
 mkdirSync(BIN_DIR);
-writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.312 (Claude Code)'\n");
+writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.322 (Claude Code)'\n");
 chmodSync(CLAUDE, 0o755);
 
 const AT = new Date("2026-10-31T12:00:00.000Z");

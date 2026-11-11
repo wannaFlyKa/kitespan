@@ -70,7 +70,7 @@ function boot() {
   connectWith(conn);
   conn.start();
   sock.onopen?.({});
-  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   sock.receive({ t: "chats", list: [{ chat: CHAT, title: "Fix the upload", project: PROJECT, state: "idle", needsYou: false, lastActivity: "2026-10-31T10:00:00.000Z", archived: false }] });
   act.open(CHAT);
   const draft = { rev: 4, text: "", mode: "chat" as const, command: null, link: false, uploads: [], by: null, at: "2026-10-31T10:00:00.000Z" };

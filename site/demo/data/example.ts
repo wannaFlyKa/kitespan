@@ -32,7 +32,7 @@ export const EXAMPLE_SESSION: ChatEventOf<"session"> = {
   sessionId: "4f6d2a90-1c3e-4b8f-9a51-7e2d0c6b8a13",
   model: "claude-opus-5-5",
   mode: "default",
-  version: "2.1.312",
+  version: "2.1.322",
   bypass: false,
   fastMode: null,
   skills: [],

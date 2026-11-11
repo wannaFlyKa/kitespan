@@ -75,9 +75,9 @@ test.skipIf(!PROCFS)(`stop() ends a restart's successor of this boot, by its pid
   };
   try {
     // What a restart leaves: bin/kitespan's server with this boot's port and page and the port wait, in the repository
-    // root. Another port's is never this boot's.
+    // root. Another port's is never this boot's (another test port than this boot's: KITESPAN_TEST_PORT may be 7949).
     const successor = spawn(PORT);
-    const otherPort = spawn(7949);
+    const otherPort = spawn(PORT === 7949 ? 7948 : 7949);
     await Bun.sleep(200);
     expect(h.successors()).toEqual([successor.pid]);
     const r = await h.stop();

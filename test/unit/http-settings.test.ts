@@ -25,7 +25,7 @@ const root = realpathSync(mkdtempSync(join(tmpdir(), "kitespan-settings-")));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 const driver: Pick<AgentDriver, "probe" | "settings" | "listSessions" | "history" | "sessionInfo"> = {
-  probe: async () => ({ ok: true, path: "/opt/bin/claude", realpath: "/opt/bin/claude", version: "2.1.312", source: "path", refused: [], platformPackages: [], drift: null, belowMinimum: null }),
+  probe: async () => ({ ok: true, path: "/opt/bin/claude", realpath: "/opt/bin/claude", version: "2.1.322", source: "path", refused: [], platformPackages: [], drift: null, belowMinimum: null }),
   settings: async () => ({ respondToBash: true, cleanupPeriodDays: null, promptSuggestions: false, defaultMode: null }),
   listSessions: async () => [],
   sessionInfo: async () => null,

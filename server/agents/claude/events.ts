@@ -199,7 +199,7 @@ export function handbackReport(side: unknown): string | null {
 
 /**
  * The user messages a main-thread reply frame says its turn took in (`user_message_uuids`, else `user_message_uuid`:
- * sdk.d.ts 0.3.312 lines 3716-3721 and 5769-5773, the turn's first frames, and a message folded in later where the CLI
+ * sdk.d.ts 0.3.322 lines 3757-3762 and 5848-5852, the turn's first frames, and a message folded in later where the CLI
  * stamps one), as one `taken_in` before the frame's own rows; none when the frame carries no stamp.
  */
 function takenIn(m: Obj, out: ChatEvent[]): void {
@@ -288,7 +288,7 @@ export function loadedFacts(m: Record<string, unknown>): Required<Pick<ChatEvent
 }
 
 /**
- * L34: `system/init`'s `cwd` (sdk.d.ts 0.3.312 line 6232), the folder Claude Code runs in: an absolute path of at most
+ * L34: `system/init`'s `cwd` (sdk.d.ts 0.3.322 line 6355), the folder Claude Code runs in: an absolute path of at most
  * 4,096 characters with no control character, else null.
  */
 export function initCwd(v: unknown): string | null {
@@ -419,6 +419,12 @@ export class EventMapper {
       case "prompt_suggestion":
         if (typeof m.suggestion === "string" && m.suggestion.trim()) out.push({ k: "suggestion", text: m.suggestion });
         return out;
+      case "command_lifecycle": {
+        // Only the `cancelled` state: a message that will not run (the `dropped` event, shared/protocol.ts).
+        const uuid = str(m.command_uuid);
+        if (uuid && m.state === "cancelled") out.push({ k: "dropped", uuid });
+        return out;
+      }
       default:
         // auth_status, rate_limit_event, tool_use_summary and the rest: not shown (4.2, 11.2).
         return out;
@@ -574,7 +580,8 @@ export class EventMapper {
       }
       default:
         // elicitation_complete is the driver's (it settles a URL-mode card); files_persisted, session_state_changed,
-        // mirror_error and the rest show nothing.
+        // mirror_error, session_writes_lost (typed since SDK 0.3.322; sent as Claude Code exits) and the rest show
+        // nothing.
         return;
     }
   }

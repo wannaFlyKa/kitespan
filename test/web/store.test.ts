@@ -99,7 +99,7 @@ const copyOf = (text: string, over: Partial<ChatDraft & { rev: number; at: numbe
 let sock: FakeSocket;
 let conn: Connection;
 
-const WELCOME: ServerFrame = { t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" };
+const WELCOME: ServerFrame = { t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" };
 
 /**
  * A store on a fresh socket with one chat in the list, attached and drawn from a short history. `reload`: a new page
@@ -1159,7 +1159,7 @@ describe("the list's busy and the session's facts", () => {
   test("the session's facts come with its event in the tail; a snapshot starts without them until the tail says them again", () => {
     boot();
     expect(chat().init ?? null).toBe(null);
-    const session = { k: "session" as const, sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "default", version: "2.1.312", bypass: false, fastMode: { state: "on" as const, reason: null }, skills: ["review"], plugins: [{ name: "docs", version: "1.2.0" }], outputStyle: null };
+    const session = { k: "session" as const, sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "default", version: "2.1.322", bypass: false, fastMode: { state: "on" as const, reason: null }, skills: ["review"], plugins: [{ name: "docs", version: "1.2.0" }], outputStyle: null };
     sock.receive({ t: "ev", chat: CHAT, seq: 4, e: session });
     expect(chat().init).toEqual({ fastMode: { state: "on", reason: null }, skills: ["review"], plugins: [{ name: "docs", version: "1.2.0" }], outputStyle: null });
     // After a restart the chat sleeps: the snapshot's tail has no session event, so no facts of the old process stay.
@@ -1172,7 +1172,7 @@ describe("the list's busy and the session's facts", () => {
 });
 
 describe("Settings reads a live chat's facts in a fresh tab (6.5, 6.8)", () => {
-  const session = { k: "session" as const, sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "default", version: "2.1.312", bypass: false, fastMode: { state: "off" as const, reason: "free" }, skills: ["review"], plugins: [], outputStyle: "Explanatory" };
+  const session = { k: "session" as const, sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "default", version: "2.1.322", bypass: false, fastMode: { state: "off" as const, reason: "free" }, skills: ["review"], plugins: [], outputStyle: "Explanatory" };
   const attachedOf = (chatId: string, seq: number, d: DraftState = draft()): ServerFrame => ({ t: "attached", chat: chatId, epoch: EPOCH, state: "idle", seq, cards: [], picks: { model: null, effort: null, mode: null }, title: null, draft: d, archived: false, replay: "snapshot" });
   const views = () => sent().filter((f) => f.t === "attach" || f.t === "detach");
   /** A fresh tab: the list has come, no chat is on screen, and /api/settings answers. */

@@ -80,7 +80,7 @@ class FakeSocket implements SocketLike {
   }
 }
 
-const WELCOME = { t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" } as ServerFrame;
+const WELCOME = { t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" } as ServerFrame;
 const attachedOf = (chat: string, seq: number, replay: "snapshot" | "events" | "none" = "snapshot") =>
   ({ t: "attached", chat, epoch: EPOCH, state: "idle", seq, cards: [], picks: { model: null, effort: null, mode: null }, title: { text: "Draw the turn rail", from: "generated" }, draft: { rev: 1, text: "", mode: "chat", command: null, link: false, uploads: [], by: null, at: "2026-10-30T08:56:00.000Z" }, archived: false, replay }) as ServerFrame;
 

@@ -1,6 +1,6 @@
 // The drift line at start (DESIGN.md 4.10). The binary pin (server/agents/claude/locate.ts) reads `claude --version`
 // at every probe and compares it with the CLI version that the pinned SDK names; the probe's `drift` is that one line,
-// for example "Claude Code 2.1.311 runs here; this SDK was built for 2.1.312." Drift is normal (a native Claude Code
+// for example "Claude Code 2.1.311 runs here; this SDK was built for 2.1.322." Drift is normal (a native Claude Code
 // updates itself), so the terminal gets one plain line at start, as Settings > Claude Code and the Environment panel
 // do. "Update available" and "Restart to apply" are About's (updates.ts), and the restart is DESIGN 4.10's.
 //

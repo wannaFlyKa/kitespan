@@ -200,7 +200,7 @@ describe("the shell's environment (D2)", () => {
   });
 
   test("the mark that the SDK's query() sets on the server's own environment never reaches the shell", () => {
-    expect(shellEnv({ PATH: "/bin", CLAUDE_AGENT_SDK_VERSION: "0.3.312" })).toEqual({ PATH: "/bin", TERM: "xterm-256color" });
+    expect(shellEnv({ PATH: "/bin", CLAUDE_AGENT_SDK_VERSION: "0.3.322" })).toEqual({ PATH: "/bin", TERM: "xterm-256color" });
   });
 
   test("the name that the SDK sets on the server's own environment when it is imported never reaches the shell", () => {

@@ -258,7 +258,7 @@ describe("a chat's shell over /ws/shell", () => {
       // The server's own process.env itself (the default is the start environment, D60's E4): the copy is taken now.
       const svc = createShellService({ host: { chat: (id) => chats.get(id) ?? null }, allowOrigin: (o) => o === ORIGIN, shell: SHELL, env: process.env, closeStepMs: 300 });
       services.push(svc);
-      put("CLAUDE_AGENT_SDK_VERSION", "0.3.312");
+      put("CLAUDE_AGENT_SDK_VERSION", "0.3.322");
       put("KITESPANTEST_LATE", "1");
       const id = chat();
       const ws = fakeSocket(svc);

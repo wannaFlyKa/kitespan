@@ -54,7 +54,7 @@ function boot(): FakeSocket {
   connectWith(conn);
   conn.start();
   sock.onopen?.({});
-  sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.4.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+  sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.4.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   sock.receive({ t: "chats", list: [row] });
   return sock;
 }
