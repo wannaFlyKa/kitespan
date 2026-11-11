@@ -408,7 +408,7 @@ describe("dependabot.yml", () => {
     expect(js.groups["agent-sdk"]).toEqual({ patterns: [SDK] });
     expect(js.groups.packages).toEqual({ patterns: ["*"], "exclude-patterns": [SDK] });
     expect(js.cooldown).toEqual({ "default-days": 30, exclude: [SDK] });
-    expect(js.ignore).toEqual([{ "dependency-name": "@types/bun" }]);
+    expect(js.ignore).toEqual([{ "dependency-name": "@types/bun" }, { "dependency-name": "typescript", "update-types": ["version-update:semver-major"] }]);
     expect(actions.directory).toBe("/");
     expect(actions.schedule).toEqual({ interval: "monthly" });
     expect(actions.groups).toEqual({ actions: { patterns: ["*"] } });

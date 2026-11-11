@@ -22,6 +22,10 @@ updates:
     ignore:
       # Bun's own types move with the pinned Bun (CI's bun-version), by hand.
       - dependency-name: "@types/bun"
+      # TypeScript 7 ships its compiler in optional platform packages, which `--omit=optional` leaves out (CLAUDE.md):
+      # a major version moves by hand, with the install rule.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
