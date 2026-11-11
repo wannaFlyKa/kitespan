@@ -14,10 +14,10 @@ credentials. Your conversations stay in Claude Code's own transcripts.
 
 kitespan is a personal project.
 
-I'm a weekly super commuter: every week I fly from Los Angeles to Seattle and back, and I want to work on the flight
-as easily as at my desk. Claude Code keeps running on my own machine. From the plane I keep up with it on my laptop
-over in-flight Wi-Fi, or on my phone, where the connection drops and the tab goes to sleep, and I pick up where I left
-off when the connection comes back.
+I'm a weekly super commuter: every week I fly there and back, and I want to work on the flight as easily as at my
+desk. Claude Code keeps running on my own machine. From the plane I keep up with it on my laptop over in-flight Wi-Fi,
+or on my phone, where the connection drops and the tab goes to sleep, and I pick up where I left off when the
+connection comes back.
 
 Claude's own apps could do that, but many companies allow Claude Code only through a cloud provider's raw API, such as
 Bedrock, with no access to the apps, so there is no way to use it from both a phone and a laptop. kitespan is what I

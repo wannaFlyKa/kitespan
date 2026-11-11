@@ -353,7 +353,7 @@ describe("the README cutting (renderPage alone)", () => {
     const why = readmeParts(md, "en").why;
     expect(why).toContain("<h3>On the way</h3>");
     expect(why).toContain("## not a heading");
-    expect(why).toContain("Seattle");
+    expect(why).toContain("super commuter");
   });
 
   test("raw HTML or an image in a section stops it", () => {
