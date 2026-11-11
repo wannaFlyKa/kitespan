@@ -4,7 +4,7 @@
 // started: the handler is called, in a scratch folder.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { PUBLIC_ADAPTERS } from "../../server/adapters/adapters";
@@ -207,7 +207,13 @@ describe("a folder as .tar.gz", () => {
     writeFileSync(join(out, "src.tar.gz"), gz);
     const list = Bun.spawnSync(["tar", "-tzf", join(out, "src.tar.gz")], { stdout: "pipe", stderr: "pipe" });
     expect(list.exitCode).toBe(0);
-    const names = list.stdout.toString().trim().split("\n").sort();
+    // The archive holds each name as the folder lists it (the server never changes a name's Unicode form) ...
+    const listed = readdirSync(join(project, "src")).find((n) => n.normalize("NFC") === "été.txt")!;
+    expect(listed).toBeDefined();
+    expect(Buffer.from(Bun.gunzipSync(gz)).includes(Buffer.from(`src/${listed}`))).toBe(true);
+    // ... but the system tar may print it in another form: bsdtar (libarchive) on macOS gives its names in NFD. So its
+    // list is compared in one form, NFC.
+    const names = list.stdout.toString().trim().split("\n").map((n) => n.normalize("NFC")).sort();
     expect(names).toContain("src/");
     expect(names).toContain("src/empty/");
     expect(names).toContain("src/été.txt");

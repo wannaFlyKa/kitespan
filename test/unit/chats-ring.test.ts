@@ -9,9 +9,13 @@ const note = (text: string): ChatEvent => ({ k: "notice", text });
 
 describe("utf8Bytes", () => {
   test("matches the encoder for ASCII, wide characters, pairs and lone surrogates", () => {
+    // The oracle is the bytes that TextEncoder writes (a lone surrogate is U+FFFD, 3 bytes), as a socket sends them.
+    // Not Buffer.byteLength, which gave 2 for a lone surrogate on macOS (arm64) in CI.
+    const enc = new TextEncoder();
     for (const s of ["", "abc", "é", "日本語", "😀x", "\ud800", "a\udc00b", "😀\ud83d", JSON.stringify({ a: "\u0000\n" })]) {
-      expect(utf8Bytes(s)).toBe(Buffer.byteLength(s));
+      expect(utf8Bytes(s)).toBe(enc.encode(s).length);
     }
+    expect([utf8Bytes("\ud800"), utf8Bytes("a\udc00b"), utf8Bytes("😀\ud83d")]).toEqual([3, 5, 7]);
   });
 });
 

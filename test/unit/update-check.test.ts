@@ -214,6 +214,14 @@ describe.skipIf(!GIT)("Update available: the ancestor rule (S4)", () => {
     expect(env.PATH).toBe("/usr/bin:/bin");
   });
 
+  test("with no false on the PATH, the password prompts are the system's own false, which is there (macOS has no /bin/false)", () => {
+    for (const path of ["", "relative", HOME]) {
+      const failing = failingProgram(path);
+      expect(existsSync(failing)).toBe(true);
+      expect(spawnSync(failing, ["Password:"]).status).not.toBe(0);
+    }
+  });
+
   test("the names that only choose git's config files stay, as the user's git reads them (row 108); no other GIT_*", () => {
     const env = updateGitEnv({ PATH: "/usr/bin:/bin", HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_SYSTEM: "/etc/x", GIT_WORK_TREE: "/elsewhere", GIT_CONFIG_PARAMETERS: "'core.hooksPath'='/x'" });
     expect(env.GIT_CONFIG_GLOBAL).toBe("/dev/null");

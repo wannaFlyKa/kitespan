@@ -3,7 +3,8 @@
 // attaches after the turn gets them in the snapshot's history (the fake claude wrote them to the transcript, as the
 // CLI does), and the page's reducer draws one to-do row at the turn's first task call, next to the history's older
 // TodoWrite row. Port 7942 when it is free, else another free test port (pickTestPort); a stub page stands in for the
-// built one.
+// built one. The harness stops its server only after a /proc/<pid>/cmdline check, so the test runs where /proc can be
+// read (test/linux.ts).
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,6 +15,7 @@ import type { Item, TodoItem } from "../../web/state/types";
 import { boot, pickTestPort, type Booted } from "../click/harness";
 import { WARM } from "../click/seed/fixture";
 import { EX } from "../click/seed/ids";
+import { LINUX_ONLY, PROCFS } from "../linux";
 
 const PORT = pickTestPort(7942);
 const DIST = mkdtempSync(join(tmpdir(), "kitespan-tasks-stub-"));
@@ -81,7 +83,7 @@ function blank(): ChatPart {
   };
 }
 
-describe("the main scene's to-do list, after a reload", () => {
+describe.skipIf(!PROCFS)(`the main scene's to-do list, after a reload ${LINUX_ONLY}`, () => {
   test(
     "the snapshot draws one to-do row with the three tasks, at the turn's first task call",
     async () => {

@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { fillFormula, releaseNotes } from "../../scripts/release";
 import { archiveName, BREW_FORMULA, RELEASE_REPO, RELEASE_VERSION, RELEASES_URL, releaseTag } from "../../shared/release";
-import { git, must, release, releaseTree, ROOT, run, type ReleaseTree } from "../release-tree";
+import { baseEnv, git, must, release, releaseTree, ROOT, run, type ReleaseTree } from "../release-tree";
 
 const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { version?: string };
 const TEMPLATE = readFileSync(join(ROOT, "packaging/homebrew/kitespan.rb"), "utf8");
@@ -88,10 +88,20 @@ describe("scripts/release.ts", () => {
   test("SHA256SUMS: the archive's line, then install.sh's, in sha256sum's text form; install.sh is the commit's own, byte for byte", () => {
     expect(bytes(out, "install.sh").equals(readFileSync(join(tree.repo, "install.sh")))).toBe(true);
     expect(bytes(out, "SHA256SUMS").toString()).toBe(`${sha256(bytes(out, archiveName(v)))}  ${archiveName(v)}\n${sha256(bytes(out, "install.sh"))}  install.sh\n`);
-    // The README's own check: sha256sum, or shasum -a 256 on macOS.
-    const check = run(Bun.which("sha256sum") ? ["sha256sum", "-c", "SHA256SUMS"] : ["shasum", "-a", "256", "-c", "SHA256SUMS"], out);
-    expect(check.code, check.err).toBe(0);
-    expect(check.out.trim().split("\n")).toEqual([`${archiveName(v)}: OK`, "install.sh: OK"]);
+    // The README's own check: sha256sum, or shasum -a 256 on macOS (which has no sha256sum). Each one on the PATH that
+    // run() gives (Bun's folder, /usr/bin and /bin: the test's own PATH may hold others, such as Homebrew's), and one
+    // at least.
+    const path = baseEnv().PATH;
+    const checks = [
+      ["sha256sum", "-c", "SHA256SUMS"],
+      ["shasum", "-a", "256", "-c", "SHA256SUMS"],
+    ].filter((cmd) => Bun.which(cmd[0]!, { PATH: path }) !== null);
+    expect(checks.length).toBeGreaterThan(0);
+    for (const cmd of checks) {
+      const check = run(cmd, out);
+      expect(check.code, `${cmd[0]}: ${check.err}`).toBe(0);
+      expect(check.out.trim().split("\n")).toEqual([`${archiveName(v)}: OK`, "install.sh: OK"]);
+    }
   });
 
   test("kitespan.rb: the template with the version and the archive's SHA-256 in its code, its comments as they are", () => {
