@@ -15,7 +15,7 @@ import { worktreeHere } from "../../worktree/check";
 import { MARK_PHRASES, MARK_RE, isProviderArn, type EnvVar, type Marked, type MarkedPicks, type MarkedSwitches, type MarkPhrase } from "../types";
 
 /** The SDK version this gate was written for (package.json pins it exactly). */
-export const SDK_VERSION = "0.3.312";
+export const SDK_VERSION = "0.3.322";
 
 /** Always passed, each with its one exact value. */
 export const ALWAYS_KEYS = [

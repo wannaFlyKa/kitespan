@@ -113,7 +113,7 @@ function bootWithSlowProjects(chatRow: ChatRow = row, history?: ChatEvent[], pro
   const conn = new Connection({ url: "ws://127.0.0.1:7942/ws", tab: "tab_me", open: () => sock, now: () => 0, setTimer: () => 0, clearTimer: () => {}, random: () => 0.5, reload: () => {} });
   start(conn);
   sock.onopen?.({});
-  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+  sock.receive({ t: "welcome", epoch: EPOCH, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   sock.receive({ t: "chats", list: [chatRow] });
   act.open(CHAT);
   sock.receive({ t: "attached", chat: CHAT, epoch: EPOCH, state: "waiting", seq: 9, cards: [permission("toolu_wait", `${FOLDER}/web/App.tsx`)], picks: { model: null, effort: null, mode: null }, title: null, draft, archived: false, replay: "snapshot" });

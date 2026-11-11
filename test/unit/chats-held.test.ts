@@ -204,6 +204,33 @@ describe("a live chat whose session another process opens", () => {
     await reg.shutdown();
   });
 
+  test("SDK 0.3.322: a message that Claude Code held answers cancelled: false; its later drop moves it to the server's queue, and the hold's end sends it", async () => {
+    const { reg, driver } = await setup();
+    const { sid, chat } = await chatOnSession(reg, driver);
+    const page = new RecordingViewer();
+    await reg.attach(chat, page);
+    const m1 = send(chat, "first");
+    const m2 = send(chat, "second");
+    await apply(reg, m1);
+    await apply(reg, m2);
+    const c = driver.last;
+    c.takeBackResult = { cancelled: false };
+    driver.openNow.set(sid, { app: "terminal", busy: true });
+    await until(() => c.calls.includes(`takeBack:${m2.uuid}`));
+    // The cancel-pending mark: Claude Code drops it when it would have queued it (sdk.d.ts 0.3.322 line 4901).
+    c.emit({ k: "dropped", uuid: m2.uuid }, turnEnd(m1.uuid));
+    await until(() => c.closed && reg.stateOf(chat) === "sleeping");
+    expect(page.of("taken_back").map((e) => e.uuid)).not.toContain(m2.uuid);
+    expect(page.of("user").filter((e) => e.uuid === m2.uuid).at(-1)).toMatchObject({ queued: true });
+    expect(reg.draftOf(chat)?.text ?? "").not.toContain("second");
+    autoReply(driver);
+    driver.openNow.delete(sid);
+    await until(() => driver.opens.length === 2);
+    await until(() => driver.last.sent.some((s) => s.uuid === m2.uuid));
+    await until(() => page.of("user").filter((e) => e.uuid === m2.uuid).at(-1)?.queued === false);
+    await reg.shutdown();
+  });
+
   test("R20: a held chat's queued message survives a restart (Not sent, nothing starts while held) and goes at the hold's end", async () => {
     const { reg, driver, store } = await setup();
     const { sid, chat } = await chatOnSession(reg, driver);

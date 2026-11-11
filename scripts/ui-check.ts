@@ -2778,8 +2778,8 @@ const CLAUDE_MINIMUM_RUNS = [
   { id: "above", prints: "2.1.317 (Claude Code)", line: null, code: null },
 ] as const;
 type ClaudeMinimumRun = (typeof CLAUDE_MINIMUM_RUNS)[number];
-/** Above the minimum, Settings > Claude Code keeps the drift line (the SDK names 2.1.312). */
-const CLAUDE_ABOVE_DRIFT = "Claude Code 2.1.317 runs here; this SDK was built for 2.1.312.";
+/** Above the minimum, Settings > Claude Code keeps the drift line (the SDK names 2.1.322). */
+const CLAUDE_ABOVE_DRIFT = "Claude Code 2.1.317 runs here; this SDK was built for 2.1.322.";
 
 /** The minimum's line in a screen (by its test id): its element, words, colour and code span; and Settings' drift line. */
 const MINIMUM_STATE = (id: string) => `JSON.stringify((() => {

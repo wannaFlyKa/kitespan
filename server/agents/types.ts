@@ -356,7 +356,10 @@ export interface AgentDriver {
    */
   sessionFolders(): Promise<string[]>;
   rename(sessionId: string, title: string, cwd: string): Promise<void>;
-  /** D48: removes the session's transcript. */
+  /**
+   * D48: removes the session's transcript. An error whose `keepChat` is true says that the transcript is gone but
+   * something of the session is still on disk, which a second call may remove: the chat stays.
+   */
   deleteSession(sessionId: string, cwd: string): Promise<void>;
   /**
    * D58 Continue in a copy: a copy of the session's transcript under a new session id, titled `title`; resolves with

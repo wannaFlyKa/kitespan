@@ -121,7 +121,7 @@ export const WIRE = {
 export const MODE_IDS = ["default", "acceptEdits", "plan", "auto", "bypassPermissions"] as const;
 export type ModeId = (typeof MODE_IDS)[number];
 
-/** The SDK's effort levels (sdk.d.ts 0.3.312 line 715). A model row offers some of them. */
+/** The SDK's effort levels (sdk.d.ts 0.3.322 line 730). A model row offers some of them. */
 export const EFFORT_IDS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type EffortId = (typeof EFFORT_IDS)[number];
 
@@ -171,7 +171,7 @@ export const TURN_CUT = "cut";
 export const CARD_ANSWER_KINDS = ["once", "session", "denied", "answered", "cancelled"] as const;
 export type CardAnswerKind = (typeof CARD_ANSWER_KINDS)[number];
 
-/** The CLI's fast-mode states (`fast_mode_state` in `system/init`, sdk.d.ts 0.3.312 line 802). */
+/** The CLI's fast-mode states (`fast_mode_state` in `system/init`, sdk.d.ts 0.3.322 line 817). */
 export const FAST_MODE_STATES = ["off", "cooldown", "on"] as const;
 export type FastModeState = (typeof FAST_MODE_STATES)[number];
 
@@ -554,9 +554,9 @@ export interface PermissionCard {
   /** The path that triggered the request, when one did. */
   blockedPath: string | null;
   input: unknown;
-  /** Open on the decline button and offer no one-key approve (sdk.d.ts line 285). */
+  /** Open on the decline button and offer no one-key approve (sdk.d.ts 0.3.322 line 285). */
   defaultToNo: boolean;
-  /** Offer no persistent choice: no Allow for this session (sdk.d.ts line 290). */
+  /** Offer no persistent choice: no Allow for this session (sdk.d.ts 0.3.322 line 290). */
   suppressAlwaysAllowRule: boolean;
   /** Claude Code suggested a rule that the `session` destination can hold, so Allow for this session can show. */
   sessionRule: boolean;
@@ -855,7 +855,7 @@ export type ChatEvent =
   /** The suggested next prompt (6.4). */
   | { k: "suggestion"; text: string }
   /**
-   * An assistant message's `error` (sdk.d.ts line 3791): the error row. `authentication_failed` and
+   * An assistant message's `error` (sdk.d.ts 0.3.322 line 3832): the error row. `authentication_failed` and
    * `cloud_credential_error` show the sign-in line (6.3).
    */
   | { k: "agent_error"; uuid: string; error: string; parent: string | null }
@@ -891,10 +891,19 @@ export type ChatEvent =
   | { k: "background"; id: string; worker: BgWorker | null }
   /**
    * The agent's own word that its running turn took these user messages in (`user_message_uuids` on a reply's first
-   * frames, sdk.d.ts 0.3.312 line 3716). The server's alone: it turns each one that waited into a `user` event with
+   * frames, sdk.d.ts 0.3.322 line 3757). The server's alone: it turns each one that waited into a `user` event with
    * `queued: false` and never sends this to a page.
    */
   | { k: "taken_in"; uuids: string[] }
+  /**
+   * Claude Code's word that a user message it was given will not run: its `command_lifecycle` frame with the state
+   * `cancelled` (Claude Code's own internal stream-json frame; sdk.d.ts 0.3.322 has no type for it, and the SDK hands
+   * it on). sdk.d.ts 0.3.322 line 4901 (SDKControlInterruptResponse.still_queued): a message that Claude Code still
+   * holds behind a model change or start-up work answers cancel_async_message with `cancelled: false`, gets a
+   * cancel-pending mark, and the drain drops it later, with this frame ("caught by a pending cancel just before
+   * dispatch"). The server's alone: a Take back that got `cancelled: false` finishes on it; never sent to a page.
+   */
+  | { k: "dropped"; uuid: string }
   /**
    * U1 (DESIGN-U1 5): what a finished turn changed in the chat's folder (shared/changes.ts ChangesCard), the card under
    * its answer. It comes after the turn's `turn_end` (about 30 ms to 10 s later), into the ring for every page, and
@@ -910,8 +919,9 @@ export type ChatEvent =
   | { k: "edit_patch"; id: string; path: string; create: boolean; added: number; removed: number; hunks: EditHunk[]; cut: boolean; parent: string | null };
 
 /**
- * W5: the start-up refusals that kitespan tells apart (sdk.d.ts 0.3.312 lines 5978-5981, 6197-6200); every other value,
- * also one that the pinned SDK does not know yet (the docs' `sandbox_required_unavailable`), reads as `unknown`.
+ * W5: the start-up refusals that kitespan tells apart (sdk.d.ts 0.3.322 lines 6058-6061, 6319-6322; their text grew
+ * since 0.3.312); every other value reads as `unknown`, also the three that 0.3.322 adds (`sandbox_required_unavailable`,
+ * `initialize_not_first`, `config_file_invalid`) and one that the pinned SDK does not know yet.
  */
 export const STARTUP_REASONS = ["worktree_unverified", "worktree_resume_refused", "cwd_unavailable", "unknown"] as const;
 export type StartupReason = (typeof STARTUP_REASONS)[number];

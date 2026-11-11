@@ -12,6 +12,13 @@
 //    its own. Two pages press at once: one press acts, the other does nothing.
 // C. Send now while Claude only writes: a plain interrupt, the turn ends as Stop ends it, and the message runs next as
 //    its own turn.
+// D. SDK 0.3.322's held message (sdk.d.ts 0.3.322 line 4901): during a Bash call, a model change, then at once a
+//    message and its Take back. Claude Code may hold the message out of its queue while it checks the model change:
+//    then cancel_async_message answers `cancelled: false`, plants a cancel-pending mark, and drops the message later
+//    with its `command_lifecycle` frame `cancelled`. Either way the message comes back (`taken_back`, at once or after
+//    that frame) and never runs: no turn's end lists it. kitespan sends the message only after set_model's answer
+//    (both go through the chat's intake), so whether Claude Code still holds it then is what this case finds out.
+// E. The same for start-up work: a message and its Take back right after a new chat's start, before its first frame.
 //
 // In every case each queued message reaches Claude Code once: one turn's end lists it, and no press acts twice.
 
@@ -185,6 +192,54 @@ liveSuite("test/live/send-now.test.ts", {}, (env) => {
         expect(replyText(c.chat, c.from)).toContain("QUEUED-F");
         expect(lastUser(c.chat, c.from, m2).e?.queued).toBe(false);
         expect(listedOnce(c.chat, c.from, m2)).toBe(1);
+      },
+      300_000,
+    );
+
+    test(
+      "D: a message sent right after a model change and taken back at once comes back, at once or when Claude Code drops it, and never runs",
+      async () => {
+        await boot();
+        const t0 = performance.now();
+        const c = await open("Run exactly this Bash command: `sleep 12; echo SLEPT`. Then reply with the word DONE-G.");
+        await waitEv(A!, c.chat, c.from, (e) => e.k === "tool_call" && e.name === "Bash" && e.parent === null, 120_000, c.tick, "the Bash call");
+        // Not awaited: the message and its Take back go while Claude Code may still check the model change.
+        const pick = A!.request({ t: "set_model", rid: rid(), chat: c.chat, value: env.strongModel ?? env.model });
+        const m2 = await send(c.chat, "Reply with the word HELD-H.");
+        const back = await A!.request({ t: "take_back", rid: rid(), chat: c.chat, uuid: m2 });
+        expect(back.ok).toBe(true);
+        const atOnce = back.result?.cancelled === true;
+        // Too late is a fair answer too (a turn took it in): then a turn's end lists it, and no taken_back comes.
+        const first = await waitEv(A!, c.chat, c.from, (e) => (e.k === "taken_back" && e.uuid === m2) || (e.k === "turn_end" && e.uuids.includes(m2)), 180_000, c.tick, "the message's taken_back or its turn's end");
+        log.line({ case: "D", cancelledAtOnce: atOnce, came: first.k, msToIt: Math.round(performance.now() - t0), pick: (await pick).ok });
+        if (first.k === "turn_end") return;
+        const end = (await waitEv(A!, c.chat, c.from, (e) => e.k === "turn_end", 180_000, c.tick, "the turn's end")) as Ev<"turn_end">;
+        log.turn({ purpose: "D: a held message taken back", model: env.model, chat: c.chat, session: sessionOf(A!.events(c.chat, c.from))?.sessionId ?? null, ms: performance.now() - t0, ok: end.ok });
+        await Bun.sleep(5_000);
+        expect(listedOnce(c.chat, c.from, m2), "the taken-back message never ran").toBe(0);
+        expect(replyText(c.chat, c.from)).not.toContain("HELD-H");
+      },
+      300_000,
+    );
+
+    test(
+      "E: a message sent right after a chat's start and taken back at once comes back, at once or when Claude Code drops it, and never runs",
+      async () => {
+        await boot();
+        const t0 = performance.now();
+        const c = await open("Reply with the word FIRST-I only.");
+        const m2 = await send(c.chat, "Reply with the word HELD-J.");
+        const back = await A!.request({ t: "take_back", rid: rid(), chat: c.chat, uuid: m2 });
+        expect(back.ok).toBe(true);
+        const atOnce = back.result?.cancelled === true;
+        const firstFrame = A!.events(c.chat, c.from).some((e) => e.k === "turn_start");
+        const first = await waitEv(A!, c.chat, c.from, (e) => (e.k === "taken_back" && e.uuid === m2) || (e.k === "turn_end" && e.uuids.includes(m2)), 180_000, c.tick, "the message's taken_back or its turn's end");
+        log.line({ case: "E", cancelledAtOnce: atOnce, turnStartedBeforeTakeBack: firstFrame, came: first.k, msToIt: Math.round(performance.now() - t0) });
+        if (first.k === "turn_end") return;
+        await waitEv(A!, c.chat, c.from, (e) => e.k === "turn_end", 180_000, c.tick, "the first turn's end");
+        await Bun.sleep(5_000);
+        expect(listedOnce(c.chat, c.from, m2), "the taken-back message never ran").toBe(0);
+        expect(replyText(c.chat, c.from)).not.toContain("HELD-J");
       },
       300_000,
     );

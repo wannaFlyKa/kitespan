@@ -100,7 +100,7 @@ export interface Turn {
    * Claude Code does between tool rounds (live LIVE-NOTES item 15): each leaves the queue (an interrupt's receipt no
    * longer names it, cancel_async_message no longer finds it), goes into the transcript after the result, and is
    * listed in the result's user_message_uuids; none runs as a turn of its own. As a typed prompt's turn does, the turn
-   * stamps no later frame with it (sdk.d.ts 0.3.312 line 3716). Default false: a queued message waits for the turn's end.
+   * stamps no later frame with it (sdk.d.ts 0.3.322 line 3757). Default false: a queued message waits for the turn's end.
    */
   fold?: boolean;
 }
@@ -123,6 +123,14 @@ export interface Fixture {
   contextRefusedFor?: string[];
   /** Row 94: answer each get_context_usage this many milliseconds late (the short read's cap). */
   contextDelayMs?: number;
+  /**
+   * SDK 0.3.322 (sdk.d.ts line 4901, SDKControlInterruptResponse.still_queued): a message held out of the queue, behind
+   * a model change or start-up work, answers cancel_async_message with `cancelled: false` and gets a cancel-pending
+   * mark, which the drain honours later. With this set, every queued message counts as held: cancel_async_message
+   * answers false, and after this many milliseconds the message leaves the queue with its terminal `command_lifecycle`
+   * frame (state `cancelled`), as Claude Code writes it on stdout. It never runs.
+   */
+  heldCancelMs?: number;
   /** Steps emitted right after the initialize response (SessionStart hooks, for example). */
   onStart?: Step[];
   /** Answer the initialize request this many milliseconds late (a slow start; the short command-list read's cap). */
@@ -286,7 +294,7 @@ function takeOwn(name: string): string | null {
 const fixturePath = takeOwn("--fixture");
 const tracePath = takeOwn("--trace");
 const fixture: Fixture = fixturePath ? (JSON.parse(readFileSync(fixturePath, "utf8")) as Fixture) : {};
-const VERSION = fixture.version ?? "2.1.312 (Claude Code)";
+const VERSION = fixture.version ?? "2.1.322 (Claude Code)";
 
 function trace(o: Json): void {
   if (!tracePath) return;
@@ -514,7 +522,7 @@ let current: QueuedUser | null = null;
 let currentTurn: Turn | null = null;
 /** The user messages that the turn in flight took in at a tool boundary (Turn.fold). */
 let folded: string[] = [];
-/** The turn in flight stamped its first stream event and its first assistant record (sdk.d.ts 0.3.312 line 3716). */
+/** The turn in flight stamped its first stream event and its first assistant record (sdk.d.ts 0.3.322 line 3757). */
 const stamped = { stream: false, assistant: false };
 
 function fill(v: unknown): unknown {
@@ -1075,6 +1083,17 @@ function onControl(id: string, req: Json): void {
       return respond(id, {});
     case "cancel_async_message": {
       const i = queue.findIndex((u) => u.uuid === req.message_uuid);
+      if (i >= 0 && fixture.heldCancelMs !== undefined) {
+        const held = queue[i]!;
+        respond(id, { cancelled: false });
+        setTimeout(() => {
+          const j = queue.indexOf(held);
+          if (j < 0) return;
+          queue.splice(j, 1);
+          emit({ type: "command_lifecycle", command_uuid: held.uuid, state: "cancelled" });
+        }, fixture.heldCancelMs);
+        return;
+      }
       if (i >= 0) queue.splice(i, 1);
       return respond(id, { cancelled: i >= 0 });
     }

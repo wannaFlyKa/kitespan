@@ -218,9 +218,9 @@ export function stopAnswerOf(run: CliRun, id: string): BgStopAnswer {
 }
 
 /**
- * The folder name that the SDK (0.3.312, `Mu`) gives a session's folder under `<config>/projects/`: every character
+ * The folder name that the SDK (0.3.322, `rd`) gives a session's folder under `<config>/projects/`: every character
  * outside a-z, A-Z and 0-9 as "-"; past 200 characters, the first 200, "-", and the base 36 of the absolute 32-bit
- * string hash of the folder (`ab`).
+ * string hash of the folder (`eC`).
  */
 export function transcriptSlug(dir: string): string {
   const plain = dir.replace(/[^a-zA-Z0-9]/g, "-");

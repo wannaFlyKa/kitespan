@@ -30,8 +30,9 @@ import {
   type SDKSessionInfo,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import { dirname, isAbsolute, join, resolve } from "node:path";
-import { readFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import {
   capAnswer,
   capInput,
@@ -136,10 +137,28 @@ export class DriverError extends Error {
   constructor(
     readonly code: Extract<ErrorCode, "no_claude" | "bad_request" | "unsupported" | "failed" | "stale" | "not_found">,
     message: string,
+    /** deleteSession only: the chat stays though its transcript is gone, so that Delete again can finish (AgentDriver). */
+    readonly keepChat = false,
   ) {
     super(message);
     this.name = "DriverError";
   }
+}
+
+/**
+ * The folder that SDK 0.3.322's deleteSession names when it deleted `<id>.jsonl` but could not remove the `<id>/`
+ * folder beside it (sdk.mjs `KL`: three tries, then an Error with code ENOTEMPTY whose message starts with the
+ * quoted path; sdk.d.ts 0.3.322 line 704: "A repeat call then throws "not found", so delete the subdirectory
+ * yourself"). Only a folder named for the session, one level under `<config>/projects/`, counts; else null.
+ */
+export function leftSessionFolder(e: unknown, sessionId: string, configDir: string): string | null {
+  if ((e as { code?: unknown } | null)?.code !== "ENOTEMPTY") return null;
+  const m = /^'([^']+)' is still on disk/.exec(String((e as Error)?.message ?? ""));
+  if (!m) return null;
+  const path = m[1]!;
+  if (!isAbsolute(path) || resolve(path) !== path) return null;
+  if (basename(path) !== sessionId || dirname(dirname(path)) !== join(configDir, "projects")) return null;
+  return path;
 }
 
 /**
@@ -272,6 +291,8 @@ export class ClaudeDriver implements AgentDriver {
   readonly sdk: SdkSurface;
   /** Session ids known to have a transcript (D41: such a session starts with `resume`, never `sessionId`). */
   readonly knownSessions = new Set<string>();
+  /** SDK 0.3.322: sessions whose transcript Delete removed while their `<id>/` folder stayed (leftSessionFolder). */
+  private readonly foldersLeft = new Map<string, string>();
   /** The last settings read per folder: the gate takes `promptSuggestionEnabled` from here, never from the input. */
   readonly settingsSeen = new Map<string, AgentSettings>();
   lastProbe: BinaryProbe | null = null;
@@ -307,7 +328,7 @@ export class ClaudeDriver implements AgentDriver {
   }
 
   capabilities(): AgentCapabilities {
-    // The untyped methods (D6) exist on SDK 0.3.312's query object (R-sdk 3.1; askSideQuestion, the lead's R124 probe);
+    // The untyped methods (D6) exist on SDK 0.3.322's query object (R-sdk 3.1; askSideQuestion, the lead's R124 probe);
     // each chat checks again before a call.
     const untyped = installedSdkVersion() === SDK_VERSION;
     return {
@@ -422,8 +443,28 @@ export class ClaudeDriver implements AgentDriver {
     try {
       await this.sdk.deleteSession(sessionId, { dir: cwd });
     } catch (e) {
+      const left = leftSessionFolder(e, sessionId, this.opts.claudeConfigDir ?? claudeConfigDir());
+      if (left) {
+        // The transcript is gone, the session's folder of subagent transcripts is not: the chat stays, and Delete
+        // again removes the folder (the SDK's own advice), since the SDK then answers "not found".
+        this.foldersLeft.set(sessionId, left);
+        throw new DriverError("failed", "deleteSession removed the transcript, but the session folder is still on disk", true);
+      }
       // Already gone is what Delete wants; anything else is a failure.
       if (!/not found/i.test(String((e as Error)?.message ?? e))) throw new DriverError("failed", "deleteSession failed");
+      const folder = this.foldersLeft.get(sessionId);
+      if (folder) {
+        // Delete again after the SDK left the folder: removed here as the SDK removes it (no link followed: rm
+        // removes a link itself, never what it points at), only while no transcript of that session is beside it.
+        if (existsSync(`${folder}.jsonl`)) throw new DriverError("failed", "the session's transcript is back", true);
+        try {
+          if (lstatSync(folder, { throwIfNoEntry: false })) await rm(folder, { recursive: true, force: true });
+        } catch {
+          throw new DriverError("failed", "the session folder is still on disk", true);
+        }
+        if (lstatSync(folder, { throwIfNoEntry: false })) throw new DriverError("failed", "the session folder is still on disk", true);
+        this.foldersLeft.delete(sessionId);
+      }
     }
     this.knownSessions.delete(sessionId);
   }
@@ -1059,6 +1100,8 @@ export class ClaudeChat implements AgentChat {
       const events = this.mapper.map(m);
       for (const e of events) {
         if (e.k === "turn_end") this.settleWaiting(e.uuids);
+        // A message that Claude Code dropped (a cancel-pending mark of a Take back) no longer waits.
+        if (e.k === "dropped") this.waiting.delete(e.uuid);
         this.queue.push(e);
       }
       // Claude Code has written the transcript once a turn ran (D41: the next start of this session is a resume).
@@ -1378,7 +1421,7 @@ export class ClaudeChat implements AgentChat {
   async backgroundAll(): Promise<boolean> {
     const q = await this.live();
     try {
-      // No tool-use id: every foreground task, as Ctrl+B (sdk.d.ts 0.3.312 lines 3310-3324).
+      // No tool-use id: every foreground task, as Ctrl+B (sdk.d.ts 0.3.322 lines 3351-3365).
       return (await q.backgroundTasks()) === true;
     } catch {
       // Background tasks are off for this session.

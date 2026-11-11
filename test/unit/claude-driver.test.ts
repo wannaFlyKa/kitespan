@@ -2,7 +2,10 @@
 // every test goes through query(), the stream-json protocol and the SDK's own callbacks. No model, no real claude.
 import { afterEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { DENY_TEXTS, DriverError } from "../../server/agents/claude/driver";
+import { DENY_TEXTS, DriverError, leftSessionFolder } from "../../server/agents/claude/driver";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { GateError, SDK_CHILD_ENV } from "../../server/agents/claude/options";
 import { CARD_ABORT, MARK_PHRASES, markOf } from "../../server/agents/types";
 import type { Card, ChatEvent } from "../../shared/protocol";
@@ -88,6 +91,21 @@ describe("a text turn with thinking", () => {
     expect((starts[1]!.args as string[]).some((a) => a.startsWith("--session-id"))).toBe(false);
   });
 
+  test("a resume adds no --await-initialize: SDK 0.3.322 adds it only without pathToClaudeCodeExecutable, which kitespan always passes", async () => {
+    const r = use(rig("text-thinking"));
+    const first = r.open();
+    await first.chat.send({ uuid: randomUUID(), text: "Hi" });
+    await first.events.turnEnds(1);
+    await first.chat.close();
+    const second = r.open({ sessionId: null, resume: { value: first.sessionId, mark: markOf(MARK_PHRASES.resume, now()) } });
+    await second.chat.send({ uuid: randomUUID(), text: "Hi again" });
+    await second.events.turnEnds(1);
+    const starts = r.fake.trace().filter((l) => l.t === "start");
+    expect(starts).toHaveLength(2);
+    expect(starts[1]!.args as string[]).toContain(`--resume=${first.sessionId}`);
+    for (const s of starts) expect((s.args as string[]).filter((a) => a.startsWith("--await-"))).toEqual([]);
+  });
+
   test("the options of each start are written before query() runs, callbacks as [function]", async () => {
     const r = use(rig("text-thinking"));
     const { chat, events, sessionId } = r.open();
@@ -95,7 +113,7 @@ describe("a text turn with thinking", () => {
     await events.turnEnds(1);
     const rec = r.lastOptions[0] as { v: number; sdk: string; chat: string; options: Record<string, unknown>; marks: Record<string, string> };
     expect(rec.v).toBe(1);
-    expect(rec.sdk).toBe("0.3.312");
+    expect(rec.sdk).toBe("0.3.322");
     expect(rec.options.canUseTool).toBe("[function]");
     expect(rec.options.systemPrompt).toEqual({ type: "preset", preset: "claude_code" });
     expect(rec.options.sessionId).toBe(sessionId);
@@ -588,6 +606,22 @@ describe("the chat's other actions", () => {
     expect(r.fake.trace().filter((l) => l.t === "turn_start")).toHaveLength(1);
   });
 
+  test("SDK 0.3.322: a held message answers cancelled: false, and Claude Code's later command_lifecycle `cancelled` reaches the chat as `dropped`", async () => {
+    const r = use(rig({ heldCancelMs: 50, turns: [{ steps: [{ sleep: 1_500 }, { say: { id: "msg_slow", text: "slow" } }, { emit: { type: "result", subtype: "success" } }] }] }));
+    const { chat, events } = r.open();
+    const [u1, u2] = [randomUUID(), randomUUID()];
+    await chat.send({ uuid: u1, text: "first" });
+    await chat.send({ uuid: u2, text: "second" });
+    await r.fake.waitFor((l) => l.t === "user" && l.uuid === u2);
+    expect(await chat.takeBack(u2)).toEqual({ cancelled: false });
+    // The SDK hands the untyped frame on (sdk.mjs 0.3.322 readMessages), and the mapper names the message.
+    await events.until((ev) => ev.some((e) => e.k === "dropped"));
+    expect(events.of("dropped")).toEqual([{ k: "dropped", uuid: u2 }]);
+    await events.turnEnds(1);
+    await Bun.sleep(100);
+    expect(r.fake.trace().filter((l) => l.t === "turn_start")).toHaveLength(1);
+  });
+
   test("an interrupt's receipt lists the messages that will still run", async () => {
     const r = use(rig({ turns: [{ steps: [{ sleep: 3_000 }] }] }));
     const { chat, events } = r.open();
@@ -691,6 +725,54 @@ describe("the gate at open()", () => {
     expect(events.of("session")[0]!.sessionId).toBe(ledger);
   });
 
+  test("SDK 0.3.322: deleteSession that removed the transcript but left the session folder keeps the chat; Delete again removes the folder", async () => {
+    const config = mkdtempSync(join(tmpdir(), "ks-del-"));
+    try {
+      const sid = randomUUID();
+      const project = join(config, "projects", "-srv-work-app");
+      const folder = join(project, sid);
+      mkdirSync(join(folder, "subagents"), { recursive: true });
+      writeFileSync(join(folder, "subagents", "agent-a.jsonl"), "{}\n");
+      const calls: string[] = [];
+      // The SDK's KL: the transcript went, the folder stayed after three tries (sdk.mjs 0.3.322); a repeat: not found.
+      const stub = async (id: string) => {
+        calls.push(id);
+        if (calls.length === 1) throw Object.assign(new Error(`'${folder}' is still on disk after three tries to delete it. A program may be writing to it.`), { code: "ENOTEMPTY" });
+        throw new Error(`Session ${id} not found in project directory for /srv/work/app`);
+      };
+      const r = use(rig("text-thinking", { claudeConfigDir: config, sdk: { deleteSession: stub as never } }));
+      const first = await r.driver.deleteSession(sid, "/srv/work/app").then(
+        () => null,
+        (x: unknown) => x,
+      );
+      expect(first).toBeInstanceOf(DriverError);
+      expect(first).toMatchObject({ code: "failed", keepChat: true });
+      expect(existsSync(folder)).toBe(true);
+      // Delete again: the SDK says not found, and the folder that it named goes.
+      await r.driver.deleteSession(sid, "/srv/work/app");
+      expect(existsSync(folder)).toBe(false);
+      expect(existsSync(project)).toBe(true);
+      expect(calls).toEqual([sid, sid]);
+      // A plain "not found" with no folder left is what Delete wants, as before.
+      await r.driver.deleteSession(sid, "/srv/work/app");
+    } finally {
+      rmSync(config, { recursive: true, force: true });
+    }
+  });
+
+  test("an ENOTEMPTY whose folder is not that session's, one level under the config's projects, is a plain failure", () => {
+    const sid = randomUUID();
+    const err = (path: string) => Object.assign(new Error(`'${path}' is still on disk after three tries to delete it.`), { code: "ENOTEMPTY" });
+    expect(leftSessionFolder(err(`/c/projects/p/${sid}`), sid, "/c")).toBe(`/c/projects/p/${sid}`);
+    expect(leftSessionFolder(err(`/c/projects/p/${randomUUID()}`), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(err(`/c/projects/${sid}`), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(err(`/c/projects/p/q/${sid}`), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(err(`/c/projects/p/../../${sid}`), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(err(`/other/projects/p/${sid}`), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(Object.assign(err(`/c/projects/p/${sid}`), { code: "EACCES" }), sid, "/c")).toBeNull();
+    expect(leftSessionFolder(new Error("boom"), sid, "/c")).toBeNull();
+  });
+
   test("promptSuggestions passes only after the user's own setting was read as true", async () => {
     const settings = { respondToBashCommands: false, promptSuggestionEnabled: true, cleanupPeriodDays: 14, permissions: { defaultMode: "acceptEdits" } };
     const r = use(
@@ -771,7 +853,7 @@ describe("the binary probe", () => {
     const r = use(rig({ version: "2.1.300 (Claude Code)" }));
     const p = await r.driver.probe();
     expect(p).toMatchObject({ ok: true, path: r.fake.bin, realpath: r.fake.bin, version: "2.1.300 (Claude Code)", source: "path", refused: [], platformPackages: [] });
-    expect(p.drift).toBe("Claude Code 2.1.300 runs here; this SDK was built for 2.1.312.");
+    expect(p.drift).toBe("Claude Code 2.1.300 runs here; this SDK was built for 2.1.322.");
     // 2.1.300 is not below kitespan's minimum (2.1.296), so no line about it.
     expect(p.belowMinimum).toBeNull();
     expect(r.fake.trace().filter((l: TraceLine) => l.t === "start")).toEqual([]);

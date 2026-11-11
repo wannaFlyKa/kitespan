@@ -33,7 +33,7 @@ function transcript(id: string, rows: { type: "user" | "assistant"; uuid: string
         isSidechain: false,
         userType: "external",
         entrypoint: "cli",
-        version: "2.1.312",
+        version: "2.1.322",
       }) + "\n";
     parent = r.uuid;
   }

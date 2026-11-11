@@ -94,6 +94,6 @@ export const PROVIDER = "";
 /** kitespan's own version: the store's `server.version` holds it after `welcome`. */
 export const APP_VERSION = "0.1.0";
 /** The claude on PATH: the store's `host.claude` holds the path, the real path and the version. */
-export const CLAUDE_BINARY = { path: "", realPath: "", version: "", sdk: "0.3.312", sdkCli: "" };
+export const CLAUDE_BINARY = { path: "", realPath: "", version: "", sdk: "0.3.322", sdkCli: "" };
 /** From the terminal: the store's `sessions` holds each project's list once read. */
 export const PREVIEW_SESSIONS: PreviewSession[] = [];

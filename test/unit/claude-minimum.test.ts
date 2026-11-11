@@ -81,7 +81,7 @@ describe("the words", () => {
   });
 
   test("the start output: the minimum's line in the drift line's place, in plain text", () => {
-    const drift = "Claude Code 2.1.250 runs here; this SDK was built for 2.1.312.";
+    const drift = "Claude Code 2.1.250 runs here; this SDK was built for 2.1.322.";
     expect(claudeLines({ ok: true, version: "2.1.250 (Claude Code)", drift, belowMinimum: below("2.1.250", true) })).toEqual([
       "Claude Code 2.1.250 (Claude Code)",
       "Claude Code 2.1.250 runs here; kitespan supports 2.1.296 and later. Run claude update.",
@@ -90,9 +90,9 @@ describe("the words", () => {
       "Claude Code 2.1.250-acme.2 runs here; kitespan supports 2.1.296 and later. Update it the way your company provides it.",
     );
     // At or above it, the drift line as before; a frame of an older server has no field.
-    const above: ClaudeStatus = { ok: true, version: "2.1.317", drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.312.", belowMinimum: null };
+    const above: ClaudeStatus = { ok: true, version: "2.1.317", drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.322.", belowMinimum: null };
     expect(claudeLines(above)).toEqual(["Claude Code 2.1.317", above.drift!]);
-    expect(claudeLines({ ok: true, version: "2.1.312", drift: null })).toEqual(["Claude Code 2.1.312"]);
+    expect(claudeLines({ ok: true, version: "2.1.322", drift: null })).toEqual(["Claude Code 2.1.322"]);
     expect(claudeLines({ ok: true, version: null, drift: null, belowMinimum: null })).toEqual(["Claude Code (its version could not be read)"]);
   });
 
@@ -215,7 +215,7 @@ describe("a boot below the minimum", () => {
       ws.onerror = () => fail(new Error("refused"));
     });
     expect(welcome.t).toBe("welcome");
-    expect(welcome.claude).toEqual({ ok: true, version: "2.1.250 (Claude Code)", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.312.", belowMinimum: want });
+    expect(welcome.claude).toEqual({ ok: true, version: "2.1.250 (Claude Code)", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.322.", belowMinimum: want });
 
     const s = (await (await fetch(`${OWN}/api/settings`)).json()) as { claude: Record<string, unknown> };
     expect(s.claude).toMatchObject({ ok: true, version: "2.1.250 (Claude Code)", belowMinimum: want });

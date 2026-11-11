@@ -67,7 +67,7 @@ export function writeBackgroundRecord(claudeConfig: string, rec: BackgroundRecor
     cwd: rec.cwd,
     startedAt,
     procStart: start,
-    version: "2.1.312",
+    version: "2.1.322",
     kind: "bg",
     entrypoint: "sdk-ts",
     messagingSocketPath: join(claudeConfig, "no-such-socket.sock"),

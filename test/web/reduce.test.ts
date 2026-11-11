@@ -220,7 +220,7 @@ describe("subagents and workflows", () => {
 
 describe("the mode Claude Code runs in", () => {
   test("with no mode pick the chat shows the session's own mode (the user's defaultMode); a pick wins", () => {
-    const session = (mode: string | null): ChatEvent => ({ k: "session", sessionId: "s1", model: "claude-opus-5-5", mode, version: "2.1.312", bypass: false });
+    const session = (mode: string | null): ChatEvent => ({ k: "session", sessionId: "s1", model: "claude-opus-5-5", mode, version: "2.1.322", bypass: false });
     expect(run([session("acceptEdits")]).mode).toBe("acceptEdits");
     expect(run([session("nonsense")]).mode).toBe("default");
     expect(run([session("plan")], {}, { ...blank(), mode: "auto", picks: { model: null, effort: null, mode: "auto" } }).mode).toBe("auto");
@@ -443,9 +443,9 @@ describe("turns", () => {
     const c = run([
       { k: "picks", model: "claude-haiku-5-5", effort: null, mode: "plan" },
       { k: "title", title: "Fix the upload", from: "generated" },
-      { k: "session", sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "plan", version: "2.1.312", bypass: false },
+      { k: "session", sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7", model: "claude-haiku-5-5", mode: "plan", version: "2.1.322", bypass: false },
     ]);
-    expect([c.model, c.effort, c.mode, c.title, c.titleSource, c.sessionId, c.version]).toEqual(["claude-haiku-5-5", "default", "plan", "Fix the upload", "generated", "7c9e6679-7425-40de-944b-e07fc1f90ae7", "2.1.312"]);
+    expect([c.model, c.effort, c.mode, c.title, c.titleSource, c.sessionId, c.version]).toEqual(["claude-haiku-5-5", "default", "plan", "Fix the upload", "generated", "7c9e6679-7425-40de-944b-e07fc1f90ae7", "2.1.322"]);
     expect(picksView({ model: null, effort: "high", mode: "dontAsk" })).toEqual({ model: "default", effort: "high", mode: "default" });
     expect(listState("ending")).toBe("sleeping");
   });
@@ -627,7 +627,7 @@ describe("the session's facts for Settings and the + menu", () => {
         sessionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
         model: "claude-haiku-5-5",
         mode: "default",
-        version: "2.1.312",
+        version: "2.1.322",
         bypass: false,
         fastMode: { state: "cooldown", reason: "rate_limited" },
         skills: ["review", "deploy"],

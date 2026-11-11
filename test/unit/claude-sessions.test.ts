@@ -34,7 +34,7 @@ function transcript(id: string, entrypoint: string, rows: { type: "user" | "assi
       isSidechain: false,
       userType: "external",
       entrypoint,
-      version: "2.1.312",
+      version: "2.1.322",
     });
     parent = r.uuid;
   }
@@ -102,7 +102,7 @@ describe("history (getSessionMessages)", () => {
 describe("lastUsage (row 94: a chat's context figure from its transcript)", () => {
   const USAGE = "8e7f2d8a-8e9b-4d0c-9e1f-2a3b4c5d6e7f";
   // kitespan's own kind of session (sdk-ts), so the other lists here leave it out.
-  const row = (uuid: string, parent: string | null, o: Record<string, unknown>) => line({ uuid, parentUuid: parent, sessionId: USAGE, timestamp: "2026-11-03T10:00:00.000Z", cwd: PROJECT, isSidechain: false, userType: "external", entrypoint: "sdk-ts", version: "2.1.312", ...o });
+  const row = (uuid: string, parent: string | null, o: Record<string, unknown>) => line({ uuid, parentUuid: parent, sessionId: USAGE, timestamp: "2026-11-03T10:00:00.000Z", cwd: PROJECT, isSidechain: false, userType: "external", entrypoint: "sdk-ts", version: "2.1.322", ...o });
   const reply = (id: string, model: string, usage: Record<string, number>) => ({ type: "assistant", message: { id, type: "message", role: "assistant", model, content: [{ type: "text", text: "ok" }], usage } });
   test("the main session's last reply with a usage: its input, cached or not, and its output, with its model", async () => {
     const u = (n: number) => `dddddddd-0000-4000-8000-00000000000${n}`;

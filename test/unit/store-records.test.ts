@@ -448,17 +448,17 @@ describe("last-options.json", () => {
   test("written 0600, callbacks as [function], replaced at the next start", async () => {
     const { root, store } = await opened();
     const opts = { cwd: "/srv/work/app", model: "claude-haiku-5-5", canUseTool: async () => ({ behavior: "allow" }), includePartialMessages: true };
-    await store.writeLastOptions({ v: 1, writtenAt: T, sdk: "0.3.312", chat: CHAT, options: opts, marks: { model: MARK } });
+    await store.writeLastOptions({ v: 1, writtenAt: T, sdk: "0.3.322", chat: CHAT, options: opts, marks: { model: MARK } });
     const f = fileOf(root, "last-options.json");
-    expect(f).toEqual({ v: 1, writtenAt: T, sdk: "0.3.312", chat: CHAT, options: { cwd: "/srv/work/app", model: "claude-haiku-5-5", canUseTool: "[function]", includePartialMessages: true }, marks: { model: MARK } });
+    expect(f).toEqual({ v: 1, writtenAt: T, sdk: "0.3.322", chat: CHAT, options: { cwd: "/srv/work/app", model: "claude-haiku-5-5", canUseTool: "[function]", includePartialMessages: true }, marks: { model: MARK } });
     expect(mode(join(root, "state", "last-options.json"))).toBe(0o600);
-    await store.writeLastOptions({ v: 1, writtenAt: T2, sdk: "0.3.312", chat: OTHER, options: {}, marks: {} });
+    await store.writeLastOptions({ v: 1, writtenAt: T2, sdk: "0.3.322", chat: OTHER, options: {}, marks: {} });
     expect(fileOf(root, "last-options.json").chat).toBe(OTHER);
     expect(readdirSync(join(root, "state")).filter((n) => n.endsWith(".tmp"))).toEqual([]);
   });
 
   test("a bad record is refused", async () => {
     const { store } = await opened();
-    expect(await code(store.writeLastOptions({ v: 1, writtenAt: T, sdk: "0.3.312", chat: "x", options: {}, marks: {} }))).toBe("bad_value");
+    expect(await code(store.writeLastOptions({ v: 1, writtenAt: T, sdk: "0.3.322", chat: "x", options: {}, marks: {} }))).toBe("bad_value");
   });
 });

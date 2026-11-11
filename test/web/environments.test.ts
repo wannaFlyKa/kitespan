@@ -282,7 +282,7 @@ function boot(at: string) {
   connectWith(conn);
   conn.start();
   sock.onopen?.({});
-  sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+  sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   sock.receive({ t: "chats", list: [row(CHAT_A, A), row(CHAT_B, B)] });
   g.history!.entries = [];
   (g.window!.__kitespanFrames ??= []).length = 0;
@@ -338,7 +338,7 @@ describe("the projects frame", () => {
 
   test("a reconnect reads the list again, since a change may have come while the socket was down", async () => {
     boot("/");
-    sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+    sock.receive({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
     await settle();
     expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(["GET /api/projects"]);
   });

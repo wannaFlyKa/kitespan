@@ -91,7 +91,7 @@ function setup() {
   conn.on((f) => frames.push(f));
   const last = () => sockets[sockets.length - 1]!;
   const welcome = (s = last(), epoch = EPOCH) => {
-    s.receive({ t: "welcome", epoch, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none" });
+    s.receive({ t: "welcome", epoch, version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none" });
   };
   return { conn, clock, sockets, frames, last, welcome, reloads: () => reloads };
 }

@@ -16,7 +16,7 @@ afterAll(() => {
 const BIN = join(s.root, "bin");
 const CLAUDE = join(BIN, "claude");
 mkdirSync(BIN);
-writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.312 (Claude Code)'\n");
+writeFileSync(CLAUDE, "#!/bin/sh\necho '2.1.322 (Claude Code)'\n");
 chmodSync(CLAUDE, 0o755);
 const WT = join(s.root, "wt");
 git(s.repo, "worktree", "add", "-q", "-b", "kitespan/abcdefgh", WT);

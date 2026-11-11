@@ -52,7 +52,7 @@ export function bgAgents(seed: Pick<SeedPaths, "folders" | "home">, now: BgListS
 
 /**
  * The fake's version in a background scene: the first Claude Code that kitespan runs `agents` and `stop` on (its gate,
- * server/agents/claude/background.ts AGENT_VIEW_SINCE). The SDK names 2.1.312, so the drift line shows, as on the
+ * server/agents/claude/background.ts AGENT_VIEW_SINCE). The SDK names 2.1.322, so the drift line shows, as on the
  * owner's machine.
  */
 export const BG_CLI_VERSION = "2.1.318 (Claude Code)";

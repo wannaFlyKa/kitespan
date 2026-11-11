@@ -64,7 +64,7 @@ function fakeStore(projects: ProjectRecord[] = [], chats: ChatLedger[] = []) {
   };
 }
 
-const PROBE: BinaryProbe = { ok: true, path: "/opt/bin/claude", realpath: "/opt/claude/2.1.311/claude", version: "2.1.311", source: "path", refused: [], platformPackages: [], drift: "Claude Code 2.1.311 runs here; this SDK was built for 2.1.312.", belowMinimum: null };
+const PROBE: BinaryProbe = { ok: true, path: "/opt/bin/claude", realpath: "/opt/claude/2.1.311/claude", version: "2.1.311", source: "path", refused: [], platformPackages: [], drift: "Claude Code 2.1.311 runs here; this SDK was built for 2.1.322.", belowMinimum: null };
 
 const driver: Pick<AgentDriver, "probe" | "settings" | "listSessions" | "history" | "sessionInfo"> = {
   probe: async () => PROBE,
