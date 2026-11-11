@@ -277,7 +277,7 @@ class FakeSocket implements SocketLike {
 }
 
 describe("the machine's name comes from the server (D54), never from the browser's address", () => {
-  const welcome = (host?: string | null): ServerFrame => ({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.312", drift: null }, update: { available: false }, auth: "none", ...(host === undefined ? {} : { host }) });
+  const welcome = (host?: string | null): ServerFrame => ({ t: "welcome", epoch: "lz2k3m-abcdefghijkl", version: "0.1.0", v: PROTOCOL_VERSION, claude: { ok: true, version: "2.1.322", drift: null }, update: { available: false }, auth: "none", ...(host === undefined ? {} : { host }) });
   test("welcome's host is the store's machine; none, or a name that cannot be shown, is null", () => {
     const sock = new FakeSocket();
     const conn = new Connection({ url: "ws://127.0.0.1:7942/ws", tab: "tab_me", open: () => sock, now: () => 0, setTimer: () => 0, clearTimer: () => {}, random: () => 0.5, reload: () => {} });

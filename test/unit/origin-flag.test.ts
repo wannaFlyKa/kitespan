@@ -255,7 +255,7 @@ describe("a start with --origin", () => {
     proc = Bun.spawn([process.execPath, "--no-env-file", MAIN, "--port", String(PORT), "--dist", dist, "--origin", BOX, "--origin", BOTH], { env, cwd: dir, stdout: "pipe", stderr: "pipe" });
     const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
     const deadline = Date.now() + 20_000;
-    while (!out.includes("Claude Code 2.1.312") && Date.now() < deadline) {
+    while (!out.includes("Claude Code 2.1.322") && Date.now() < deadline) {
       const r = await Promise.race([reader.read(), Bun.sleep(500).then(() => null)]);
       if (r && !r.done) out += new TextDecoder().decode(r.value);
       if (r?.done) break;
@@ -272,7 +272,7 @@ describe("a start with --origin", () => {
       `kitespan listens on ${OWN}`,
       `Also allowed: ${BOX} (--origin), ${BOTH} (--origin, adapters.json), ${FILE} (adapters.json)`,
       NO_SIGN_IN,
-      "Claude Code 2.1.312 (Claude Code)",
+      "Claude Code 2.1.322 (Claude Code)",
     ];
     expect(out).toBe(`${lines.join("\n")}\n`);
 

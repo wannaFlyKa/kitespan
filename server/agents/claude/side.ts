@@ -1,11 +1,11 @@
 // The side question (owner rows 124 and 125; DESIGN-R124 section 2.3 and 10): the Agent SDK's undocumented
-// `Query.askSideQuestion(question, { history?, signal? })` (sdk.mjs of the pinned 0.3.312; no type in sdk.d.ts). It
+// `Query.askSideQuestion(question, { history?, signal? })` (sdk.mjs of the pinned 0.3.322; no type in sdk.d.ts). It
 // sends the control request `side_question` (history only when it is not empty), and answers `null` for a null
 // response, else `{ response, synthetic, refusalFallback? }`. An abort of `signal` rejects it at once and sends
-// `control_cancel_request`. Its progress comes on the message stream as `system/control_request_progress` (sdk.d.ts
-// line 5252: "currently only side_question"), matched by a request id that the method never returns. The lead's live
-// probe (it5-ui/live/LIVE-NOTES.md, CLI 2.1.317): about 2 s while a turn runs and while none does, the main turn
-// untouched, history read only as `{question, response}` pairs (other shapes throw), nothing in the transcript.
+// `control_cancel_request`. Its progress comes on the message stream as `system/control_request_progress`
+// (sdk.d.ts 0.3.322 line 5314: "currently only side_question"), matched by a request id that the method never returns.
+// The lead's live probe (it5-ui/live/LIVE-NOTES.md, CLI 2.1.317): about 2 s while a turn runs and while none does,
+// the main turn untouched, history read only as `{question, response}` pairs (other shapes throw), nothing in the transcript.
 //
 // This module types the method and maps what comes back; the driver feature-tests it on each call (D6), as it does
 // generateSessionTitle.
@@ -16,7 +16,7 @@ import type { SideAnswer, SideProgress, SideTurn } from "../types";
 /** The DriverError message when the installed SDK has no side question. */
 export const SIDE_MISSING = "Query.askSideQuestion is not in this Agent SDK";
 
-/** What the SDK's method answers (sdk.mjs 0.3.312). */
+/** What the SDK's method answers (sdk.mjs 0.3.322). */
 export interface RawSideAnswer {
   response: unknown;
   synthetic?: unknown;

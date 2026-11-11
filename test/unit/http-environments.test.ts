@@ -40,7 +40,7 @@ const OTHER_SDK = "33333333-3333-4333-8333-333333333333";
 const STILL_CHAT = "44444444-4444-4444-8444-444444444444";
 const info = (sessionId: string, cwd: string) => ({ sessionId, title: sessionId.slice(0, 4), customTitle: null, lastModified: 1, cwd });
 const driver: Pick<AgentDriver, "probe" | "settings" | "listSessions" | "listReleased" | "history" | "sessionInfo"> = {
-  probe: async () => ({ ok: true, path: "/opt/bin/claude", realpath: "/opt/bin/claude", version: "2.1.312", source: "path", refused: [], platformPackages: [], drift: null, belowMinimum: null }),
+  probe: async () => ({ ok: true, path: "/opt/bin/claude", realpath: "/opt/bin/claude", version: "2.1.322", source: "path", refused: [], platformPackages: [], drift: null, belowMinimum: null }),
   settings: async () => ({ respondToBash: true, cleanupPeriodDays: 30, promptSuggestions: false, defaultMode: null }),
   listSessions: async (cwd) => [info(TERMINAL, cwd)],
   // As the SDK with includeProgrammatic true, kept to the ids asked for.

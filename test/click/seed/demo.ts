@@ -26,7 +26,7 @@ export interface TranscriptFile {
   lines: string[];
 }
 
-const CLI_VERSION = "2.1.312";
+const CLI_VERSION = "2.1.322";
 const MODEL = "claude-opus-5-5";
 
 export class Transcript {

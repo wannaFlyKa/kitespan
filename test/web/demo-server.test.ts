@@ -219,7 +219,7 @@ describe("the welcome, the list and the example chat", () => {
     d.conn.start();
     const w = await d.until(isT("welcome"), "the welcome");
     expect(w).toMatchObject({ v: PROTOCOL_VERSION, version: PACKAGE_VERSION, host: DEMO_HOST, auth: "none", update: { available: false, kind: "none" }, capabilities: { sideQuestions: false, trustFolder: false } });
-    expect(w.claude).toEqual({ ok: true, version: "2.1.312 (Claude Code)", drift: null });
+    expect(w.claude).toEqual({ ok: true, version: "2.1.322 (Claude Code)", drift: null });
     expect(w.epoch).toBe(server.epoch);
     expect(w.epoch).toMatch(/^demo-[a-z2-7]{12}$/);
     const list = await d.until(isT("chats"), "the list");
@@ -536,7 +536,7 @@ describe("the API", () => {
     expect(projects.projects.every((p: { cwd: string }) => p.cwd.startsWith("/work/"))).toBe(true);
     const settings = await get("/api/settings?project=k3m7q2x4ab");
     expect(Object.keys(settings).sort()).toEqual(["access", "account", "adaptersProblem", "agent", "claude", "facts", "phoneNotes", "server", "settings", "uploads"]);
-    expect(settings.claude).toMatchObject({ ok: true, path: "/usr/local/bin/claude", version: "2.1.312 (Claude Code)" });
+    expect(settings.claude).toMatchObject({ ok: true, path: "/usr/local/bin/claude", version: "2.1.322 (Claude Code)" });
     expect(await get("/api/update")).toMatchObject({ kind: "release", update: "none", build: "none", latest: null, next: null, can: true, job: { state: "idle" } });
     expect(await get("/api/restart")).toEqual({ update: "none", build: "none", panes: [] });
     expect(await get("/api/push")).toEqual({ key: null, devices: [] });

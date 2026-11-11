@@ -1,8 +1,8 @@
-// The names that SDK 0.3.312 puts into, or takes out of, the claude child's environment: a module with no imports, so
+// The names that SDK 0.3.322 puts into, or takes out of, the claude child's environment: a module with no imports, so
 // the gate (options.ts) and D60's refused names (server/env/names.ts) both read it without importing each other.
 
 /**
- * What SDK 0.3.312 does to the environment of the claude child (sdk.mjs; DESIGN 4.7, "The clean start environment").
+ * What SDK 0.3.322 does to the environment of the claude child (sdk.mjs; DESIGN 4.7, "The clean start environment").
  * It sets the `host` names on the server's own process.env (the first when the SDK is imported, the second at each
  * query()), and the child's copy of process.env carries them. In that copy it sets the three `added` names, each only
  * when absent. With the key set above no other name comes: each `conditional` one needs an option outside the table or

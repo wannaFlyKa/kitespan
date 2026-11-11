@@ -64,7 +64,7 @@ beforeEach(() => resetState({ projects: [P], ready: true }));
 
 describe("Settings > Claude Code", () => {
   test("a stock build below it: the line in the drift line's place, warn-coloured, with the command as a code span", () => {
-    resetState({ projects: [P], ready: true, host: reply(claude("2.1.250 (Claude Code)", { drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.312.", belowMinimum: STOCK })) });
+    resetState({ projects: [P], ready: true, host: reply(claude("2.1.250 (Claude Code)", { drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.322.", belowMinimum: STOCK })) });
     const html = settings();
     const line = element(html, "setting-claude-minimum");
     expect(line).toMatch(/^<span class="set-row-line" data-testid="setting-claude-minimum">/);
@@ -86,10 +86,10 @@ describe("Settings > Claude Code", () => {
   });
 
   test("at or above it: no line, and the drift line as before", () => {
-    resetState({ projects: [P], ready: true, host: reply(claude("2.1.317", { drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.312." })) });
+    resetState({ projects: [P], ready: true, host: reply(claude("2.1.317", { drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.322." })) });
     const html = settings();
     expect(ids(html)).not.toContain("setting-claude-minimum");
-    expect(text(html)).toContain("Claude Code 2.1.317 runs here; this SDK was built for 2.1.312.");
+    expect(text(html)).toContain("Claude Code 2.1.317 runs here; this SDK was built for 2.1.322.");
     resetState({ projects: [P], ready: true, host: reply(claude("2.1.296", { belowMinimum: null })) });
     expect(ids(settings())).not.toContain("setting-claude-minimum");
   });
@@ -109,11 +109,11 @@ describe("Settings > Claude Code", () => {
     resetState({ projects: [P], ready: true, server: welcome({ ok: true, version: "2.1.250", drift: null, belowMinimum: STOCK }), host: reply(claude("2.1.317")) });
     expect(ids(settings())).not.toContain("setting-claude-minimum");
     // Nor does the welcome's old drift line come back in its place once the read says the versions match.
-    const old = { ok: true, version: "2.1.250", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.312.", belowMinimum: STOCK };
-    resetState({ projects: [P], ready: true, server: welcome(old), host: reply(claude("2.1.312")) });
+    const old = { ok: true, version: "2.1.250", drift: "Claude Code 2.1.250 runs here; this SDK was built for 2.1.322.", belowMinimum: STOCK };
+    resetState({ projects: [P], ready: true, server: welcome(old), host: reply(claude("2.1.322")) });
     const html = settings();
     expect(html).not.toContain("runs here");
-    expect(text(html)).toContain("Version 2.1.312");
+    expect(text(html)).toContain("Version 2.1.322");
   });
 });
 
@@ -138,7 +138,7 @@ describe("the new-chat form", () => {
   });
 
   test("at or above it, a version that cannot be read, or a frame of an older server: no line (the form shows no drift)", () => {
-    for (const c of [claude("2.1.317", { drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.312." }), claude("2.1.296.1"), claude(null), claude("garbage", { belowMinimum: null })]) {
+    for (const c of [claude("2.1.317", { drift: "Claude Code 2.1.317 runs here; this SDK was built for 2.1.322." }), claude("2.1.296.1"), claude(null), claude("garbage", { belowMinimum: null })]) {
       resetState({ projects: [P], ready: true, host: reply(c) });
       const html = form();
       expect(ids(html)).not.toContain("form-claude-minimum");

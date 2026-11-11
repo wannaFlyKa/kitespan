@@ -381,17 +381,17 @@ describe("the detail views: real values or ..., and no explaining foot (M21) or 
     expect(ids(html)).toContain("copy-session-id");
   });
 
-  test("the version without the CLI's own name after it: claude --version prints 2.1.312 (Claude Code)", () => {
-    expect(claudeVersion("2.1.312 (Claude Code)")).toBe("2.1.312");
-    expect(claudeVersion("2.1.312")).toBe("2.1.312");
+  test("the version without the CLI's own name after it: claude --version prints 2.1.322 (Claude Code)", () => {
+    expect(claudeVersion("2.1.322 (Claude Code)")).toBe("2.1.322");
+    expect(claudeVersion("2.1.322")).toBe("2.1.322");
     expect(claudeVersion(null)).toBeNull();
     // A company's own build (row 119) keeps its extra numbers and its own name.
     expect(claudeVersion("2.1.317.1 (Claude Code)")).toBe("2.1.317.1");
     expect(claudeVersion("2.1.317-acme.2 (Acme Claude Code)")).toBe("2.1.317-acme.2 (Acme Claude Code)");
-    resetState({ projects: [P], host: { claude: { ok: true, path: "/usr/local/bin/claude", realpath: null, version: "2.1.312 (Claude Code)", drift: null } } as never });
+    resetState({ projects: [P], host: { claude: { ok: true, path: "/usr/local/bin/claude", realpath: null, version: "2.1.322 (Claude Code)", drift: null } } as never });
     const chat = chatWith({ version: null });
     const t = text(renderToStaticMarkup(createElement(Detail, { name: "environment", chat, route: url(`/c/${chat.id}/environment`) })));
-    expect(t).toContain("Version 2.1.312");
+    expect(t).toContain("Version 2.1.322");
     expect(t).not.toContain("(Claude Code)");
   });
 

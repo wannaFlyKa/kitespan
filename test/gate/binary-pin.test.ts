@@ -23,12 +23,12 @@ const pin = (pathEnv: string) => pinSync({ pathEnv, installRoot: EMPTY_ROOT });
 
 describe("the PATH claude only", () => {
   test("the first claude on PATH is chosen, with its real path", async () => {
-    const a = fakeClaude(join(T, "a"), "2.1.312 (Claude Code)");
+    const a = fakeClaude(join(T, "a"), "2.1.322 (Claude Code)");
     fakeClaude(join(T, "b"), "2.1.300 (Claude Code)");
     const p = pin(`${join(T, "a")}:${join(T, "b")}`);
     expect(p).toEqual({ ok: true, path: a, realpath: a, refused: [], platformPackages: [] });
     const probe = await probeBinary({ pathEnv: `${join(T, "a")}:${join(T, "b")}`, installRoot: EMPTY_ROOT });
-    expect(probe).toMatchObject({ ok: true, path: a, version: "2.1.312 (Claude Code)", source: "path", drift: null });
+    expect(probe).toMatchObject({ ok: true, path: a, version: "2.1.322 (Claude Code)", source: "path", drift: null });
   });
 
   test("a link on PATH is followed to its real path", () => {
@@ -47,12 +47,12 @@ describe("the PATH claude only", () => {
   });
 
   test("a relative PATH entry: the pin holds the absolute path, so the start runs the file the pin checked", async () => {
-    const c = fakeClaude(join(T, "rel", "bin"), "2.1.312 (Claude Code)");
+    const c = fakeClaude(join(T, "rel", "bin"), "2.1.322 (Claude Code)");
     const rel = relative(realpathSync(process.cwd()), join(T, "rel", "bin"));
     expect(isAbsolute(rel)).toBe(false);
     expect(Bun.which("claude", { PATH: rel })).not.toBe(c);
     expect(pin(rel)).toEqual({ ok: true, path: c, realpath: c, refused: [], platformPackages: [] });
-    expect(await probeBinary({ pathEnv: rel, installRoot: EMPTY_ROOT })).toMatchObject({ ok: true, path: c, version: "2.1.312 (Claude Code)" });
+    expect(await probeBinary({ pathEnv: rel, installRoot: EMPTY_ROOT })).toMatchObject({ ok: true, path: c, version: "2.1.322 (Claude Code)" });
     fakeClaude(join(T, "rel", "noexec"), "x", 0o644);
     const relNoExec = relative(realpathSync(process.cwd()), join(T, "rel", "noexec"));
     expect(pin(relNoExec).refused).toEqual([{ path: join(T, "rel", "noexec", "claude"), reason: "not-executable" }]);
@@ -102,18 +102,18 @@ describe("the PATH claude only", () => {
   });
 
   test("the drift line names both versions; none when they match", () => {
-    expect(sdkClaudeCodeVersion()).toBe("2.1.312");
-    expect(driftLine("2.1.300 (Claude Code)")).toBe("Claude Code 2.1.300 runs here; this SDK was built for 2.1.312.");
-    expect(driftLine("2.1.312 (Claude Code)")).toBeNull();
+    expect(sdkClaudeCodeVersion()).toBe("2.1.322");
+    expect(driftLine("2.1.300 (Claude Code)")).toBe("Claude Code 2.1.300 runs here; this SDK was built for 2.1.322.");
+    expect(driftLine("2.1.322 (Claude Code)")).toBeNull();
     expect(driftLine(null)).toBeNull();
   });
 
   test("a company's own build (row 119): its extra numbers are shown, and only the first three are compared", () => {
-    expect(driftLine("2.1.312.4 (Claude Code)")).toBeNull();
-    expect(driftLine("2.1.312-acme.2 (Claude Code)")).toBeNull();
-    expect(driftLine("2.1.317.1 (Claude Code)")).toBe("Claude Code 2.1.317.1 runs here; this SDK was built for 2.1.312.");
-    expect(driftLine("2.1.317-acme.2 (Acme Claude Code)")).toBe("Claude Code 2.1.317-acme.2 runs here; this SDK was built for 2.1.312.");
-    expect(driftLine("2.1.317+build.9")).toBe("Claude Code 2.1.317+build.9 runs here; this SDK was built for 2.1.312.");
+    expect(driftLine("2.1.322.4 (Claude Code)")).toBeNull();
+    expect(driftLine("2.1.322-acme.2 (Claude Code)")).toBeNull();
+    expect(driftLine("2.1.317.1 (Claude Code)")).toBe("Claude Code 2.1.317.1 runs here; this SDK was built for 2.1.322.");
+    expect(driftLine("2.1.317-acme.2 (Acme Claude Code)")).toBe("Claude Code 2.1.317-acme.2 runs here; this SDK was built for 2.1.322.");
+    expect(driftLine("2.1.317+build.9")).toBe("Claude Code 2.1.317+build.9 runs here; this SDK was built for 2.1.322.");
     expect(driftLine("dev build")).toBeNull();
   });
 });
@@ -134,9 +134,9 @@ describe("the SDK platform packages (case 10)", () => {
 
   test("found under node_modules/.bun/ (an isolated install)", () => {
     const root = join(T, "pp2", "app");
-    plant(join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk@0.3.312"));
-    plant(join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk-darwin-arm64@0.3.312"));
-    expect(findPlatformPackages(root)).toEqual([join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk-darwin-arm64@0.3.312")]);
+    plant(join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk@0.3.322"));
+    plant(join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk-darwin-arm64@0.3.322"));
+    expect(findPlatformPackages(root)).toEqual([join(root, "node_modules", ".bun", "@anthropic-ai+claude-agent-sdk-darwin-arm64@0.3.322")]);
   });
 
   test("found in a parent folder's node_modules", () => {

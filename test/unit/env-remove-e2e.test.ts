@@ -78,7 +78,7 @@ function plantSession(id: string, entrypoint: "cli" | "sdk-ts", prompt: string):
       isSidechain: false,
       userType: "external",
       entrypoint,
-      version: "2.1.312",
+      version: "2.1.322",
     });
   const a = "aaaaaaaa-0000-4000-8000-000000000001";
   const b = "aaaaaaaa-0000-4000-8000-000000000002";

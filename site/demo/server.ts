@@ -59,8 +59,8 @@ import { DEMO_CHECK_REFUSAL, DEMO_HOST, DEMO_LINES, DEMO_REPLIES, DEMO_TAG, EXAM
 import { frameMsgOf, type DemoTheme, type FrameMsg, type PortLike, type ServerMsg } from "./port";
 
 /** Claude Code as the demo's machine runs it. */
-export const DEMO_CLAUDE = { version: "2.1.312 (Claude Code)", path: "/usr/local/bin/claude" } as const;
-const CLAUDE_SHORT = "2.1.312";
+export const DEMO_CLAUDE = { version: "2.1.322 (Claude Code)", path: "/usr/local/bin/claude" } as const;
+const CLAUDE_SHORT = "2.1.322";
 const DEFAULT_MODEL = "claude-opus-5-5";
 /** The corpus build's id (shared/corpus.ts `v`): the demo's folders never change. */
 const CORPUS_V = "demo";

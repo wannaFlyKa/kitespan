@@ -1,6 +1,6 @@
 // R127 (owner rows 126, 127, 129): the trust start's options and their own narrow check. This file is the only place
 // in the app that sends the SDK's undocumented host attestation, `Options.workspaceTrust: {accepted: true, directory}`
-// (sdk.mjs 0.3.312 puts it in the initialize request; the CLI's schema: "Only send true after showing the user a trust
+// (sdk.mjs 0.3.322 puts it in the initialize request; the CLI's schema: "Only send true after showing the user a trust
 // dialog for `directory`"). kitespan sends it only after the user's own Yes in its confirm, for the one folder that
 // Claude Code refused a background session in, so that Claude Code records the trust itself (kitespan never writes
 // Claude Code's config). The chat gate (options.ts) is unchanged and still refuses the key for every chat start.
@@ -19,7 +19,7 @@ import { holdsPath } from "../../../shared/trust";
 export const TRUST_READ_MS = 20_000;
 
 /**
- * Lead decision (a): the trust start loads no settings file (`settingSources: []`, sdk.d.ts 0.3.312 line 2327, "SDK
+ * Lead decision (a): the trust start loads no settings file (`settingSources: []`, sdk.d.ts 0.3.322 line 2364, "SDK
  * isolation mode"), so a folder that the user has not trusted yet runs none of its own hooks and connects none of its
  * `.mcp.json` servers while Claude Code records the trust. Whether the record still lands this way is one live check
  * (test/live/trust.test.ts); when it does not, this turns false and the start loads the CLI's default sources.

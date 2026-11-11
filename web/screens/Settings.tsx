@@ -1216,7 +1216,7 @@ function KeptLine({ at }: { at: string | null | undefined }) {
 /** A row's value while its init facts are on their way, or when none can come. */
 const factsPending = (init: "waiting" | null) => <Dim>{init === "waiting" ? UNKNOWN : START_A_CHAT}</Dim>;
 
-/** The CLI's fast-mode reasons (`fast_mode_disabled_reason`, sdk.d.ts 0.3.312 line 797) in words. */
+/** The CLI's fast-mode reasons (`fast_mode_disabled_reason`, sdk.d.ts 0.3.322 line 812) in words. */
 const FAST_REASON: Record<string, string> = {
   free: "Not available on the free plan.",
   preference: "Turned off in your Claude Code settings.",

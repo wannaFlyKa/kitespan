@@ -329,12 +329,12 @@ describe("Models and fast mode (AR-7)", () => {
 
 describe("Claude Code: the claude on PATH, from /api/settings", () => {
   test("its path, real path and version, the SDK version, and the drift line when the versions differ", () => {
-    resetState({ projects: [P], host: reply({ claude: { ok: true, path: "/usr/local/bin/claude", realpath: "/opt/claude/2.1.400/claude", version: "2.1.400", drift: "Claude Code 2.1.400 runs here; this SDK was built for 2.1.312." } }), ready: true });
+    resetState({ projects: [P], host: reply({ claude: { ok: true, path: "/usr/local/bin/claude", realpath: "/opt/claude/2.1.400/claude", version: "2.1.400", drift: "Claude Code 2.1.400 runs here; this SDK was built for 2.1.322." } }), ready: true });
     const t = text(section("claude-code"));
     expect(t).toContain("/ usr/ local/ bin/ claude");
     expect(t).toContain("Version 2.1.400");
-    expect(t).toContain("Agent SDK Version 0.3.312");
-    expect(t).toContain("Claude Code 2.1.400 runs here; this SDK was built for 2.1.312.");
+    expect(t).toContain("Agent SDK Version 0.3.322");
+    expect(t).toContain("Claude Code 2.1.400 runs here; this SDK was built for 2.1.322.");
   });
 
   test("with no claude on PATH, one line says so", () => {
@@ -342,10 +342,10 @@ describe("Claude Code: the claude on PATH, from /api/settings", () => {
     expect(text(section("claude-code"))).toContain("There is no claude on your PATH, so no chat can start.");
   });
 
-  test("the version without the CLI's own name after it (claude --version prints 2.1.312 (Claude Code))", () => {
-    resetState({ projects: [P], host: reply({ claude: { ok: true, path: "/usr/local/bin/claude", realpath: null, version: "2.1.312 (Claude Code)", drift: null } }), ready: true });
+  test("the version without the CLI's own name after it (claude --version prints 2.1.322 (Claude Code))", () => {
+    resetState({ projects: [P], host: reply({ claude: { ok: true, path: "/usr/local/bin/claude", realpath: null, version: "2.1.322 (Claude Code)", drift: null } }), ready: true });
     const t = text(section("claude-code"));
-    expect(t).toContain("Version 2.1.312 Agent SDK");
+    expect(t).toContain("Version 2.1.322 Agent SDK");
     expect(t).not.toContain("(Claude Code)");
   });
 
