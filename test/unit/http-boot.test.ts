@@ -9,6 +9,7 @@ import { networkInterfaces, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { claudeLines } from "../../server/update/drift";
 import { freePort } from "./free-port";
+import { readInto } from "./read-into";
 
 const ROOT = resolve(import.meta.dir, "..", "..");
 const MAIN = join(ROOT, "server", "main.ts");
@@ -136,22 +137,9 @@ describe("a clean boot", () => {
     writeFileSync(join(dist, "index.html"), "<!doctype html><html><body>kitespan page</body></html>");
     env = cleanEnv("clean");
     proc = Bun.spawn([process.execPath, "--no-env-file", MAIN, "--port", String(PORT), "--dist", dist], { env, cwd: dir, stdout: "pipe", stderr: "pipe" });
-    const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
-    const deadline = Date.now() + 15_000;
     // The fake claude's version differs from the SDK's, so the drift line is the last boot line.
-    while (!out.includes("this SDK was built for") && Date.now() < deadline) {
-      const r = await Promise.race([reader.read(), Bun.sleep(500).then(() => null)]);
-      if (r && !r.done) out += new TextDecoder().decode(r.value);
-      if (r?.done) break;
-    }
-    // Keep reading in the background so the pipe never fills.
-    void (async () => {
-      for (;;) {
-        const r = await reader.read().catch(() => ({ done: true, value: undefined }));
-        if (r.done) break;
-        out += new TextDecoder().decode(r.value);
-      }
-    })();
+    // Read from the first byte to the end by one reader (test/unit/read-into.ts), so no chunk is lost.
+    await readInto(proc.stdout as ReadableStream<Uint8Array>, (s) => (out += s)).until(() => out.includes("this SDK was built for"), 15_000);
   });
 
   afterAll(async () => {

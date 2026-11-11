@@ -15,6 +15,7 @@ import { statusOf } from "../../server/chats/registry";
 import { claudeLines } from "../../server/update/drift";
 import { installFakeClaude, type FakeClaude } from "../fake-claude/install";
 import { pickTestPort } from "../click/ports";
+import { readInto } from "./read-into";
 
 const below = (version: string, stock: boolean): ClaudeBelow => ({ version, minimum: "2.1.296", stock });
 
@@ -186,20 +187,8 @@ describe("a boot below the minimum", () => {
       stdout: "pipe",
       stderr: "pipe",
     });
-    const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
-    const deadline = Date.now() + 20_000;
-    while (!out.includes("and later.") && Date.now() < deadline) {
-      const r = await Promise.race([reader.read(), Bun.sleep(500).then(() => null)]);
-      if (r && !r.done) out += new TextDecoder().decode(r.value);
-      if (r?.done) break;
-    }
-    void (async () => {
-      for (;;) {
-        const r = await reader.read().catch(() => ({ done: true, value: undefined }));
-        if (r.done) break;
-        out += new TextDecoder().decode(r.value);
-      }
-    })();
+    // Read from the first byte to the end by one reader (test/unit/read-into.ts), so no chunk is lost.
+    await readInto(proc.stdout as ReadableStream<Uint8Array>, (s) => (out += s)).until(() => out.includes("and later."), 20_000);
     expect(out).toContain("Claude Code 2.1.250 (Claude Code)\nClaude Code 2.1.250 runs here; kitespan supports 2.1.296 and later. Run claude update.\n");
     expect(out).not.toContain("this SDK was built for");
 
