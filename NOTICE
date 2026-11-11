@@ -1,0 +1,6 @@
+kitespan
+A browser UI for the Claude Code CLI on your own machine.
+Copyright 2026 The kitespan Authors
+
+web/ui/qrcodegen.ts is the QR Code generator library (TypeScript) by Project Nayuki, under the MIT License, with its
+copyright and permission notice kept at the top of the file.

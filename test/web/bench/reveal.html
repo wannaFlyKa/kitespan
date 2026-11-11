@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- The reveal's benchmark page (scripts/bench-reveal.ts builds and opens it in its own headless Chrome): one reply in
+     the chat's column with the page's own styles, streamed in pieces and revealed frame by frame. -->
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>reveal benchmark</title>
+    <link rel="stylesheet" href="../../../web/styles/tokens.css" />
+    <link rel="stylesheet" href="../../../web/styles/base.css" />
+  </head>
+  <body>
+    <div class="chat-view">
+      <div class="chat-scroll-wrap">
+        <div class="chat-scroll" id="scroller">
+          <section class="chat-col" id="root"></section>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./reveal-page.tsx"></script>
+  </body>
+</html>

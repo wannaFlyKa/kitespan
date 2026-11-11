@@ -1,0 +1,305 @@
+/* The search pane (DESIGN.md 9.3, 6.7, 7.2, 7.3; web/search/SearchPane.tsx) and the Search buttons. Only the tokens of
+   tokens.css and the shared classes of base.css (.field, .menu-row, .seg, .icon-btn, .notice), so each of the four
+   looks restyles it in light and dark; layout widths and 1 px hairlines are the only numbers. The rows are base.css's
+   menu rows: the look's highlight on a laptop, 44 px rows with hairlines and a grey active row on touch. The matched
+   letters are bold in the row's own colour, as the @ picker draws them (6.13 gives --accent-text to links and the
+   Needs input word only). */
+
+/* The pane fills its place (the side column, the docked pane, the layer over the chat, the phone's page) and scrolls
+   its list inside, under the field. */
+.side-col.srch-col,
+.side-pane.srch-col {
+  overflow: hidden;
+}
+.srch {
+  container: srch / inline-size; /* the narrow pane's scopes below ask its width */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+.srch-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  min-height: var(--header-h);
+  padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  border-bottom: 1px solid var(--hairline);
+}
+.srch-at-page .srch-head,
+.srch-at-screen .srch-head {
+  padding-right: var(--s3);
+}
+.srch-field {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-input);
+}
+.srch-close {
+  flex: none;
+}
+.srch-line {
+  margin: var(--s2) var(--s3) 0;
+}
+.srch-scope {
+  flex: none;
+  padding: var(--s2) var(--s3) 0;
+}
+/* In a side pane under 23em of its own text (the 250 px pane at 626 x 890; the 307 and 320 px panes at a large text
+   size, DESIGN-T1 2.7) the three scopes keep their equal widths, so the thumb slides by thirds, with the meta size and
+   a narrow padding, so "Commands" is never cut. In the 250 px pane at text size 1.3 even the meta size does not fit
+   "Commands" in a third, so the words are at most 5% of the pane's width there (12.5 px), a little under the size. */
+@container srch (width < 23em) {
+  .side-pane .srch-scope .seg.seg-block .seg-item {
+    padding: 0 2px;
+    font-size: min(var(--fs-meta), 5cqi);
+  }
+}
+/* In a side pane a file hit's name keeps whole (DESIGN-T1 2.7: no name cut in search): where the folder and the name do
+   not fit on one line, the name takes a line of its own under the folder (cut at its start), wrapping only inside a
+   part wider than the row. */
+.side-pane .srch-path {
+  flex-wrap: wrap;
+}
+.side-pane .srch-name,
+.side-pane .srch-dir + .srch-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+/* A file hit's "..." on touch (its file menu, DESIGN-T1 2.1), at the row's end. */
+.srch-row > .icon-btn.srch-more {
+  margin: -6px -4px -6px auto;
+}
+/* The list's flex basis is 0, not its content: every place gives the pane a definite height, so the list's box comes
+   from the pane, and a relayout (the field's own echo on each key) never measures the content height of its rows. */
+.srch-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s1) var(--s2) var(--s3);
+}
+.srch-list:empty {
+  display: none;
+}
+.srch-group + .srch-group {
+  margin-top: var(--s2);
+}
+.srch-group-title {
+  padding: var(--s1) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-weight: var(--weight-strong);
+}
+.menu-row.srch-row {
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.srch-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.srch-project {
+  flex: 0 1 auto;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.srch-icon {
+  flex: none;
+  color: var(--dim);
+}
+/* A path: the folder part dimmed before the name. The name keeps its width, and the folder takes what is left, cut at
+   its start, so the slash before the name stays; a name too long for the row leaves the folder 2em, so the folder
+   never disappears whole. The folder sits in a bdi, so its cut from the start (right to left) keeps its own
+   left-to-right order. */
+.srch-path {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.srch-dir {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.srch-name {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.srch-dir + .srch-name {
+  max-width: calc(100% - 2em);
+}
+.srch-hit {
+  font-weight: var(--weight-strong);
+}
+/* U5 (DESIGN-U5 8): a message row. A chat's first row is two lines: its title, Archived and when, then one line of the
+   message around the match, in --dim, with the matched words bold in --text (so not by colour alone). The user's own
+   line starts with a quiet "You: ", which has no rule of its own: it takes the line's --dim and weight, and the row's
+   colour with the line on a laptop's active row. A later row of the same chat is that line alone: on a laptop it has
+   no height of its own and no gap above it; on touch it keeps the 44 px target with its line in the middle and no
+   hairline above it. */
+.menu-row.srch-messages {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+.srch-msg-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+}
+.srch-when,
+.srch-tag {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.srch-snippet {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.srch-snippet .srch-hit {
+  color: var(--text);
+}
+.srch-group .srch-messages:not(.srch-more) + .srch-messages:not(.srch-more),
+.srch-group .srch-more + .srch-messages:not(.srch-more) {
+  margin-top: var(--s1);
+}
+.menu-row.srch-more {
+  padding-top: 0;
+}
+body:not(.touch) .menu-row.srch-more {
+  min-height: 0;
+}
+body:not(.touch) .menu-row.srch-row:is(:hover, :focus-visible, [data-active="true"]) :is(.srch-dir, .srch-project, .srch-icon, .srch-snippet, .srch-snippet .srch-hit, .srch-when, .srch-tag) {
+  color: inherit;
+}
+/* "Searching messages…": in the list, under the groups. */
+.srch-wait {
+  margin-top: var(--s2);
+  padding: var(--s1) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.srch-empty {
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.touch .srch-list {
+  padding: 0 0 max(var(--s3), env(safe-area-inset-bottom));
+}
+.touch .srch-group + .srch-group {
+  margin-top: var(--s3);
+}
+.touch .srch-group-title {
+  padding: var(--s2) var(--s4) var(--s1);
+}
+.touch .srch-head {
+  padding-left: var(--s3);
+}
+.touch .menu-row.srch-messages {
+  gap: 2px;
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+}
+.touch .srch-snippet,
+.touch .srch-when,
+.touch .srch-tag {
+  font-size: var(--fs-ui);
+}
+/* On touch every line of one chat is one row's height (44 px) from the next: a follow-up row is 44 px with its line in
+   the middle, and a chat's first row ends half of the rest of 44 px under its line. */
+.touch .menu-row.srch-more {
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 0;
+  box-shadow: none;
+}
+.touch .menu-row.srch-messages:not(.srch-more):has(+ .srch-more) {
+  padding-bottom: calc((var(--touch) - var(--fs-ui) * var(--lh-ui)) / 2);
+}
+.touch .srch-wait {
+  padding: var(--s2) var(--s4);
+  font-size: var(--fs-ui);
+}
+
+/* The phone: the pane is its own page over the chat, which stays mounted under it, hidden (as the Terminal page). */
+.shell-phone[data-search="page"] > .main > .chat-screen {
+  display: none;
+}
+/* The shell while it rides the on-screen keyboard with a search surface on touch (Shell.tsx sets its height to the
+   visual viewport's and its move to the visual viewport's offsetTop, as the Terminal pane's ride): the list ends at
+   the keyboard's top, so its last rows scroll up above it. */
+.shell.srch-riding {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+/* /search: a page in the main column beside the sidebar on a laptop, as wide as the reading measure; full width on a
+   tablet and on the phone (5.3). */
+.srch-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.srch-page > .srch {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+.shell-medium .srch-page > .srch,
+.shell-phone .srch-page > .srch {
+  max-width: none;
+}
+/* Under the title bar's own hairline the page's field needs none. */
+body:not(.touch) .srch-at-screen .srch-head {
+  border-bottom: 0;
+  padding-top: var(--s3);
+}
+
+/* The Search buttons: the bar's tint on the phone's title bar; lit while the search they open is open. */
+.scr-bar-search {
+  color: var(--bar-tint, var(--text));
+}
+.scr-search[aria-current="page"] {
+  background: var(--selected);
+  color: var(--text);
+}

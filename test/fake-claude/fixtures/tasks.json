@@ -1,0 +1,65 @@
+{
+  "_about": "The to-do list on Claude Code 2.1, which has no TodoWrite (CV-13). Turn 1 is the shape of a live run: ToolSearch finds no TodoWrite, a keyword search loads the task tools, three TaskCreate calls ({subject, description}; each result 'Task #<n> created successfully: <subject>'), then two TaskUpdate calls ({taskId, status}; result 'Updated task #<n> status'). Turn 2 only reads the list (TaskList, TaskGet). The texts are the CLI's own result texts.",
+  "version": "2.1.311 (Claude Code)",
+  "model": "claude-opus-4-6",
+  "turns": [
+    {
+      "steps": [
+        { "say": { "id": "msg_tasks_1", "tools": [{ "id": "toolu_fake_search_1", "name": "ToolSearch", "input": { "query": "select:TodoWrite", "max_results": 1 } }] } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_search_1", "content": "No matching deferred tools found" }] }, "parent_tool_use_id": null } },
+        { "say": { "id": "msg_tasks_2", "tools": [{ "id": "toolu_fake_search_2", "name": "ToolSearch", "input": { "query": "todo task create write", "max_results": 5 } }] } },
+        {
+          "emit": {
+            "type": "user",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "toolu_fake_search_2",
+                  "content": [
+                    { "type": "tool_reference", "tool_name": "TaskCreate" },
+                    { "type": "tool_reference", "tool_name": "TaskUpdate" },
+                    { "type": "tool_reference", "tool_name": "TaskList" },
+                    { "type": "tool_reference", "tool_name": "TaskGet" }
+                  ]
+                }
+              ]
+            },
+            "parent_tool_use_id": null
+          }
+        },
+        {
+          "say": {
+            "id": "msg_tasks_3",
+            "text": "I'll record the three steps.",
+            "tools": [
+              { "id": "toolu_fake_create_1", "name": "TaskCreate", "input": { "subject": "Boil water", "description": "Boil fresh water in the kettle", "activeForm": "Boiling water" } },
+              { "id": "toolu_fake_create_2", "name": "TaskCreate", "input": { "subject": "Steep the tea bag", "description": "Steep the tea bag in the cup for three minutes", "activeForm": "Steeping the tea bag" } },
+              { "id": "toolu_fake_create_3", "name": "TaskCreate", "input": { "subject": "Pour and serve", "description": "Take the bag out and serve the tea", "activeForm": "Pouring and serving" } }
+            ]
+          }
+        },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_create_1", "content": "Task #1 created successfully: Boil water" }] }, "parent_tool_use_id": null, "tool_use_result": { "task": { "id": "1", "subject": "Boil water" } } } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_create_2", "content": "Task #2 created successfully: Steep the tea bag" }] }, "parent_tool_use_id": null, "tool_use_result": { "task": { "id": "2", "subject": "Steep the tea bag" } } } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_create_3", "content": "Task #3 created successfully: Pour and serve" }] }, "parent_tool_use_id": null, "tool_use_result": { "task": { "id": "3", "subject": "Pour and serve" } } } },
+        { "say": { "id": "msg_tasks_4", "tools": [{ "id": "toolu_fake_update_1", "name": "TaskUpdate", "input": { "taskId": "1", "status": "in_progress" } }] } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_update_1", "content": "Updated task #1 status" }] }, "parent_tool_use_id": null, "tool_use_result": { "success": true, "taskId": "1", "updatedFields": ["status"], "statusChange": { "from": "pending", "to": "in_progress" } } } },
+        { "say": { "id": "msg_tasks_5", "tools": [{ "id": "toolu_fake_update_2", "name": "TaskUpdate", "input": { "taskId": "1", "status": "completed" } }] } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_update_2", "content": "Updated task #1 status" }] }, "parent_tool_use_id": null, "tool_use_result": { "success": true, "taskId": "1", "updatedFields": ["status"], "statusChange": { "from": "in_progress", "to": "completed" } } } },
+        { "say": { "id": "msg_tasks_6", "text": "planned" } },
+        { "emit": { "type": "result", "subtype": "success", "result": "planned", "num_turns": 7 } }
+      ]
+    },
+    {
+      "steps": [
+        { "say": { "id": "msg_tasks_7", "tools": [{ "id": "toolu_fake_list_1", "name": "TaskList", "input": {} }] } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_list_1", "content": "#1 [completed] Boil water\n#2 [pending] Steep the tea bag\n#3 [pending] Pour and serve" }] }, "parent_tool_use_id": null } },
+        { "say": { "id": "msg_tasks_8", "tools": [{ "id": "toolu_fake_get_1", "name": "TaskGet", "input": { "taskId": "2" } }] } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_get_1", "content": "Task #2: Steep the tea bag\nStatus: pending\nDescription: Steep the tea bag in the cup for three minutes" }] }, "parent_tool_use_id": null } },
+        { "say": { "id": "msg_tasks_9", "text": "The water is boiled; the tea is next." } },
+        { "emit": { "type": "result", "subtype": "success", "result": "The water is boiled; the tea is next.", "num_turns": 3 } }
+      ]
+    }
+  ]
+}

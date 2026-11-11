@@ -1,0 +1,998 @@
+/* The Browser pane (DESIGN-B1 section 4; web/browser/). Tokens only: no literal colour, radius, font or shadow (layout
+   widths and 1 px hairlines only), so every look restyles it. bp- is the pane's own prefix. */
+
+/* ---- The pane: a head (the tab strip, New tab, Close browser), a bar (Back, Forward, Reload, the address, the chip,
+   More), the stage with the frame, and on touch a foot (the Keyboard button; on the phone Back, Forward and Tabs too). */
+.bp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg);
+}
+
+/* The tab strip: one row of --header-h, the open tab on --selected, each tab's title cut with an ellipsis. Each tab's
+   Close is a button beside its tab in a presentation wrapper (DESIGN-B1 4.18), never inside the tab. */
+.bp-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--s1);
+  min-height: var(--header-h);
+  padding: 0 var(--s2);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.bp-tabs {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bp-tabs::-webkit-scrollbar {
+  display: none;
+}
+.bp-tab-wrap {
+  position: relative;
+  display: flex;
+  flex: 0 1 200px;
+  align-items: center;
+  min-width: 92px;
+  border-radius: var(--r-btn);
+  color: var(--dim);
+}
+.bp-tab-wrap:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.bp-tab-wrap.is-open {
+  background: var(--selected);
+  color: var(--text);
+}
+.bp-tab {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: calc(var(--btn-h) + 2px);
+  padding: 0 2px 0 var(--s2);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-ui);
+  text-align: left;
+  cursor: default;
+}
+.bp-tab:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.bp-tab-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* One mark per tab (DESIGN-B1 4.2): the needs-you dot, the working mark while Claude's running call uses the tab, or the
+   pointer on the tab that Claude's last result named. */
+.bp-mark {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  color: var(--dim);
+}
+.bp-tab .chat-spin {
+  margin-left: 0;
+}
+.bp-tab .dot {
+  margin-right: 2px;
+}
+.bp-tab-x {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-right: 2px;
+  visibility: hidden;
+}
+.bp-tab-wrap:hover > .bp-tab-x,
+.bp-tab-wrap.is-open > .bp-tab-x,
+.bp-tab-x:focus-visible,
+.touch .bp-tab-x {
+  visibility: visible;
+}
+.bp-new,
+.bp-head-end {
+  flex: none;
+}
+.bp-head-end {
+  margin-left: auto;
+}
+.touch .bp-tab-wrap {
+  min-width: 112px;
+}
+.touch .bp-tab {
+  height: var(--touch);
+}
+.touch .bp-tab-x {
+  width: var(--touch);
+  height: var(--touch);
+  margin-right: 0;
+}
+
+/* The bar: Back, Forward and Reload as icon buttons, the address field, the chip while Claude acts, and More. */
+.bp-bar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: var(--s1) var(--s2);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.touch .bp-bar {
+  gap: 0;
+  padding: 0 var(--s1);
+}
+/* The address field: at rest the host in --text and the rest in --dim (a picture over the field, which stays the one
+   element, so a tap focuses it inside the tap and a new tab keeps it: DESIGN-B1 4.2); while it has the focus, the
+   field's own text, selected. */
+.bp-url {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 160px;
+  height: var(--btn-h);
+  margin: 0 var(--s1);
+  border-radius: var(--r-field);
+  background: var(--fill);
+}
+.bp-url-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--s3);
+  border: 1px solid transparent;
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-ui);
+}
+.bp-url-input::placeholder {
+  color: var(--faint);
+}
+.bp-url-input:focus,
+.bp-url-input:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  background: var(--elevated);
+  box-shadow: 0 0 0 3px var(--ring-wash);
+}
+.bp-url.is-rest > .bp-url-input {
+  color: transparent;
+}
+.bp-url-show {
+  position: absolute;
+  inset: 0 var(--s3);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-size: var(--fs-ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.bp-url:not(.is-rest) > .bp-url-show {
+  display: none;
+}
+.bp-url-host {
+  flex: none;
+  color: var(--text);
+}
+.bp-url-rest {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+}
+.bp-url-go {
+  flex: none;
+  height: calc(100% - 4px);
+  margin-right: 2px;
+  padding: 0 var(--s2);
+  border: 0;
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--accent-ui);
+  font: inherit;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+.bp-url-go:hover {
+  background: var(--hover);
+}
+.touch .bp-url {
+  height: auto;
+  min-height: var(--touch);
+}
+.touch .bp-url-input,
+.touch .bp-url-show {
+  font-size: var(--fs-input);
+}
+.touch .bp-url-input {
+  min-height: var(--touch);
+}
+/* Go on touch: a 44 px target (DESIGN 7.7), as tall as the field and at least as wide. */
+.touch .bp-url-go {
+  align-self: stretch;
+  height: auto;
+  min-width: var(--touch);
+}
+/* The page loads: a 2 px line on the bar's foot, in the accent, while the tab loads (it moves only then). */
+.bp-progress {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 40%;
+  height: 2px;
+  background: var(--accent);
+  animation: bp-load 1.2s ease-in-out infinite alternate;
+}
+@keyframes bp-load {
+  from {
+    left: 0;
+  }
+  to {
+    left: 60%;
+  }
+}
+[data-motion="reduce"] .bp-progress {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-progress {
+    animation: none;
+  }
+}
+/* "Claude is acting": a .chip with the working mark (base.css; its 44 px hit area on touch). In another tab it acts,
+   in --accent-ui; its narrow form is the mark alone with "Claude's tab" (DESIGN-B1 4.4). */
+.bp-chip {
+  flex: none;
+  gap: 6px;
+}
+.bp-chip .chat-spin {
+  margin-left: 0;
+}
+a.bp-chip,
+button.bp-chip {
+  color: var(--accent-ui);
+  cursor: pointer;
+}
+.bp-chip.is-narrow {
+  padding: 0 8px;
+}
+
+/* The stage: the frame fitted, never past the page's own size, on the --panel ground, with a 4 px inset for the ring
+   (DESIGN-B1 4.2); the overlays (a picker, a card, a line) sit over it. */
+.bp-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--panel);
+}
+.bp-stage-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 4px;
+}
+.bp-stage.is-zoomed > .bp-stage-scroll {
+  overflow: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline-strong) transparent;
+}
+.bp-stage.is-zoomed > .bp-stage-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.bp-stage.is-zoomed > .bp-stage-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--hairline-strong) padding-box;
+}
+/* The frame: a picture of the page, one frame at a time, with its rest edge (1 px --hairline outside it). While it holds
+   the keys, a 2 px --ring line outside it with a 2 px gap, on the stage's own ground, never on the page's pixels. */
+.bp-frame {
+  position: relative;
+  margin: 0 auto;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--hairline);
+  -webkit-touch-callout: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bp-stage.is-zoomed .bp-frame {
+  margin: 0;
+}
+.bp-frame > canvas,
+.bp-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.bp-frame.has-keys {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.bp-frame.is-dim {
+  opacity: 0.5;
+}
+.bp-stage.is-moving .bp-frame {
+  cursor: grab;
+}
+/* A tap mark: a 24 px ring at the point, at once, for 300 ms; Reduce motion shows it with no fade. */
+.bp-tapmark {
+  position: absolute;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid var(--ring);
+  border-radius: var(--r-pill);
+  pointer-events: none;
+  animation: bp-tap 300ms ease-out forwards;
+}
+@keyframes bp-tap {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+[data-motion="reduce"] .bp-tapmark {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-tapmark {
+    animation: none;
+  }
+}
+/* Fit and Move at the stage's bottom right while zoomed (32 px; 44 px on touch). */
+.bp-zoomkeys {
+  position: absolute;
+  z-index: 4;
+  right: var(--s3);
+  bottom: var(--s3);
+  display: flex;
+  gap: var(--s2);
+}
+.bp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  height: 32px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+button.bp-pill[aria-pressed="true"] {
+  background: var(--accent-wash);
+  color: var(--accent-ui);
+}
+.touch .bp-pill {
+  height: var(--touch);
+  padding: 0 var(--s4);
+  font-size: var(--fs-ui);
+}
+.bp-veil {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background: var(--scrim);
+}
+.bp-card-wrap {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  overflow: auto;
+}
+.bp-card-wrap > .chat-card {
+  width: min(100%, 400px);
+  max-height: 100%;
+  overflow: auto;
+  animation: none;
+}
+/* The card holds the focus itself while the user may still be typing for the page (F10): no ring frames the whole card,
+   as a dialog that takes the focus has none (base.css .dialog:focus); its buttons keep theirs. */
+.bp-card-wrap > .chat-card:focus {
+  outline: none;
+}
+.bp-card-wrap .chat-card-body .field {
+  width: 100%;
+  margin-top: var(--s2);
+}
+.bp-card-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+/* The lines at the stage's foot: a download, a dialog answered elsewhere, the page that changed, Copy failed. */
+.bp-notes {
+  position: absolute;
+  z-index: 3;
+  right: var(--s3);
+  bottom: var(--s3);
+  left: var(--s3);
+  display: grid;
+  gap: var(--s2);
+  justify-items: center;
+  pointer-events: none;
+}
+.bp-stage.is-zoomed .bp-notes {
+  bottom: calc(var(--s3) + 32px + var(--s2));
+}
+.touch .bp-stage.is-zoomed .bp-notes {
+  bottom: calc(var(--s3) + var(--touch) + var(--s2));
+}
+.bp-note {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  max-width: 460px;
+  padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  border-radius: var(--r-card);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  pointer-events: auto;
+}
+.bp-note-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.bp-note-text .dim {
+  color: var(--dim);
+}
+.bp-note .field {
+  flex: 1 1 100%;
+  font-family: var(--font-mono);
+}
+.bp-note.is-copy {
+  flex-wrap: wrap;
+}
+/* "Reconnecting...": a pill on --elevated over the dimmed last frame (DESIGN-B1 4.3). */
+.bp-over {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--s2);
+  padding: var(--s5);
+  text-align: center;
+}
+.bp-over.is-solid {
+  background: var(--bg);
+}
+
+/* The app-drawn pickers over the frame, anchored at the control: a select's list is the app's menu; the date and colour
+   pickers are a popover of the same surface. On the phone they are sheets. */
+.bp-pop {
+  position: absolute;
+  z-index: 5;
+  max-height: 60vh;
+  overflow: auto;
+  animation: none;
+}
+.bp-pop.menu {
+  min-width: 200px;
+}
+.bp-pop-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px 2px var(--s2) var(--s2);
+}
+.bp-pop-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+.bp-group {
+  padding: 6px var(--s2) 2px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.bp-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 2px;
+  justify-content: center;
+}
+.bp-cal-dow {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.bp-cal-day {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-ui);
+  font-variant-numeric: tabular-nums;
+}
+.bp-cal-day:hover:not(:disabled) {
+  background: var(--hover);
+}
+.bp-cal-day:disabled {
+  color: var(--faint);
+}
+.bp-cal-day.is-today {
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+.bp-cal-day[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: var(--weight-strong);
+}
+.bp-cal-day:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.touch .bp-cal-grid {
+  grid-template-columns: repeat(7, var(--touch));
+}
+.touch .bp-cal-day {
+  width: var(--touch);
+  height: var(--touch);
+}
+.bp-time {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s2);
+}
+.bp-time .field {
+  width: 4.5em;
+  font-variant-numeric: tabular-nums;
+}
+.bp-pop-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) 2px 0;
+}
+.bp-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 28px);
+  gap: var(--s2);
+  padding: 2px var(--s1) var(--s2);
+}
+.bp-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.bp-swatch[aria-checked="true"],
+.bp-swatch:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.touch .bp-swatches {
+  grid-template-columns: repeat(6, var(--touch));
+}
+.touch .bp-swatch {
+  width: var(--touch);
+  height: var(--touch);
+}
+.bp-hex {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s1);
+}
+.bp-hex-now {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-row);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.bp-hex label {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.bp-hex .field {
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+/* The browser's states replace the whole pane: the middle, a title, one line and its actions. */
+.bp-empty {
+  display: grid;
+  flex: 1 1 auto;
+  place-content: center;
+  justify-items: center;
+  gap: var(--s2);
+  padding: var(--s5);
+  background: var(--bg);
+  text-align: center;
+}
+.bp-empty-icon {
+  color: var(--faint);
+}
+.bp-empty-title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-strong);
+}
+.bp-empty-line {
+  max-width: 40ch;
+  margin: 0;
+  color: var(--dim);
+}
+.bp-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+/* Touch: the foot. On the phone Back, Forward, Keyboard and Tabs, each an icon with its name; beside the chat (the
+   tablets) the Keyboard button at the right, and Back and Forward when the bar moves them there; Copy before Keyboard
+   while More > Select text is on. The foot, its key row and its echo sit in one box that draws nothing (the keyboard
+   release's owner of the hidden field, data-kb-owner): each stays a row of the pane. */
+.bp-touch {
+  display: contents;
+}
+.bp-foot {
+  display: flex;
+  flex: none;
+  gap: var(--s1);
+  padding: var(--s1) var(--s2) max(var(--s1), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--panel);
+}
+.bp-foot-btn {
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: var(--s1) 0;
+  border: 0;
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: min(var(--fs-meta), 12px);
+  line-height: 1.2;
+}
+.bp-foot-btn:disabled {
+  opacity: 0.4;
+}
+.bp-foot-btn.is-invite {
+  background: var(--accent-wash);
+  color: var(--accent-ui);
+}
+.bp-foot-btn[aria-pressed="true"] {
+  background: var(--selected);
+  color: var(--accent-ui);
+}
+.bp-foot.is-end {
+  justify-content: flex-end;
+}
+.bp-foot.is-end .bp-foot-btn {
+  flex: 0 0 96px;
+}
+.bp-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 4px;
+  border: 1.5px solid currentColor;
+  border-radius: var(--r-row);
+  font-size: var(--fs-caption);
+  font-weight: var(--weight-strong);
+}
+/* The hidden field that the Keyboard button focuses inside its own tap (DESIGN-B1 4.10): 16 px, out of sight. */
+.bp-type {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0.01;
+  font-size: 16px;
+  resize: none;
+}
+/* The typed echo (the last 20 characters, for 2 s) and a word that an input method composes, above the key row. */
+.bp-echo {
+  flex: none;
+  padding: var(--s1) var(--s3);
+  border-top: 1px solid var(--hairline);
+  background: var(--elevated);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  white-space: pre;
+  overflow: hidden;
+}
+.bp-echo u {
+  text-decoration-color: var(--accent);
+}
+
+/* The phone's title bar holds the chip at its right, as the Terminal's page holds the folder (terminal.css). */
+.scr-bar > .bp-chip {
+  margin-left: auto;
+}
+
+/* The Tabs sheet on the phone: one 56 px row per tab, with its address under the title, the open tab ticked. */
+.bp-tab-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bp-tab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 56px;
+  border-bottom: 1px solid var(--hairline);
+}
+.bp-tab-row-pick {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+.bp-tab-row-pick > .menu-check {
+  visibility: hidden;
+  color: var(--accent);
+}
+.bp-tab-row-pick[aria-current="true"] > .menu-check {
+  visibility: visible;
+}
+.bp-tab-row-text {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bp-tab-row-title,
+.bp-tab-row-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-tab-row-url {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.bp-tab-row-pick[aria-current="true"] .bp-tab-row-title {
+  font-weight: var(--weight-strong);
+}
+.bp-sheet-actions {
+  display: grid;
+  gap: var(--s2);
+  padding-top: var(--s3);
+}
+.sheet .menu-row.bp-sheet-row {
+  min-height: var(--touch);
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  font-size: var(--fs-touch);
+}
+
+/* More: a non-modal popover with ordinary controls (DESIGN-B1 4.2): the Page size radio group, the zoom row, the rest. */
+.bp-more {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 4px);
+  right: var(--s2);
+  width: 264px;
+  max-width: calc(100% - 2 * var(--s2));
+  animation: none;
+}
+.bp-more-label {
+  margin: 0;
+  padding: 6px var(--s2) 2px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  font-weight: inherit;
+}
+.bp-more-size {
+  padding: 2px var(--s2) var(--s2);
+}
+.bp-more-size-note {
+  margin: 0;
+  padding: 0 var(--s2) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.bp-zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px var(--s2);
+}
+.bp-zoom-now {
+  flex: 1 1 auto;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.bp-downloads {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bp-download {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s2);
+}
+.bp-download-text {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bp-download-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-download-meta {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+
+/* The words "Needs an answer" beside a waiting tab's dot (the Tabs sheet), in --attn as Needs input is. */
+.bp-attn {
+  color: var(--attn);
+}
+/* A Browser button while a page dialog or a file chooser waits and no Browser view on this page shows that tab: the
+   needs-you dot on the icon's corner. */
+.bp-tool-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+}
+.bp-has-dot {
+  position: relative;
+}
+
+/* A line under the bar, only while it holds: the address came from a link, or the typed text is not an address. */
+.bp-line {
+  flex: none;
+  margin: 0;
+  padding: var(--s1) var(--s3);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+/* The Browser over the chat (DESIGN-B1 4.1): a layer at the rule's width on a laptop, the whole width beside the pane
+   bar on medium touch. */
+.side-pane.bp-over-chat {
+  overflow: hidden;
+}
+.side-col.bp-col,
+.side-pane.bp-col {
+  overflow: hidden;
+}
+
+/* ---- The pane in the shell (layout/Shell.tsx, BrowserScreen.tsx) */
+/* The phone: the Browser is its own page over the chat, which stays mounted under it, hidden (as the Terminal page). */
+.shell-phone[data-browser="page"] > .main > .chat-screen {
+  display: none;
+}
+/* The shell while it rides the on-screen keyboard with the Browser's hidden field (DESIGN-B1 4.10): the key row on it. */
+.shell.bp-riding {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+/* /browser at full size on a laptop: no title bar row; the pane's head is that row. */
+.main-col.main-col-bare {
+  grid-template-rows: minmax(0, 1fr);
+}
+.bp-screen {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.bp-screen > .bp {
+  flex: 1 1 auto;
+}
+.bp-back-chat {
+  flex: none;
+  margin-right: var(--s1);
+}
+/* The Browser button outside a chat, lit while /browser shows. */
+.scr-browser[aria-current="page"] {
+  background: var(--selected);
+  color: var(--text);
+}
+/* The chip's two forms measured off screen for the bar's fit rule (Bar.tsx). */
+.bp-chip-probes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* More's rows: a label and its switch on one row. */
+.bp-more-switch {
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.bp-more-body .seg {
+  width: 100%;
+}
+/* Settings > Browser: the owner's command breaks anywhere, in mono; the line under the rows. */
+.bp-mcp {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.set-foot-line {
+  display: block;
+  margin: var(--s2) var(--s3) 0;
+}

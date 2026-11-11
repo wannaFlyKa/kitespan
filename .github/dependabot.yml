@@ -1,0 +1,35 @@
+# Dependabot's version updates (P1 DESIGN 4.7). The bun ecosystem reads the text bun.lock. Blocks of one ecosystem
+# must not overlap, so the Agent SDK and the other packages share one weekly block: the SDK in a pull request of its
+# own at the first Monday run after its release, every other package in one pull request once its release is 30 days
+# old. The SDK's pull request is expected to fail on its pins until a maintainer reads the new SDK, moves the pins and
+# runs the live tests with their own Claude Code (CONTRIBUTING). test/unit/workflows.test.ts checks this file.
+version: 2
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      agent-sdk:
+        patterns: ["@anthropic-ai/claude-agent-sdk"]
+      packages:
+        patterns: ["*"]
+        exclude-patterns: ["@anthropic-ai/claude-agent-sdk"]
+    cooldown:
+      default-days: 30
+      exclude: ["@anthropic-ai/claude-agent-sdk"]
+    ignore:
+      # Bun's own types move with the pinned Bun (CI's bun-version), by hand.
+      - dependency-name: "@types/bun"
+      # TypeScript 7 ships its compiler in optional platform packages, which `--omit=optional` leaves out (CLAUDE.md):
+      # a major version moves by hand, with the install rule.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
+        patterns: ["*"]

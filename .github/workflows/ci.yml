@@ -1,0 +1,130 @@
+# kitespan's checks: the locked install, both type checks, the tests with the fake claude, the page build and the
+# public-clean audit of the tree (check, and `bun run ci` on your machine); the install, the type checks and the tests
+# on macOS (macos); the click-through in headless Chrome (click: the pull-request subset; click-full: every check);
+# every commit signed off by its author (dco). Never a model turn, a credential, a secret or the real claude.
+# Every action is pinned by its commit, with its tag after it. test/unit/workflows.test.ts checks this file.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1" # Mondays at 06:17 UTC: every job but those of pull requests, so click-full too
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One group per pull request (a newer push cancels its older run); every other run in a group of its own, so a push to
+# main never waits behind click-full, and is never cancelled while it waits.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --omit=optional
+      - run: bun run typecheck
+      - run: bun test
+        env:
+          KITESPAN_TEST_PORT: "7941"
+      - run: bun run build
+      - run: bun scripts/audit-public-clean.ts --repo . --scope tree
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --omit=optional
+      - run: bun run typecheck
+      # The tests that read /proc skip here, each with "(Linux only: ...)" in its name (test/linux.ts).
+      - run: bun test
+        env:
+          KITESPAN_TEST_PORT: "7941"
+
+  click:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CHROME_PATH: /usr/bin/google-chrome # the runner's own Chrome: nothing is downloaded
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --omit=optional
+      - run: bun scripts/ci.ts --click pr --out "$RUNNER_TEMP/ui-check" --port 7941
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-check-pr
+          path: ${{ runner.temp }}/ui-check
+          retention-days: 7
+          if-no-files-found: ignore
+
+  click-full:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CHROME_PATH: /usr/bin/google-chrome # the runner's own Chrome: nothing is downloaded
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --omit=optional
+      - run: bun scripts/ci.ts --click full --out "$RUNNER_TEMP/ui-check" --port 7941
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-check-full
+          path: ${{ runner.temp }}/ui-check
+          retention-days: 7
+          if-no-files-found: ignore
+
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      # The base commit's copy of the script, run from a folder outside the checkout, so neither the pull request's
+      # scripts/dco.ts nor its bunfig.toml takes part in the check.
+      - name: Every commit is signed off by its author
+        working-directory: ${{ runner.temp }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          git -C "$GITHUB_WORKSPACE" show "$BASE_SHA:scripts/dco.ts" > dco.ts
+          bun --no-env-file dco.ts --repo "$GITHUB_WORKSPACE" --base "$BASE_SHA" --head "$HEAD_SHA" --pr-author "$PR_AUTHOR"

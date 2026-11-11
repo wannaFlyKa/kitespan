@@ -1,0 +1,9 @@
+#!/bin/sh
+# The start command's old name, kept for one release (iteration 6, round K1): flydeck is kitespan now, and its start
+# command is bin/kitespan. This stub says so on stderr, then runs bin/kitespan with every argument in this same process
+# (exec): a server of the old name restarts into `<root>/bin/flydeck ... --bind-wait 10` and watches that pid.
+
+set -eu
+root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)
+printf 'bin/flydeck is now bin/kitespan; the old name goes in the next release.\n' >&2 || :
+exec "$root/bin/kitespan" "$@"

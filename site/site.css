@@ -1,0 +1,364 @@
+@import "../web/styles/tokens.css";
+@import "../web/styles/base.css";
+
+/* The landing page's own layout (DESIGN-W1 1.2): kitespan's tokens (tokens.css; Glass, the root carries no data-look)
+   and base.css's controls (.seg, .icon-btn, .copy-btn), with their touch sizes when the page sets body.touch on a
+   coarse pointer, as the app does. No colour, font, radius or shadow of its own: every value is a token. base.css
+   makes the app's body a fixed, unscrolled shell; the page undoes that for itself only (body.site). */
+
+html:has(body.site),
+body.site {
+  height: auto;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+body.site {
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+  --page-w: min(1200px, calc(100vw - 80px));
+  --bezel: var(--text);
+  --top-h: 48px;
+}
+/* Under 1280 px the gutters narrow to 24 px, so the laptop's screen keeps the width of the laptop layout (1,100 px). */
+@media (max-width: 1279px) {
+  body.site {
+    --page-w: calc(100vw - 48px);
+  }
+}
+/* The bezel: graphite on a light page; on a dark page the lifted surface with a hairline ring. */
+:root[data-theme="dark"] body.site {
+  --bezel: var(--elevated);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body.site {
+    --bezel: var(--elevated);
+  }
+}
+
+/* ---- the top bar */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: var(--page-w);
+  height: var(--top-h);
+  margin: 0 auto;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--text);
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  text-decoration: none;
+}
+.mark svg {
+  width: 22px;
+  height: 22px;
+}
+.mark .mark-chevron {
+  stroke: var(--bg);
+}
+.top-links {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  font-size: var(--fs-ui);
+}
+.top-links a {
+  color: var(--dim);
+  text-decoration: none;
+}
+.top-links a:hover {
+  color: var(--text);
+}
+.touch .top-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+}
+
+/* ---- the stage: the h1 and the device switch in one row, the device, the demo's note */
+.stage {
+  display: flex;
+  flex-direction: column;
+  width: var(--page-w);
+  height: calc(100svh - var(--top-h));
+  min-height: 560px;
+  max-height: 900px;
+  margin: 0 auto;
+}
+.stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5);
+  min-height: 44px;
+  margin-bottom: var(--s3);
+}
+.stage h1 {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--weight-strong);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-title);
+}
+.stage .seg {
+  flex: none;
+  background: var(--fill);
+}
+.device {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.note {
+  margin: var(--s3) 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* One device at a time: the other keeps its size (its page keeps its layout) but is not seen, not tabbed into (the
+   script makes it inert). */
+.device > .phone,
+.device > .laptop {
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0 auto;
+}
+.device[data-on="phone"] > .laptop,
+.device[data-on="laptop"] > .phone {
+  visibility: hidden;
+}
+
+/* The phone: 390 px of screen, a 10 px bezel. */
+.phone {
+  width: calc(390px + 20px);
+  height: 100%;
+  padding: 10px;
+  border-radius: 46px;
+  background: var(--bezel);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+/* The laptop: the screen with its bezel, and the base under it, a little wider. */
+.laptop {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+.laptop .screen {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 10px 12px;
+  border-radius: 14px 14px 4px 4px;
+  background: var(--bezel);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+.laptop .base {
+  flex: none;
+  height: 12px;
+  margin: 0 calc(-1 * var(--s5));
+  border-radius: 2px 2px 12px 12px;
+  background: var(--fill-strong);
+}
+.view {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 36px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.laptop .view {
+  border-radius: 4px;
+}
+
+/* Without script: the line in the device's place, and no switch, theme button, frame or note about the demo (the page
+   follows the device). */
+body:has(.no-script) .theme-btn,
+.stage:has(.no-script) .seg,
+.stage:has(.no-script) .note,
+.device:has(.no-script) > .phone,
+.device:has(.no-script) > .laptop {
+  display: none;
+}
+.no-script {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  border-block: 1px solid var(--hairline);
+  color: var(--dim);
+}
+
+/* ---- the README's sections, one column */
+.doc {
+  width: min(var(--measure), calc(100vw - 48px));
+  margin: 0 auto;
+}
+.doc > :first-child {
+  margin-top: var(--s6);
+}
+.doc p,
+.doc ul {
+  margin: 0 0 var(--s4);
+}
+.doc ul {
+  padding-left: 1.25em;
+}
+.doc li + li {
+  margin-top: var(--s1);
+}
+.doc h2 {
+  margin: 56px 0 var(--s3);
+  font-size: var(--fs-title);
+  font-weight: var(--weight-strong);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-title);
+}
+.doc h3 {
+  margin: var(--s5) 0 var(--s2);
+  font-size: var(--fs-prose);
+  font-weight: var(--weight-strong);
+}
+/* Code in the text is a little smaller than the text; a command block's code is at the block's own --fs-ui. */
+.doc :not(pre) > code {
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: var(--r-row);
+  background: var(--code-bg);
+}
+.cmd {
+  display: flex;
+  align-items: flex-start;
+  margin: 0 0 var(--s4);
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+}
+/* A long command scrolls inside its block; Copy keeps its own place at the right. */
+.cmd pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  font-size: var(--fs-ui);
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+}
+.cmd .copy-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin: 6px 6px 0 0;
+}
+.cmd .copy-btn[data-state="failed"] {
+  color: var(--danger);
+}
+.doc table {
+  width: 100%;
+  margin: 0 0 var(--s5);
+  border-collapse: collapse;
+  font-size: var(--fs-ui);
+  line-height: 1.4;
+}
+.doc th,
+.doc td {
+  padding: var(--s2) var(--s3) var(--s2) 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  vertical-align: top;
+}
+.doc th {
+  color: var(--dim);
+  font-weight: var(--weight-strong);
+}
+.doc td:last-child,
+.doc th:last-child {
+  padding-right: 0;
+  color: var(--dim);
+}
+
+/* ---- the foot: the licence, the trademarks, the links. The foot keeps the column's type size, so its measure (in ch)
+   is the column's and the two line up; only its contents are small. */
+.foot {
+  margin-top: 72px;
+  padding: var(--s5) 0 var(--s6);
+  border-top: 1px solid var(--hairline);
+  color: var(--dim);
+}
+.foot > * {
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+}
+.foot p {
+  margin: 0 0 var(--s2);
+}
+.foot nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}
+.foot a {
+  color: var(--dim);
+}
+.touch .foot nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+}
+
+/* ---- a phone, and a portrait tablet: the demo fills the width, no frame, no switch */
+@media (max-width: 899px) {
+  body.site {
+    --top-h: 52px;
+    --page-w: calc(100vw - 40px);
+    font-size: var(--fs-prose-phone);
+  }
+  .top-links {
+    gap: var(--s3);
+  }
+  .stage {
+    width: 100%;
+    height: calc(100svh - var(--top-h) - 20px);
+    min-height: 520px;
+  }
+  .stage-row {
+    padding: 0 20px;
+    margin-bottom: var(--s3);
+  }
+  .stage h1 {
+    font-size: var(--fs-h3);
+    line-height: 1.3;
+  }
+  .stage .seg {
+    display: none;
+  }
+  .device > .phone {
+    position: static;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    border-block: 1px solid var(--hairline);
+  }
+  .device > .laptop {
+    display: none;
+  }
+  .view {
+    border-radius: 0;
+  }
+  .doc table {
+    font-size: var(--fs-prose);
+  }
+}

@@ -1,0 +1,4 @@
+# The SDK's optional platform packages each hold a claude binary; kitespan runs only the claude on PATH (DESIGN 4.7),
+# so a plain `bun install` leaves them out too, as `--omit=optional` does.
+[install]
+optional = false

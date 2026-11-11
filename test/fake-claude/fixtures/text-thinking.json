@@ -1,0 +1,23 @@
+{
+  "_about": "A text turn with thinking: the CLI streams a thinking block and a text block, then sends one assistant record per block (the shape that showed a reply twice before D-LIVE-42).",
+  "onStart": [
+    { "emit": { "type": "system", "subtype": "hook_started", "hook_id": "hook-1", "hook_name": "SessionStart:startup", "hook_event": "SessionStart" } },
+    { "emit": { "type": "system", "subtype": "hook_response", "hook_id": "hook-1", "hook_name": "SessionStart:startup", "hook_event": "SessionStart", "output": "", "stdout": "", "stderr": "", "exit_code": 0, "outcome": "success" } }
+  ],
+  "turns": [
+    {
+      "steps": [
+        { "emit": { "type": "system", "subtype": "status", "status": "requesting" } },
+        { "emit": { "type": "system", "subtype": "thinking_tokens", "estimated_tokens": 12, "estimated_tokens_delta": 12 } },
+        { "say": { "id": "msg_text_1", "thinking": "The user says hello. A short, friendly answer fits.", "text": "Hello! How can I help you today?", "chunks": 3 } },
+        { "emit": { "type": "result", "subtype": "success", "result": "Hello! How can I help you today?" } }
+      ]
+    },
+    {
+      "steps": [
+        { "say": { "id": "msg_text_2", "text": "Second reply.", "chunks": 1 } },
+        { "emit": { "type": "result", "subtype": "success", "result": "Second reply." } }
+      ]
+    }
+  ]
+}

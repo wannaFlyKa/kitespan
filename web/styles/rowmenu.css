@@ -1,0 +1,112 @@
+/* The row menus (DESIGN-T1 2.1; web/ui/RowMenu.tsx, which imports this sheet): the press target, the visible opener,
+   the menu's first lines, the two-column sheet of a phone on its side and Copy failed. Only the tokens of tokens.css
+   and the shared classes of base.css (.menu, .sheet, .group, .dialog, .icon-btn), so each look restyles them. */
+
+/* The target of a hold: on touch no iOS link callout and no word selection on its hold (a laptop keeps the head's
+   text selectable, and its right-click then is the browser's); a link is never lifted for a drag, which would end the
+   touch with pointercancel. After 150 ms of the hold it wears the pressed wash, so the finger sees what it holds. */
+.touch [data-row-press] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.touch a[data-row-press] {
+  -webkit-user-drag: none;
+}
+[data-row-press][data-pressing] {
+  background: var(--selected);
+}
+
+/* The visible opener: a "..." at the row's end, in --dim as the Download icon it replaces; 44 px on touch
+   (.touch .icon-btn). While its menu is open it keeps the pressed wash. */
+.icon-btn.row-more {
+  flex: none;
+  color: var(--dim);
+}
+.icon-btn.row-more[aria-expanded="true"] {
+  background: var(--selected);
+  color: var(--text);
+}
+
+/* The first line: the full path or command in mono, whole, wrapping at its own punctuation first (breakable) and
+   anywhere only inside a part wider than the line. A menu (a tablet, a laptop) has it at the top in --dim; a sheet
+   centres it under the title. The cut line of a cut output follows it. */
+.row-menu-head,
+.row-menu-note {
+  overflow-wrap: anywhere;
+}
+.menu .row-menu-head {
+  max-width: 300px;
+  font-family: var(--font-mono);
+  font-weight: var(--fw-regular);
+}
+.menu .row-menu-note {
+  max-width: 300px;
+}
+.sheet .row-menu-head,
+.sheet .row-menu-note {
+  margin: 0 var(--s4) var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  text-align: center;
+}
+.sheet .row-menu-head {
+  font-family: var(--font-mono);
+}
+.sheet .row-menu-note {
+  margin-top: calc(-1 * var(--s2));
+}
+
+/* A phone on its side (the viewport under 480 px tall, T-32): a sheet is at most 86dvh, about 335 px, which holds the
+   title, the first line and three rows. There the menu's groups flow in two columns, down the first and then the
+   second, so every row shows with no scroll; each row stays a 44 px target and the first lines span both columns. */
+@media (max-height: 480px) {
+  .sheet .scr-sheet.row-menu {
+    display: block;
+    columns: 2;
+    column-gap: var(--s4);
+  }
+  .sheet .row-menu > :is(.row-menu-head, .row-menu-note) {
+    column-span: all;
+  }
+  .sheet .row-menu > .group {
+    break-inside: avoid;
+  }
+}
+
+/* Copy failed (T-29): the hint at the meta size, then the text in a read-only mono field at the UI size (16 px on touch,
+   so iOS does not zoom), wrapping, four to eight lines tall, selected. The dialog is wider than a confirm's, so the
+   field shows whole lines of a command's output. */
+.row-copy .row-copy-hint {
+  margin: 0 0 var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.row-copy-text {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: calc(4 * 1.45em);
+  max-height: calc(8 * 1.45em + var(--s4));
+  margin: 0 0 var(--s3);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-field);
+  background: var(--fill);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+.touch .row-copy-text {
+  font-size: max(16px, var(--fs-ui));
+}
+.sheet .row-copy {
+  padding: 0 var(--s4) var(--s4);
+}
+.dialog:has(.row-copy) {
+  width: min(520px, calc(100vw - 48px));
+}

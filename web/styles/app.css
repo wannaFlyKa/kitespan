@@ -1,0 +1,10 @@
+/* One stylesheet per area; each area's agent owns its file. */
+@import "./layout.css";
+@import "./chat.css";
+@import "./composer.css";
+@import "./panels.css";
+@import "./screens.css";
+@import "./terminal.css";
+@import "./environment.css";
+@import "./changes.css";
+@import "./browser.css";

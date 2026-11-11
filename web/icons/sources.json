@@ -1,0 +1,22 @@
+{
+  "icon-192.png": {
+    "source": "mark-any.svg",
+    "svg": "3dbb1b1d4a13ba9e336cfb4ecaf978fe2dfd36db045b1eed777d9a67b4777dfb",
+    "png": "4b649596035baa60e85f2bf38734b69182e14652eccd42c37000258c648d1cc1"
+  },
+  "icon-512.png": {
+    "source": "mark-any.svg",
+    "svg": "3dbb1b1d4a13ba9e336cfb4ecaf978fe2dfd36db045b1eed777d9a67b4777dfb",
+    "png": "3e4984bae73cc2a6efa760a051b44c2f07168ff632ad3658650e1d270dd33b55"
+  },
+  "icon-maskable-512.png": {
+    "source": "mark-full.svg",
+    "svg": "efddbe6af5a3c3d6babdfffefce3d70ac205dedd104317176d8b4074c910e7cf",
+    "png": "6c390bbd5b67274ad2ea9751c435f14df88fdf574b94ce0f88afd7546126ffae"
+  },
+  "apple-touch-icon.png": {
+    "source": "mark-full.svg",
+    "svg": "efddbe6af5a3c3d6babdfffefce3d70ac205dedd104317176d8b4074c910e7cf",
+    "png": "ef76ee7e81de74c1e67480c4f22131d1de1a24ce2a346cec4fb5d9f349e14289"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "_about": "A plan card: in plan mode Claude calls ExitPlanMode with its plan; an approval switches the mode, a refusal keeps planning with the user's feedback.",
+  "initMessage": { "permissionMode": "plan" },
+  "turns": [
+    {
+      "steps": [
+        { "say": { "id": "msg_plan_1", "text": "Here is my plan.", "tools": [{ "id": "toolu_fake_plan_1", "name": "ExitPlanMode", "input": { "plan": "## Plan\n\n1. Add the button.\n2. Write its test." } }] } },
+        {
+          "ask": { "subtype": "can_use_tool", "tool_name": "ExitPlanMode", "input": { "plan": "## Plan\n\n1. Add the button.\n2. Write its test." }, "tool_use_id": "toolu_fake_plan_1" },
+          "then": {
+            "allow": [
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_plan_1", "content": "User has approved your plan.", "is_error": false }] }, "parent_tool_use_id": null } },
+              { "emit": { "type": "system", "subtype": "status", "status": null, "permissionMode": "acceptEdits" } },
+              { "say": { "id": "msg_plan_2", "text": "Starting on the plan." } },
+              { "emit": { "type": "result", "subtype": "success", "result": "Starting on the plan.", "num_turns": 2 } }
+            ],
+            "deny": [
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_plan_1", "content": "The user doesn't want to proceed with this plan.", "is_error": true }] }, "parent_tool_use_id": null } },
+              { "say": { "id": "msg_plan_3", "text": "I will keep planning." } },
+              { "emit": { "type": "result", "subtype": "success", "result": "I will keep planning.", "num_turns": 2 } }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

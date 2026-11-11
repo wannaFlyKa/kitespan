@@ -1,0 +1,303 @@
+/* The environment (row 73, D60): the project's editor at /p/<project>/environment (screens/EnvironmentScreen.tsx and
+   env/EnvSection.tsx), New environment's Worktree and Environment variables rows (dialogs/NewEnvironment.tsx), the
+   Worktree switch's row (worktree/WorktreeOption.tsx), the project page's Environment rows and a refused start's line
+   in the chat (worktree/StartLine.tsx). Tokens only, as every area's file. */
+
+/* ---- the Worktree switch and its one line */
+.wt-opt-row {
+  justify-content: space-between;
+}
+.wt-opt-label {
+  flex: 1;
+}
+.wt-opt-line {
+  margin: 0;
+  padding: 0 var(--s3) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.touch .wt-opt-line {
+  padding: 0 var(--s4) var(--s3);
+}
+
+/* ---- the editor: the folder and the switch, then the variables */
+.env-folder {
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--s4);
+}
+.env-folder > .group-label {
+  flex: none;
+}
+.env-folder-path {
+  flex: 1 1 14em;
+  min-width: 0;
+  color: var(--dim);
+  text-align: right;
+}
+[data-size="phone"] .env-folder-path {
+  text-align: left;
+}
+.env-line {
+  margin: var(--s2) 0 0;
+}
+.env-li {
+  display: grid;
+}
+.env-li[data-marked] {
+  background: var(--accent-wash);
+}
+.group-row.env-row {
+  flex-wrap: wrap;
+  row-gap: var(--s1);
+}
+.env-name {
+  flex: 1 1 8em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.env-mask {
+  flex: none;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+.env-tools {
+  display: flex;
+  flex: none;
+  gap: var(--s2);
+  margin-left: auto;
+}
+[data-size="phone"] .env-tools {
+  flex-basis: 100%;
+  justify-content: flex-end;
+}
+.env-mark {
+  margin: 0;
+  padding: 0 var(--s3) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.touch .env-mark {
+  padding: 0 var(--s4) var(--s3);
+}
+.env-box {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+  padding: 0 var(--s3) var(--s3);
+}
+.touch .env-box {
+  padding: 0 var(--s4) var(--s4);
+}
+.env-ask .scr-dim {
+  margin: 0;
+}
+.env-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+[data-size="phone"] .env-actions .btn {
+  flex: 1;
+}
+.env-field {
+  display: block;
+  min-height: 5.5em;
+}
+.env-fieldbox {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.env-notes {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.env-note.is-bad {
+  color: var(--danger);
+}
+.group-row.env-none {
+  color: var(--dim);
+}
+.env-section .env-add {
+  margin-top: var(--s3);
+}
+.env-section .env-add-box {
+  margin-top: var(--s3);
+  padding: 0;
+}
+.env-unreadable {
+  display: grid;
+  justify-items: start;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.env-unreadable .notice {
+  margin: 0;
+}
+.env-foot {
+  margin-top: var(--s3);
+}
+
+/* ---- the project page's Environment rows */
+.scr-penv .group-value {
+  max-width: 60%;
+}
+.scr-penv-row > .group-label,
+.scr-env-opt > .group-label {
+  flex: 1;
+}
+.scr-penv-row {
+  cursor: pointer;
+}
+
+/* ---- New environment: the two rows under the finder, which stay in view with Use this folder */
+.scr-env-opts {
+  flex: none;
+}
+.dialog .scr-env-opt-group {
+  box-shadow: none;
+  border: 1px solid var(--hairline);
+}
+.group-row.scr-env-opt {
+  cursor: pointer;
+}
+/* On touch (a phone's line is too narrow for both, "Environment variables" and "None for this environment"), New
+   environment's rows and the project page's put the value under its label, whole, so the label keeps its one line and
+   the value is never cut; the chevron stays at the right. */
+.touch .group-row.scr-env-opt,
+.touch .group-row.scr-penv-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--s3);
+  row-gap: 2px;
+}
+.touch .scr-env-opt > .group-label,
+.touch .scr-penv-row > .group-label {
+  grid-area: 1 / 1;
+}
+.touch .scr-env-opt > .group-value,
+.touch .scr-penv-row > .group-value {
+  grid-area: 2 / 1;
+  max-width: none;
+  white-space: normal;
+}
+.touch .scr-env-opt > .group-chevron,
+.touch .scr-penv-row > .group-chevron {
+  grid-area: 1 / 2 / span 2;
+  align-self: center;
+}
+.scr-env-fold {
+  transition: transform var(--t-reveal) var(--ease);
+}
+.scr-env-opt[aria-expanded="true"] .scr-env-fold {
+  transform: rotate(180deg);
+}
+.scr-env-varsbox {
+  display: grid;
+  gap: var(--s2);
+  padding: 0 var(--s3) var(--s3);
+}
+.touch .scr-env-varsbox {
+  padding: 0 var(--s4) var(--s4);
+}
+.scr-env-varsbox .env-field {
+  min-height: 4.5em;
+  max-height: 30dvh;
+}
+
+/* ---- the chat's Environment detail: "Worktree of <folder>" in the size of the path above it (.side-path), and the
+   count of variables, which opens the editor: on touch the whole value line is a 44 px target. */
+.side-sub {
+  font-size: var(--fs-small);
+}
+.touch .side-sub {
+  font-size: var(--fs-ui);
+}
+.side-env-link {
+  color: var(--accent-ui);
+  text-decoration: none;
+}
+.side-env-link:hover {
+  text-decoration: underline;
+}
+.touch .side-env-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch);
+}
+
+/* ---- a refused start's line, with its buttons under it (W4, W5) */
+.wt-start-text {
+  display: grid;
+  gap: var(--s2);
+  white-space: normal;
+}
+.wt-start-line {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere; /* Claude Code's first error line may name a worktree's path */
+}
+/* Claude Code's own first error line under kitespan's sentence (worktree_resume_refused): dim mono, wrapped anywhere,
+   since it may name a worktree's path. */
+.wt-start-detail {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.wt-start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.cmp-archived-kept {
+  color: var(--dim);
+}
+/* A line with a worktree's path (Delete's confirm, the archived chat's kept line): the path breaks only after a "/"
+   (PathText: a <wbr> after each part). Each part is one box, so a hyphen or a space inside it is no break; a part that
+   alone is wider than the line breaks anywhere inside it rather than run past a phone's edge. */
+.wt-path-line {
+  overflow-wrap: anywhere;
+}
+.wt-path-part {
+  display: inline-block;
+  max-width: 100%;
+}
+.wt-start-actions > a.btn {
+  text-decoration: none;
+}
+
+/* ---- L39: the link under a refused send's or Start's line (env_unreadable), to the project's environment */
+.notice-env-link {
+  text-decoration: none;
+}
+.chat-notice-line .notice-env-link,
+.scr-col > .notice-env-link {
+  display: flex;
+  width: fit-content;
+}
+.chat-notice-line .notice-env-link {
+  margin-top: var(--s2);
+}
+.scr-col > .notice-env-link {
+  margin: calc(-1 * var(--s2)) 0 var(--s4);
+}
+
+/* ---- W3: the new-chat form's step line in Start's place while git makes the chat's worktree */
+.scr-start-step {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--btn-h);
+  color: var(--dim);
+  font-size: var(--fs-ui);
+  white-space: nowrap;
+}

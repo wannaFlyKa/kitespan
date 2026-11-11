@@ -1,0 +1,57 @@
+{
+  "name": "kitespan",
+  "version": "0.1.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "bin": {
+    "kitespan": "bin/kitespan"
+  },
+  "files": [
+    "bin/",
+    "server/",
+    "shared/",
+    "web/",
+    "scripts/build-web.ts",
+    "dist/web/",
+    "bunfig.toml",
+    "bun.lock",
+    "install.sh",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "scripts": {
+    "start": "bin/kitespan",
+    "dev": "bin/kitespan dev",
+    "build": "bun scripts/build-web.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.web.json",
+    "gate": "bun test ./test/gate/",
+    "test:click": "bun test ./test/click/",
+    "test:live": "KITESPAN_LIVE=1 bun test ./test/live/",
+    "ui-check": "bun scripts/ui-check.ts",
+    "audit": "bun scripts/audit-public-clean.ts",
+    "ci": "bun scripts/ci.ts",
+    "dco": "bun scripts/dco.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.312",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-unicode11": "0.9.0",
+    "@xterm/addon-web-links": "0.12.0",
+    "@xterm/xterm": "6.0.0",
+    "highlight.js": "11.12.0",
+    "marked": "18.0.11",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}

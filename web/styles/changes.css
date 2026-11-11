@@ -1,0 +1,338 @@
+/* U1 (DESIGN-U1 6, 7, 12): the changed-files card under a turn's answer, and the changes view in the side panel (its
+   sixth kind). Only the tokens of tokens.css, so each of the four looks restyles it in light and dark; layout sizes and
+   1 px hairlines are the only numbers. The counts are the one bold thing: +N in --ok and -N in --danger, the UI face
+   with figures of one width, each in its own slot, so the columns line up. No icon, no fill, no shadow, no motion of
+   its own (the panel's slide is the column's). */
+
+/* ---- the card ---- */
+.chg-card {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.chg-head,
+.chg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--row-h);
+  padding: 3px var(--s3);
+  color: var(--text);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+  text-decoration: none;
+}
+.chg-head {
+  color: var(--dim);
+}
+a.chg-head:hover,
+a.chg-row:hover {
+  background: var(--hover);
+}
+a.chg-head:hover {
+  color: var(--text);
+}
+a.chg-head:active,
+a.chg-row:active {
+  background: var(--fill);
+}
+.chg-head:focus-visible,
+.chg-row:focus-visible,
+.chg-list-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.chg-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chg-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chg-head + .chg-rows,
+.chg-rows > li + li {
+  border-top: 1px solid var(--hairline);
+}
+.chg-row .side-pl,
+.chg-list-row .side-pl {
+  flex: 1 1 auto;
+}
+.chg-row.chg-more {
+  color: var(--accent-ui);
+}
+/* On touch a row's "..." (its file menu, DESIGN-T1 2.1) takes the row's end, beside the link. */
+.chg-rows > li:has(> .row-more) {
+  display: flex;
+  align-items: center;
+}
+.chg-rows > li:has(> .row-more) > .chg-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.chg-rows > li > .row-more {
+  margin-right: var(--s1);
+}
+/* The row whose view the side panel shows: the head for the turn's list, a file's row for its diff. */
+.chg-head[aria-current="page"],
+.chg-row[aria-current="page"] {
+  background: var(--selected);
+}
+
+/* The counts: the diff's own colours. */
+.chg-count {
+  flex: none;
+  display: inline-flex;
+  gap: 6px;
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chg-count > span {
+  min-width: 3.2ch;
+  text-align: right;
+}
+.chg-count .is-add {
+  color: var(--ok);
+}
+.chg-count .is-del {
+  color: var(--danger);
+}
+.chg-word {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+
+/* The phone (row 115): the head alone, a quiet line of the answer's foot. A changes route marks it as a linked
+   message is (chat.css .chat-item.is-highlight). */
+.chg-line-phone {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+.chg-line-phone .chg-title {
+  flex: 0 1 auto;
+}
+.chg-line-phone .chg-count > span {
+  min-width: 0;
+}
+
+/* ---- the changes view: a column of its own that scrolls inside itself ---- */
+.side-col.chg-col,
+.side-pane.chg-col {
+  overflow: hidden;
+  background: var(--bg);
+}
+.chg-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+.chg-view:focus {
+  outline: none;
+}
+.split > .split-half > .chg-view {
+  flex: 1 1 auto;
+  height: auto;
+}
+.chg-view-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--header-h);
+  padding: 0 var(--s2) 0 var(--s3);
+  border-bottom: 1px solid var(--hairline);
+}
+.chg-view-head .side-back {
+  align-self: center;
+  margin-right: auto;
+}
+.chg-view-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+/* On touch the head at the top of the screen keeps the safe area above it (a home-screen app), as the panes' heads do
+   (layout.css); in the lower half of a split it is not at the top. */
+.shell-medium .side-pane .chg-view-head,
+.touch .shell-laptop .side-pane .chg-view-head,
+.touch .shell-laptop .side-col .chg-view-head {
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+}
+.shell :is(.side-col, .side-pane).split > .split-lower .chg-view-head {
+  min-height: var(--header-h);
+  padding-top: 0;
+}
+.chg-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The turn's list: the panel's own grouped rows, in a grid whose rows share its three tracks (subgrid): the path, the
+   status word (New, Deleted, Renamed; an empty cell for an edit) and the counts, so the words and the counts each
+   stand in a column. On touch the rows read at the card's size beside them (--fs-small), not at the touch size of the
+   panel's other lists, so a path keeps its folder in the tablet's 320 px pane; they keep their 44 px. */
+.chg-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  column-gap: var(--s3);
+  margin: var(--s3);
+}
+.chg-list > li {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+.chg-list-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  column-gap: var(--s3);
+  color: var(--text);
+  text-decoration: none;
+}
+.chg-list-row > :last-child {
+  justify-self: end;
+}
+.touch .chg-list-row {
+  font-size: var(--fs-small);
+}
+/* The list's rows with their "..." on touch: a fourth column, after the counts. */
+.touch .chg-list:has(> li > .row-more) {
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+}
+.touch .chg-list > li:has(> .row-more) > .chg-list-row {
+  grid-column: 1 / -2;
+}
+.chg-foot {
+  margin: 0 var(--s3) var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-prose);
+}
+
+/* One file: its name, its counts, its folder in --dim, its one line. */
+.chg-file {
+  padding: var(--s3) var(--s3) var(--s2);
+}
+.chg-file-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.chg-file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chg-file-dir,
+.chg-file-note {
+  margin: 2px 0 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.chg-say {
+  margin: var(--s2) var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-prose);
+}
+.chg-failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s2);
+  margin-right: var(--s3);
+}
+
+/* The diff: unified, both line numbers, long lines wrap under their own text (no sideways scroll); the tints are the
+   Edit row's (chat.css .chat-line.is-add). The numbers, the signs and the hidden words are never copied with the
+   code. A seam between two hunks: a dashed hairline and git's context line in --faint, set in the code's column. */
+.chg-diff {
+  border-top: 1px solid var(--hairline);
+  background: var(--code-bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+  tab-size: 4;
+  padding: 4px 0 var(--s4);
+}
+.chg-dl {
+  display: grid;
+  grid-template-columns: repeat(var(--ln-n), var(--ln-w)) 1ch minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 0 var(--s3) 0 var(--s2);
+}
+.chg-ln {
+  color: var(--faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chg-sign {
+  color: var(--faint);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chg-lt {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chg-lt > .visually-hidden {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chg-dl.is-add {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.chg-dl.is-del {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.chg-dl.is-add .chg-sign {
+  color: var(--ok);
+}
+.chg-dl.is-del .chg-sign {
+  color: var(--danger);
+}
+.chg-dl.is-note .chg-lt {
+  color: var(--faint);
+}
+.chg-hunk {
+  margin: 0;
+  padding: 0 var(--s3) 2px calc(var(--s2) + var(--ln-n) * (var(--ln-w) + 8px) + 1ch + 8px);
+  overflow: hidden;
+  color: var(--faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chg-hunk.is-seam {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--hairline);
+}

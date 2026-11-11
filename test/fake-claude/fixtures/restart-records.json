@@ -1,0 +1,185 @@
+{
+  "_about": "What a page draws after a server restart: a permission card answered (its record comes from the server's notes), a ! record that the CLI writes under an id of its own (bashRecordId own, as the real CLI does), and a tool call that a Stop cut off. The transcript is written as the CLI writes it.",
+  "transcript": true,
+  "bashRecordId": "own",
+  "turnsByText": {
+    "list the files": {
+      "steps": [
+        {
+          "say": {
+            "id": "msg_tool_1",
+            "text": "I will list the files in this folder.",
+            "tools": [
+              {
+                "id": "toolu_fake_bash_1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls",
+                  "description": "List the files"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ask": {
+            "subtype": "can_use_tool",
+            "tool_name": "Bash",
+            "input": {
+              "command": "ls",
+              "description": "List the files"
+            },
+            "tool_use_id": "toolu_fake_bash_1",
+            "title": "Claude wants to run ls",
+            "display_name": "Run a command",
+            "description": "List the files",
+            "decision_reason": "This command needs your approval",
+            "default_to_no": true,
+            "permission_suggestions": [
+              {
+                "type": "addRules",
+                "rules": [
+                  {
+                    "toolName": "Bash",
+                    "ruleContent": "ls"
+                  }
+                ],
+                "behavior": "allow",
+                "destination": "localSettings"
+              }
+            ]
+          },
+          "then": {
+            "allow": [
+              {
+                "emit": {
+                  "type": "tool_progress",
+                  "tool_use_id": "toolu_fake_bash_1",
+                  "tool_name": "Bash",
+                  "parent_tool_use_id": null,
+                  "elapsed_time_seconds": 1
+                }
+              },
+              {
+                "emit": {
+                  "type": "user",
+                  "message": {
+                    "role": "user",
+                    "content": [
+                      {
+                        "type": "tool_result",
+                        "tool_use_id": "toolu_fake_bash_1",
+                        "content": "notes.txt\nplan.md",
+                        "is_error": false
+                      }
+                    ]
+                  },
+                  "parent_tool_use_id": null,
+                  "tool_use_result": {
+                    "stdout": "notes.txt\nplan.md",
+                    "stderr": "",
+                    "interrupted": false
+                  }
+                }
+              },
+              {
+                "say": {
+                  "id": "msg_tool_2",
+                  "text": "There are two files: notes.txt and plan.md."
+                }
+              },
+              {
+                "emit": {
+                  "type": "result",
+                  "subtype": "success",
+                  "result": "There are two files: notes.txt and plan.md.",
+                  "num_turns": 2
+                }
+              }
+            ],
+            "deny": [
+              {
+                "emit": {
+                  "type": "user",
+                  "message": {
+                    "role": "user",
+                    "content": [
+                      {
+                        "type": "tool_result",
+                        "tool_use_id": "toolu_fake_bash_1",
+                        "content": "The user denied this tool use.",
+                        "is_error": true
+                      }
+                    ]
+                  },
+                  "parent_tool_use_id": null
+                }
+              },
+              {
+                "say": {
+                  "id": "msg_tool_3",
+                  "text": "Understood, I will not run it."
+                }
+              },
+              {
+                "emit": {
+                  "type": "result",
+                  "subtype": "success",
+                  "result": "Understood, I will not run it.",
+                  "num_turns": 2
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "stop me": {
+      "steps": [
+        {
+          "say": {
+            "id": "msg_restart_stop",
+            "text": "I will wait for the build.",
+            "tools": [
+              {
+                "id": "toolu_fake_wait_1",
+                "name": "Bash",
+                "input": {
+                  "command": "sleep 60",
+                  "description": "Wait for the build"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sleep": 8000
+        },
+        {
+          "emit": {
+            "type": "result",
+            "subtype": "success",
+            "result": "Too late."
+          }
+        }
+      ]
+    }
+  },
+  "defaultTurn": {
+    "steps": [
+      {
+        "say": {
+          "id": "msg_restart_default",
+          "text": "ok"
+        }
+      },
+      {
+        "emit": {
+          "type": "result",
+          "subtype": "success",
+          "result": "ok"
+        }
+      }
+    ]
+  }
+}

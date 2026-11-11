@@ -1,0 +1,12 @@
+{
+  // The page (web/), the landing page and its demo (site/), and the tests that need the DOM (test/web/). The shared
+  // code is checked here too, because the page imports it, and so are the API's types (server/http/api-types.ts),
+  // which the page imports as types only.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx"
+  },
+  "include": ["web/**/*", "site/**/*", "shared/**/*", "test/web/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

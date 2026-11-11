@@ -1,0 +1,150 @@
+# kitespan's release (DESIGN-I1 5): on a pushed tag v<version>, the checks of ci.yml's check job; the source archive
+# (git archive of the tag), SHA256SUMS and install.sh; the installer tried on clean Linux and macOS runners, and the
+# Homebrew formula built from source on macOS; then, after the owner's approval in the protected environment `release`,
+# their build provenance (public for good once it is made, so not before the approval) and the GitHub Release. Nothing
+# else is published: the tap's formula is printed for the owner.
+# Every action is pinned by its commit, with its tag after it. test/unit/workflows.test.ts checks this file.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --omit=optional
+      - run: bun run typecheck
+      - run: bun test
+        env:
+          KITESPAN_TEST_PORT: "7941"
+      - run: bun run build
+      - run: bun scripts/audit-public-clean.ts --repo . --scope tree
+
+  archive:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - name: The archive, SHA256SUMS, install.sh, the formula and the notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: bun --no-env-file scripts/release.ts --tag "$TAG" --out "$RUNNER_TEMP/release"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+          retention-days: 7
+          if-no-files-found: error
+
+  install-linux:
+    needs: archive
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+      - name: The installer from the release folder, in this clean runner
+        run: sh scripts/install-trial.sh "$RUNNER_TEMP/release" 7941
+
+  install-macos:
+    needs: archive
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+      - name: The installer from the release folder, in this clean runner
+        run: sh scripts/install-trial.sh "$RUNNER_TEMP/release" 7941
+
+  brew:
+    needs: archive
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+      - name: The formula, built from source in a local tap, tested, started and audited
+        run: sh scripts/brew-trial.sh "$RUNNER_TEMP/release" 7941
+
+  release:
+    needs: [check, archive, install-linux, install-macos, brew]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+      - name: The environment release asks for the owner's approval
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          curl --proto =https --tlsv1.2 -fsS "https://api.github.com/repos/$REPO/environments/release" > "$RUNNER_TEMP/environment.json"
+          grep -q '"type": *"required_reviewers"' "$RUNNER_TEMP/environment.json" || { echo "release: the environment release has no required reviewer, so nothing is published." >&2; exit 1; }
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/release/SHA256SUMS
+      - name: The GitHub Release
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=${TAG#v}
+          gh release create "$TAG" --repo "$REPO" --verify-tag --title "kitespan $v" --notes-file "$RUNNER_TEMP/release/release-notes.md" "$RUNNER_TEMP/release/kitespan-$v.tar.gz" "$RUNNER_TEMP/release/SHA256SUMS" "$RUNNER_TEMP/release/install.sh"
+      - name: The tap's formula, for the owner
+        run: |
+          printf 'Put this file in wannaFlyKa/homebrew-tap as Formula/kitespan.rb, in a signed-off commit:\n\n'
+          cat "$RUNNER_TEMP/release/kitespan.rb"
