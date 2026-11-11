@@ -14,7 +14,12 @@ export const INSTALL = join(ROOT, "install.sh");
 const FAKES = join(import.meta.dir, "fakes");
 const FAKE_NAMES = ["bun", "claude", "curl", "ps", "uname", "wget"] as const;
 /** The system tools on the test's PATH (install.sh's, the fakes' and GNU tar's gzip). */
-const TOOLS = ["awk", "cat", "chmod", "cp", "dd", "gzip", "grep", "ln", "mkdir", "mv", "readlink", "rm", "rmdir", "sed", "sha256sum", "shasum", "sleep", "sort", "tail", "tar", "tr", "wc"];
+const TOOLS = ["awk", "cat", "chmod", "cp", "dd", "gzip", "grep", "ln", "mkdir", "mv", "readlink", "rm", "rmdir", "sed", "sleep", "sort", "tail", "tar", "tr", "wc"];
+/**
+ * install.sh's hashers: it takes sha256sum, else shasum (`shasum -a 256`). A system may have one of them only (macOS
+ * has shasum and no sha256sum), so each one that the system has goes on PATH, and at least one must.
+ */
+export const HASHERS = ["sha256sum", "shasum"] as const;
 
 const made: string[] = [];
 /** Removes every home made so far. Each test file that makes homes calls it in its own afterAll (Bun loads this module
@@ -23,9 +28,16 @@ export function removeHomes(): void {
   for (const d of made.splice(0)) rmSync(d, { recursive: true, force: true });
 }
 
-function systemTool(name: string): string {
+/** The system's own copy of a tool (in /usr/bin or /bin), or null. */
+export function systemToolOrNull(name: string): string | null {
   for (const d of ["/usr/bin", "/bin"]) if (existsSync(join(d, name))) return join(d, name);
-  throw new Error(`the system has no ${name}`);
+  return null;
+}
+
+function systemTool(name: string): string {
+  const at = systemToolOrNull(name);
+  if (at === null) throw new Error(`the system has no ${name}`);
+  return at;
 }
 
 export interface Home {
@@ -60,6 +72,13 @@ export function makeHome(o: { omit?: string[] } = {}): Home {
   const omit = new Set(o.omit ?? []);
   for (const n of FAKE_NAMES) if (!omit.has(n)) symlinkSync(join(FAKES, n), join(bin, n));
   for (const n of TOOLS) if (!omit.has(n)) symlinkSync(systemTool(n), join(bin, n));
+  const hashers = HASHERS.filter((n) => !omit.has(n));
+  const found = hashers.flatMap((n) => {
+    const at = systemToolOrNull(n);
+    return at === null ? [] : [[n, at] as const];
+  });
+  if (hashers.length > 0 && found.length === 0) throw new Error(`the system has none of ${hashers.join(", ")}`);
+  for (const [n, at] of found) symlinkSync(at, join(bin, n));
   const kit = join(home, ".local", "share", "kitespan");
   const env: Record<string, string> = {
     HOME: home,

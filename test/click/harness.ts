@@ -33,6 +33,7 @@ import { DOT_SCENES, PART2_SCENES, SCENES, SEARCH_SCENES, SEARCH_TEXT_SCENES, SI
 import { writeSeed, type SeedPaths } from "./seed/write";
 import { bgFixture, startBgSeed, type BgSeed } from "./seed/background";
 import { checkPort, portFree } from "./ports";
+import { LINUX_ONLY, PROCFS } from "../linux";
 
 export const ROOT = resolve(import.meta.dir, "..", "..");
 const BIN_KITESPAN = join(ROOT, "bin", "kitespan");
@@ -412,6 +413,9 @@ const SHELL = existsSync("/bin/bash") ? "/bin/bash" : "/bin/sh";
 
 /** Boot bin/kitespan on the seed of one scene. */
 export async function boot(opts: BootOptions): Promise<Booted> {
+  // It stops its server, a restart's successors and the seed's processes only after a /proc check (cmdline, cwd), so
+  // where /proc cannot be read (macOS) it would never stop them: it refuses at once (test/linux.ts skips its tests).
+  if (!PROCFS) throw new Error(`the harness reads /proc to stop what it started ${LINUX_ONLY}`);
   const port = opts.port ?? DEFAULT_PORT;
   checkPort(port);
   checkEnv(opts.env ?? {});

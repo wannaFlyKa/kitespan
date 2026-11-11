@@ -17,7 +17,7 @@
 // transports allowed (no `ext::` or other remote helper).
 
 import type { Subprocess } from "bun";
-import { absolutePath, findGit, gitEnv } from "../search/git";
+import { failingProgram, findGit, gitEnv } from "../search/git";
 
 /** Before every subcommand: no optional locks (a read never writes the index), the fsmonitor hook off. */
 export const GIT_FLAGS = ["--no-optional-locks", "-c", "core.fsmonitor=false"] as const;
@@ -42,11 +42,8 @@ export const UPDATE_SSH = "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAl
 /** The longest stdout a read keeps; past it git is killed and the read fails. */
 const MAX_OUT = 64 * 1024;
 
-/** A program that fails at once, for git's and ssh's password prompts: `false` on the absolute PATH entries. */
-export function failingProgram(pathEnv: string): string {
-  const PATH = absolutePath(pathEnv);
-  return (PATH && Bun.which("false", { PATH })) || "/bin/false";
-}
+/** A program that fails at once, for the password prompts (server/search/git.ts). */
+export { failingProgram };
 
 /**
  * The GIT_* names that only choose which git config files apply (the user's own, or none): kept from the base, as the

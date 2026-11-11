@@ -32,6 +32,15 @@ export function absolutePath(pathEnv: string): string {
     .join(":");
 }
 
+/**
+ * A program that fails at once, for git's and ssh's password prompts: `false` on the absolute entries of `pathEnv`,
+ * else the system's own (/usr/bin/false; Linux has /bin/false too, macOS has no /bin/false).
+ */
+export function failingProgram(pathEnv: string): string {
+  const PATH = absolutePath(pathEnv);
+  return (PATH && Bun.which("false", { PATH })) || Bun.which("false", { PATH: "/usr/bin:/bin" }) || "/usr/bin/false";
+}
+
 /** `git` on the absolute entries of `pathEnv`, as an absolute path; null when there is none (the walk runs). */
 export function findGit(pathEnv: string): string | null {
   const PATH = absolutePath(pathEnv);

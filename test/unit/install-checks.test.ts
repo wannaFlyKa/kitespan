@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { CLAUDE_CODE_MINIMUM } from "../../server/agents/claude/background";
 import { CLAUDE_MINIMUM_WORDS } from "../../shared/protocol";
 import { archiveName } from "../../shared/release";
-import { calls, good, type Home, install, localRelease, makeHome, removeHomes, snapshot } from "../install/home";
+import { calls, good, HASHERS, type Home, install, localRelease, makeHome, removeHomes, sha256, snapshot, systemToolOrNull } from "../install/home";
 
 afterAll(removeHomes);
 
@@ -109,6 +109,26 @@ describe("the checks of an install, in order (exit 1, nothing changed)", () => {
     const { h, from } = withRelease({ omit: ["sha256sum", "shasum"] });
     refused(h, { KITESPAN_INSTALL_FROM: from }, "it needs sha256sum or shasum to check the download.");
   });
+
+  // Each hasher alone checks the archive: sha256sum (Linux), and shasum -a 256 (macOS, which has no sha256sum). A
+  // system without one of them skips its own case, with the reason in the name.
+  for (const hasher of HASHERS) {
+    const other = HASHERS.filter((n) => n !== hasher);
+    const has = systemToolOrNull(hasher) !== null;
+    test.skipIf(!has)(`9: ${hasher} alone checks the archive: a right SHA-256 installs, a wrong one is refused with the archive's own${has ? "" : ` (this system has no ${hasher})`}`, () => {
+      const { h, from } = withRelease({ omit: other });
+      expect(install(h, [], { KITESPAN_INSTALL_FROM: from }).code).toBe(0);
+      const w = makeHome({ omit: other });
+      const a = good("0.1.0");
+      const wrong = "0".repeat(64);
+      const bad = localRelease(w, "release", [a], `${wrong}  ${archiveName("0.1.0")}\n`);
+      const r = install(w, [], { KITESPAN_INSTALL_FROM: bad });
+      expect(r.code).toBe(3);
+      expect(r.err.trim().split("\n").at(-1)).toBe(
+        `install.sh: step 1 of 3 failed: the SHA-256 of kitespan-0.1.0.tar.gz is ${sha256(a.data)}, not ${wrong} as SHA256SUMS says, so the download was removed; kitespan did not change.`,
+      );
+    });
+  }
 
   test("10: Bun on PATH, and it never installs Bun", () => {
     const { h, from } = withRelease({ omit: ["bun"] });

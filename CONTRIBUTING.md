@@ -28,7 +28,9 @@ audit of the tree.
   seed and the fake claude, and checks every route, action and flow in headless Chrome at a laptop, a tablet and a
   phone size, in dark and light, with a screenshot of each. It finds Chrome with `--chrome <binary>` or
   `CHROME_PATH`, else on PATH or in the usual install caches. The full run takes about an hour; `--checks`, `--routes`
-  and `--skip` pick a part (`bun scripts/ui-check.ts --help` lists the options).
+  and `--skip` pick a part (`bun scripts/ui-check.ts --help` lists the options). It runs on Linux only: its harness
+  (`test/click/harness.ts`) reads `/proc` to stop only the processes that it started, so on a system without `/proc`
+  (macOS) it stops at once with a line that says so, and the tests that boot it skip there.
 - **The live tests** are opt-in and are never run in CI: `bun run test:live` runs real turns with your own Claude Code,
   and each turn costs what a turn costs you. [test/live/README.md](test/live/README.md) says what each file checks and
   which variables it needs.

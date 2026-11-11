@@ -3,10 +3,11 @@
 // runner's .bin link. Run through an absolute link, a relative one, a chain of them across folders, and a PATH lookup,
 // `kitespan --help` and `--version` print kitespan's own, and `update.sh --bogus` is refused by cli.ts (so Bun ran each
 // from the real root; with the old root line the start failed with "Module not found"). A chain longer than 32 links is
-// refused with one line. The real Bun runs; no server starts and no claude runs.
+// refused with one line: the script's own, or the system's where the system itself does not open so long a chain. The
+// real Bun runs; no server starts and no claude runs.
 
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { ROOT } from "../install/home";
@@ -37,6 +38,34 @@ function link(at: string, to: string): string {
 function run(cmd: string[], env: Record<string, string> = ENV): { code: number; out: string; err: string } {
   const r = Bun.spawnSync(cmd, { cwd: DIR, env, stdin: "ignore", stdout: "pipe", stderr: "pipe", timeout: 60_000 });
   return { code: r.exitCode ?? -1, out: r.stdout.toString(), err: r.stderr.toString() };
+}
+
+/** True when the system itself refuses to open `path`: more links lead to it than its limit (ELOOP). */
+function systemRefuses(path: string): boolean {
+  try {
+    statSync(path);
+    return false;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "ELOOP";
+  }
+}
+
+/**
+ * A chain of 33 links to `script`. The script's own walk refuses it with its one line and exit 1: `sh -c` runs the
+ * script's text with the chain as $0, so the walk runs on every system. Run through the chain itself, the script says
+ * the same where the system opens a chain that long (Linux allows 40 links); where the system allows fewer (macOS
+ * allows 32), sh cannot open the file at all, and its own one line names the chain, with exit 126.
+ */
+function tooMany(chain: string, script: string, arg: string, name: string): void {
+  const own = { code: 1, out: "", err: `${name}: too many links lead to ${chain}\n` };
+  expect(run(["/bin/sh", "-c", readFileSync(script, "utf8"), chain, arg])).toEqual(own);
+  const r = run(["/bin/sh", chain, arg]);
+  if (!systemRefuses(chain)) expect(r).toEqual(own);
+  else {
+    expect({ code: r.code, out: r.out }).toEqual({ code: 126, out: "" });
+    expect(r.err.trim().split("\n")).toHaveLength(1);
+    expect(r.err).toContain(chain);
+  }
 }
 
 /** Each way to reach a script through links: the path that is run. */
@@ -76,7 +105,7 @@ describe("bin/kitespan through links", () => {
   test("a chain of more than 32 links: one line, exit 1", () => {
     let to = KITESPAN;
     for (let i = 0; i < 33; i++) to = link(join(DIR, "long", String(i)), to);
-    expect(run(["/bin/sh", to, "--help"])).toEqual({ code: 1, out: "", err: `kitespan: too many links lead to ${to}\n` });
+    tooMany(to, KITESPAN, "--help", "kitespan");
   });
 });
 
@@ -92,6 +121,6 @@ describe("bin/update.sh through links", () => {
   test("a chain of more than 32 links: one line, exit 1", () => {
     let to = UPDATE;
     for (let i = 0; i < 33; i++) to = link(join(DIR, "long-update", String(i)), to);
-    expect(run(["/bin/sh", to, "--bogus"])).toEqual({ code: 1, out: "", err: `update.sh: too many links lead to ${to}\n` });
+    tooMany(to, UPDATE, "--bogus", "update.sh");
   });
 });
