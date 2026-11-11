@@ -261,7 +261,12 @@ describe("a step whose server is gone (row 108: a kill -9 during a step)", () =>
       await jobs.start();
       for (let i = 0; i < 100 && !release; i++) await Bun.sleep(5);
       const held = JSON.parse(readFileSync(join(state, UPDATE_LOCK), "utf8"));
-      expect(held).toMatchObject({ v: 1, pid: process.pid, step: { pid: p.pid, start: await systemProcs.startOf(p.pid) } });
+      expect(held).toMatchObject({ v: 1, pid: process.pid, step: { pid: p.pid } });
+      // The start that names the leader, as the lock's own check reads it: /proc's start ticks are exact, but without
+      // /proc (macOS) a start comes from ps's elapsed whole seconds, so two reads of one process may differ a little.
+      const now = await systemProcs.startOf(p.pid);
+      expect(now).not.toBeNull();
+      expect(systemProcs.sameStart(held.step.start, now!)).toBe(true);
       expect(held.step.until).toBeGreaterThan(Date.now() + 50_000);
       release();
       await jobs.idle();
@@ -314,8 +319,11 @@ describe("the update notice (row 108)", () => {
     let asks = 0;
     const logs = join(ROOT, `pf-again-${++n}`);
     mkdirSync(logs, { recursive: true });
-    // dev skips the stamp; /bin/true stands for `bun ... --check` and exits 0.
-    const line = await preflight({ root: ROOT, dist: join(ROOT, "none"), dev: true, argv: [], env: {}, git: { git: null, env: {} }, logs, bun: "/bin/true", updating: async () => ++asks > 1 });
+    // dev skips the stamp; the system's true stands for `bun ... --check` and exits 0 (it is /usr/bin/true on macOS,
+    // which has no /bin/true).
+    const yes = Bun.which("true", { PATH: "/usr/bin:/bin" });
+    expect(yes).not.toBeNull();
+    const line = await preflight({ root: ROOT, dist: join(ROOT, "none"), dev: true, argv: [], env: {}, git: { git: null, env: {} }, logs, bun: yes!, updating: async () => ++asks > 1 });
     expect(asks).toBe(2);
     expect(line).toBe(PREFLIGHT_LINES.updating);
   });
