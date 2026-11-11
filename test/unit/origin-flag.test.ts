@@ -15,6 +15,7 @@ import { createGate } from "../../server/gate/guards";
 import { successorArgv } from "../../server/update/successor";
 import { installFakeClaude } from "../fake-claude/install";
 import { pickTestPort } from "../click/ports";
+import { readInto } from "./read-into";
 
 const ROOT = resolve(import.meta.dir, "..", "..");
 const MAIN = join(ROOT, "server", "main.ts");
@@ -253,20 +254,8 @@ describe("a start with --origin", () => {
     writeFileSync(file, JSON.stringify({ v: 1, access: { origins: [BOTH, FILE] } }));
     chmodSync(file, 0o600);
     proc = Bun.spawn([process.execPath, "--no-env-file", MAIN, "--port", String(PORT), "--dist", dist, "--origin", BOX, "--origin", BOTH], { env, cwd: dir, stdout: "pipe", stderr: "pipe" });
-    const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
-    const deadline = Date.now() + 20_000;
-    while (!out.includes("Claude Code 2.1.322") && Date.now() < deadline) {
-      const r = await Promise.race([reader.read(), Bun.sleep(500).then(() => null)]);
-      if (r && !r.done) out += new TextDecoder().decode(r.value);
-      if (r?.done) break;
-    }
-    void (async () => {
-      for (;;) {
-        const r = await reader.read().catch(() => ({ done: true, value: undefined }));
-        if (r.done) break;
-        out += new TextDecoder().decode(r.value);
-      }
-    })();
+    // Read from the first byte to the end by one reader (test/unit/read-into.ts), so no chunk is lost.
+    await readInto(proc.stdout as ReadableStream<Uint8Array>, (s) => (out += s)).until(() => out.includes("Claude Code 2.1.322"), 20_000);
     const errText = new Response(proc.stderr as ReadableStream<Uint8Array>).text();
     const lines = [
       `kitespan listens on ${OWN}`,
