@@ -12,6 +12,7 @@ import type { Subprocess } from "bun";
 import { RELEASE_VERSION } from "../../shared/release";
 import { pickTestPort } from "../click/ports";
 import { installFakeClaude } from "../fake-claude/install";
+import { readInto } from "./read-into";
 
 const ROOT = resolve(import.meta.dir, "..", "..");
 const MAIN = join(ROOT, "server", "main.ts");
@@ -80,20 +81,9 @@ describe("a booted server says the same version", () => {
     mkdirSync(dist, { recursive: true });
     writeFileSync(join(dist, "index.html"), "<!doctype html><title>kitespan</title>");
     proc = Bun.spawn([process.execPath, "--no-env-file", MAIN, "--port", String(PORT), "--dist", dist], { env, cwd: dir, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
-    const reader = proc.stdout.getReader();
-    const deadline = Date.now() + 20_000;
-    while (!out.includes(`kitespan listens on ${OWN}`) && Date.now() < deadline) {
-      const r = await Promise.race([reader.read(), Bun.sleep(500).then(() => null)]);
-      if (r && !r.done) out += new TextDecoder().decode(r.value);
-      if (r?.done) break;
-    }
-    void (async () => {
-      for (;;) {
-        const r = await reader.read().catch(() => ({ done: true as const, value: undefined }));
-        if (r.done) break;
-      }
-    })();
-  });
+    // Read from the first byte to the end by one reader (test/unit/read-into.ts), so no chunk is lost.
+    await readInto(proc.stdout as ReadableStream<Uint8Array>, (s) => (out += s)).until(() => out.includes(`kitespan listens on ${OWN}`), 20_000);
+  }, 25_000); // its own wait is 20 s, past the hook's 5 s default
 
   afterAll(async () => {
     if (proc && proc.exitCode === null) {
@@ -102,7 +92,7 @@ describe("a booted server says the same version", () => {
       if (!done && proc.exitCode === null) proc.kill("SIGKILL");
       await proc.exited;
     }
-  });
+  }, 20_000); // its own wait is 15 s
 
   test("welcome.version and GET /api/settings server.version are package.json's", async () => {
     expect(out).toContain(`kitespan listens on ${OWN}`);
