@@ -1,0 +1,88 @@
+/* Open on phone (DESIGN-T1 2.5; dialogs/OpenOnPhone.tsx imports this sheet, as search.css and side.css are imported by
+   their components). The code is black on white in every look and theme, its quiet zone inside the tile, so a phone's
+   camera reads it on a dark page too, and forced colours leave it alone. The link under it is page text: selectable,
+   in mono, and it wraps wherever it must, so a long origin never widens the dialog. */
+.dialog:has(> .scr-dlg.oop) {
+  width: min(360px, calc(100vw - 32px));
+}
+.oop {
+  display: grid;
+  justify-items: center;
+  gap: var(--s3);
+}
+/* The tile keeps its 216 px while the address is read, so nothing moves when the code arrives (ui/qr.ts QR_TILE_PX);
+   the code inside it is drawn at a whole number of pixels a module. */
+.oop-tile {
+  display: grid;
+  place-items: center;
+  width: 216px;
+  height: 216px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px var(--hairline);
+  forced-color-adjust: none;
+}
+.oop-tile svg {
+  display: block;
+}
+.oop-tile path {
+  fill: #000000;
+}
+.oop .oop-link {
+  max-width: 100%;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.45;
+  text-align: center;
+  overflow-wrap: anywhere;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.oop .oop-line {
+  justify-self: start;
+  margin: 0;
+  color: var(--text);
+}
+.oop .oop-hint {
+  margin: 0;
+  color: var(--danger);
+}
+.oop .dialog-actions {
+  justify-self: stretch;
+  margin-top: var(--s2);
+}
+/* Copy link holds its three words in one cell and shows one, so it keeps the width of the longest (ui/Copy.tsx's
+   states: Copied, then the word again; Copy failed with the hint line). */
+.btn.oop-copy {
+  display: inline-grid;
+}
+.oop-copy > span {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.oop-copy > span[data-on] {
+  visibility: visible;
+}
+/* A phone on its side (the viewport under 480 px tall, T-32): the sheet holds about 335 px, and the tile, the link and
+   Copy link under one another need 449. The tile stands at the left and the link and Copy link at its right, so the
+   code keeps its size and the whole sheet shows with no scroll. */
+@media (max-height: 480px) {
+  .sheet .oop {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    column-gap: var(--s5);
+  }
+  .sheet .oop > .oop-tile {
+    grid-row: 1 / span 3;
+  }
+  .sheet .oop .oop-link {
+    align-self: end;
+    text-align: left;
+  }
+  .sheet .oop .dialog-actions {
+    align-self: start;
+  }
+}

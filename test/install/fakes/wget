@@ -1,0 +1,21 @@
+#!/bin/sh
+# A fake wget for install.sh's tests (DESIGN-I1 2.15): it never touches the network. It appends its arguments, as one
+# line, to $FAKE_LOG, and serves a URL under $FAKE_RELEASES/ from the same path under $FAKE_SERVE/; a missing file is
+# exit 8 (wget's "the server issued an error response").
+printf 'wget %s\n' "$*" >>"$FAKE_LOG"
+out=""
+url=""
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -O) out=$2; shift ;;
+    -*) ;;
+    *) url=$1 ;;
+  esac
+  shift
+done
+case $url in
+  "$FAKE_RELEASES"/*) file=$FAKE_SERVE/${url#"$FAKE_RELEASES"/} ;;
+  *) exit 4 ;;
+esac
+[ -f "$file" ] || exit 8
+cp "$file" "$out"

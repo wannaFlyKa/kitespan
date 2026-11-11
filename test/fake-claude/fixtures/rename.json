@@ -1,0 +1,46 @@
+{
+  "_about": "A /rename typed in the chat, as Claude Code 2.1.311 sends it to an SDK host (the live rename probe): a local command, no model turn. In this order: system/session_title_changed with the new name, the turn's system/init, the headless twin of the command's own output (an assistant message with local_command_source, never a reply), and the result. Any other message gets the default reply.",
+  "turnsByText": {
+    "/rename Probe title 42": {
+      "init": false,
+      "steps": [
+        { "emit": { "type": "system", "subtype": "session_title_changed", "title": "Probe title 42" } },
+        {
+          "emit": {
+            "type": "system",
+            "subtype": "init",
+            "session_id": "$SESSION",
+            "model": "$MODEL",
+            "permissionMode": "default",
+            "claude_code_version": "2.1.311",
+            "tools": [],
+            "mcp_servers": [],
+            "slash_commands": ["rename"],
+            "apiKeySource": "none",
+            "output_style": "default",
+            "skills": [],
+            "plugins": []
+          }
+        },
+        {
+          "emit": {
+            "type": "assistant",
+            "parent_tool_use_id": null,
+            "local_command_source": "<local-command-stdout>Session renamed to: Probe title 42</local-command-stdout>",
+            "message": {
+              "id": "local-command-rename",
+              "type": "message",
+              "role": "assistant",
+              "model": "<synthetic>",
+              "content": [{ "type": "text", "text": "Session renamed to: Probe title 42" }],
+              "stop_reason": null,
+              "stop_sequence": null,
+              "usage": { "input_tokens": 0, "output_tokens": 0 }
+            }
+          }
+        },
+        { "emit": { "type": "result", "subtype": "success", "result": "", "num_turns": 0, "duration_api_ms": 0 } }
+      ]
+    }
+  }
+}

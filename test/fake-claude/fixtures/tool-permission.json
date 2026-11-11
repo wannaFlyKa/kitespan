@@ -1,0 +1,45 @@
+{
+  "_about": "A tool turn with a permission card: Claude calls Bash, the CLI asks can_use_tool, and the turn goes on by the answer.",
+  "turns": [
+    {
+      "steps": [
+        { "say": { "id": "msg_tool_1", "text": "I will list the files in this folder.", "tools": [{ "id": "toolu_fake_bash_1", "name": "Bash", "input": { "command": "ls", "description": "List the files" } }] } },
+        {
+          "ask": {
+            "subtype": "can_use_tool",
+            "tool_name": "Bash",
+            "input": { "command": "ls", "description": "List the files" },
+            "tool_use_id": "toolu_fake_bash_1",
+            "title": "Claude wants to run ls",
+            "display_name": "Run a command",
+            "description": "List the files",
+            "decision_reason": "This command needs your approval",
+            "default_to_no": true,
+            "permission_suggestions": [{ "type": "addRules", "rules": [{ "toolName": "Bash", "ruleContent": "ls" }], "behavior": "allow", "destination": "localSettings" }]
+          },
+          "then": {
+            "allow": [
+              { "emit": { "type": "tool_progress", "tool_use_id": "toolu_fake_bash_1", "tool_name": "Bash", "parent_tool_use_id": null, "elapsed_time_seconds": 1 } },
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_bash_1", "content": "notes.txt\nplan.md", "is_error": false }] }, "parent_tool_use_id": null, "tool_use_result": { "stdout": "notes.txt\nplan.md", "stderr": "", "interrupted": false } } },
+              { "say": { "id": "msg_tool_2", "text": "There are two files: notes.txt and plan.md." } },
+              { "emit": { "type": "result", "subtype": "success", "result": "There are two files: notes.txt and plan.md.", "num_turns": 2 } }
+            ],
+            "deny": [
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_bash_1", "content": "The user denied this tool use.", "is_error": true }] }, "parent_tool_use_id": null } },
+              { "say": { "id": "msg_tool_3", "text": "Understood, I will not run it." } },
+              { "emit": { "type": "result", "subtype": "success", "result": "Understood, I will not run it.", "num_turns": 2 } }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "steps": [
+        { "say": { "id": "msg_tool_4", "text": "I will read the notes.", "tools": [{ "id": "toolu_fake_read_1", "name": "Read", "input": { "file_path": "notes.txt" } }] } },
+        { "emit": { "type": "system", "subtype": "permission_denied", "tool_name": "Read", "tool_use_id": "toolu_fake_read_1", "decision_reason_type": "classifier", "decision_reason": "Denied by auto mode", "message": "Permission to use Read has been denied." } },
+        { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_read_1", "content": "Permission to use Read has been denied.", "is_error": true }] }, "parent_tool_use_id": null } },
+        { "emit": { "type": "result", "subtype": "success", "result": "", "num_turns": 2 } }
+      ]
+    }
+  ]
+}

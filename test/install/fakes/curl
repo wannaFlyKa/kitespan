@@ -1,0 +1,31 @@
+#!/bin/sh
+# A fake curl for install.sh's tests (DESIGN-I1 2.15): it never touches the network. It appends its arguments, as one
+# line, to $FAKE_LOG, and serves a URL under $FAKE_RELEASES/ from the same path under $FAKE_SERVE/. A missing file is
+# exit 22 (curl -f's HTTP error); a file larger than --max-filesize is exit 63, with nothing written; the file named by
+# $FAKE_PARTIAL is written half and is exit 18 (a partial transfer).
+printf 'curl %s\n' "$*" >>"$FAKE_LOG"
+out=""
+max=""
+url=""
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -o) out=$2; shift ;;
+    --max-filesize) max=$2; shift ;;
+    --proto | --retry | --connect-timeout | --speed-limit | --speed-time) shift ;;
+    -*) ;;
+    *) url=$1 ;;
+  esac
+  shift
+done
+case $url in
+  "$FAKE_RELEASES"/*) file=$FAKE_SERVE/${url#"$FAKE_RELEASES"/} ;;
+  *) exit 6 ;;
+esac
+[ -f "$file" ] || exit 22
+size=$(wc -c <"$file" | tr -d ' ')
+if [ -n "$max" ] && [ "$size" -gt "$max" ]; then exit 63; fi
+if [ "${FAKE_PARTIAL-}" = "${file##*/}" ]; then
+  dd if="$file" of="$out" bs=1 count=$((size / 2)) 2>/dev/null
+  exit 18
+fi
+cp "$file" "$out"

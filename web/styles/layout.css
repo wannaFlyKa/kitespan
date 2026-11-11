@@ -1,0 +1,654 @@
+/* The shell grids (DESIGN.md 6.1, 6.2, 7.2, 7.3) and the shell's chrome (prototype design plans v2 and v3). Owned by
+   the lead. Shell.tsx sets grid-template-columns from the layout rules (layout/size.ts) with the tokens --sidebar-w,
+   --panel-w, --pane-w and --pane-bar-w, so a column is there only when its part is. Separators are hairlines. Only
+   tokens here: the look the user picks restyles the chrome too. */
+/* The page's height (DESIGN 7.8): 100%, then 100svh where the browser has it (an older WebKit has neither viewport
+   unit), then 100dvh, which follows the browser's own bars. */
+.shell {
+  position: relative;
+  height: 100%;
+  height: 100svh;
+  height: 100dvh;
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+}
+.shell-phone {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+/* The page while the server has not answered (App.tsx BootWait): the connection line alone, quiet, in the middle. */
+.boot-wait {
+  height: 100%;
+  height: 100svh;
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  background: var(--bg);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.main-col {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+.main {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.side-col,
+.side-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border-left: 1px solid var(--hairline);
+  background: var(--bg);
+}
+
+/* A laptop whose chat column would keep less than 520 px: the pane opens over the chat, beside the pane bar. */
+.side-pane.side-over {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  bottom: 0;
+  right: var(--pane-bar-w);
+  width: min(var(--panel-w), calc(100% - var(--pane-bar-w)));
+  box-shadow: var(--shadow-3);
+  animation: shell-over-in var(--t-reveal) var(--ease);
+}
+@keyframes shell-over-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+/* T-15: the large tablet's pane over the chat ends above the composer's dock at rest (Shell.tsx sets its bottom), with
+   a foot of its own, so it reads as a layer over the conversation; the dock draws over that foot when it is taller
+   than at rest (more lines, a row of keys, a card in its place), as D44's riding composer does. */
+.side-pane.side-over.side-over-above {
+  border-bottom: 1px solid var(--hairline);
+  border-bottom-left-radius: var(--r-card);
+}
+.shell[data-over="above"] :is(.cmp-dock, .chat-dock:not(.is-riding)) {
+  position: relative;
+  z-index: 31;
+}
+/* T-17: on medium touch where the docked pane would be under 320 px, a changes view opens over the chat at the whole
+   width beside the pane bar; the pane bar stays, and the view's own Close changes closes it. */
+.shell-medium > .side-pane.side-over.chg-over-chat {
+  left: 0;
+  width: auto;
+  border-left: 0;
+  box-shadow: none;
+}
+
+/* The pane bar (7.3): a slim bar on the right edge; on touch each button shows its name under the icon. */
+.pane-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s2) 0;
+  border-left: 1px solid var(--hairline);
+  background: var(--panel);
+}
+.pane-bar-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-btn);
+  color: var(--dim);
+  text-decoration: none;
+  transition: background-color var(--t-reveal) var(--ease), color var(--t-reveal) var(--ease);
+}
+.pane-bar-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.pane-bar-btn:active {
+  background: var(--fill-strong);
+}
+.pane-bar-btn.on {
+  background: var(--selected);
+  color: var(--accent-ui);
+}
+.touch .pane-bar-btn {
+  width: var(--touch);
+  height: var(--touch);
+}
+.touch .pane-bar-btn:hover {
+  background: transparent;
+  color: var(--dim);
+}
+.touch .pane-bar-btn.on {
+  background: var(--selected);
+  color: var(--accent-ui);
+}
+.pane-bar.with-names .pane-bar-btn {
+  align-content: center;
+  gap: 2px;
+  width: calc(100% - var(--s2));
+  height: auto;
+  min-height: 52px;
+  padding: var(--s1) 0;
+  border-radius: var(--r-field);
+}
+.pane-bar-name {
+  /* The bar is 56 px wide: the names keep the meta size, and do not grow past it with a larger text size. A name of
+     two words (R124's Side chat) takes two lines, centred under its icon as the one-word names are. */
+  font-size: min(var(--fs-meta), 12px);
+  line-height: 1.2;
+  text-align: center;
+}
+/* The tablet's right column runs to the top of the screen, beside the title bar, and on a large iPad (1366x1024 touch,
+   which has the laptop's layout, size.ts) every column does: in a home-screen app the status bar lies over them
+   (FIX-U6), so the pane bar and each docked pane's or column's head start below the top safe area, level with the
+   title bar's own row (0 in a browser tab). A laptop's pointer has no safe area, so its layout keeps none. */
+.shell-medium > .pane-bar,
+.touch .shell-laptop > .pane-bar {
+  padding-top: calc(var(--s2) + env(safe-area-inset-top));
+}
+.shell-medium .side-pane .side-pane-head,
+.shell-medium .side-pane .term-head,
+.touch .shell-laptop .side-pane .side-pane-head,
+.touch .shell-laptop .side-pane .term-head,
+.touch .shell-laptop .side-col .term-head {
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+}
+/* The search pane's head keeps its own --s2 over the field (search.css), with the inset added to it. */
+.shell-medium .side-pane .srch-head,
+.touch .shell-laptop .side-pane .srch-head,
+.touch .shell-laptop .side-col .srch-head {
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: calc(var(--s2) + env(safe-area-inset-top));
+}
+/* The large iPad's title bar grows by the inset as the tablet's does (screens.css .scr-bar-touch); its sidebar and its
+   drawer start below it, and so do the side panel's cards in their column (which has no head of its own: the inset
+   is added to the column's own top padding, panels.css). Their materials and backgrounds still run to the top, under
+   the status bar. */
+.touch .shell-laptop > .main-col > .scr-bar {
+  height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+}
+.touch .shell-laptop > .sidebar,
+.touch .shell-drawer {
+  padding-top: env(safe-area-inset-top);
+}
+.touch .shell-laptop .side-mode-column {
+  padding-top: calc(var(--s3) + env(safe-area-inset-top));
+}
+
+/* A laptop narrower than 1,000 px: /chats opens the sidebar as a drawer over the page (DESIGN.md 6.1, 5.3). */
+.shell-drawer {
+  position: fixed;
+  z-index: 51;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 86vw);
+  background: var(--panel);
+  box-shadow: var(--shadow-3);
+  outline: none;
+  animation: shell-drawer-in var(--t-sheet) var(--ease-spring);
+}
+.shell-drawer > .sidebar {
+  flex: 1;
+  min-height: 0;
+  border-right: 0;
+  background: transparent;
+}
+@keyframes shell-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell-drawer,
+  .side-pane.side-over {
+    animation: fade-in 120ms linear;
+  }
+}
+
+.chat-screen {
+  position: relative; /* the drop overlay (base.css .drop-target) covers it */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.fallback-line {
+  margin: var(--s2) auto 0;
+  max-width: var(--measure);
+}
+.gone {
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+  max-width: var(--measure);
+  margin: var(--s6) auto;
+  padding: 0 var(--s4);
+}
+
+/* ---- The chrome (plans v2 and v3): the title bar (--header-h: the look's height on a laptop, 44 px on touch and the
+   phone), the sidebar, the drawers and the pane bar, separated by hairlines. */
+.shell > .sidebar {
+  border-right: 1px solid var(--hairline);
+  background: var(--panel);
+}
+.main-col > .topbar {
+  position: relative;
+  z-index: 5; /* over the conversation, so a tip that hangs from the bar (the rename field's) shows over it */
+  min-height: var(--header-h);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.shell-phone > .topbar {
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+
+/* The material on a laptop and a tablet (plan v2 rule 3, plan v3's --material-bg and --material-filter): the look's
+   tint with its backdrop-filter, drawn by a ::before layer behind the content, so the element itself stays no
+   containing block for fixed children and its scrolling list is not inside the filtered layer (WebKit). The glass
+   look's material is translucent and blurred; the other looks' --material-bg is opaque and their filter is none, so
+   the same rule paints a solid sidebar. Where backdrop-filter is not supported at all, these rules do not apply and
+   the opaque --panel and --bg above stay. The phone keeps an opaque header, and sheets stay opaque everywhere. The
+   medium drawer of the chat list (.scr-drawer, screens/ChatList.tsx) is the tablet's sidebar, so it takes the same
+   material; the title bar takes --material-bar, the look's tint of --bg. */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .shell > .sidebar,
+  .shell-drawer,
+  .pane-bar,
+  .main-col > .topbar,
+  body .scr-drawer {
+    isolation: isolate;
+    background: transparent;
+  }
+  .shell > .sidebar,
+  .pane-bar {
+    position: relative;
+  }
+  .shell > .sidebar::before,
+  .shell-drawer::before,
+  .pane-bar::before,
+  body .scr-drawer::before,
+  .main-col > .topbar::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: var(--material-bg);
+    -webkit-backdrop-filter: var(--material-filter);
+    backdrop-filter: var(--material-filter);
+    pointer-events: none;
+  }
+  .main-col > .topbar::before {
+    background: var(--material-bar);
+  }
+  /* T-6 (DESIGN 7.9: backdrop blur is not drawn reliably on touch, so sheets and headers are opaque): on touch every
+     bar is opaque in every look, the title bar in --bg as the phone's header is, the sidebar, the drawers and the pane
+     bar in --panel. The glass look keeps its material on a laptop, where it is the look's mark; the conversation still
+     scrolls under the title bar, unseen. */
+  .touch .shell > .sidebar::before,
+  .touch .shell-drawer::before,
+  .touch .pane-bar::before,
+  body.touch .scr-drawer::before,
+  .touch .main-col > .topbar::before {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--panel);
+  }
+  .touch .main-col > .topbar::before {
+    background: var(--bg);
+  }
+
+  /* The glass look's title bar is a material the conversation scrolls under, as in the Mac's Messages and Notes
+     (plan v3 section 6: the look is known by its materials). On a chat screen on a laptop and a tablet, the bar lies
+     over the top of the main column, and the conversation's scroller starts at the top with the bar's height as its
+     padding (and its scroll padding, so a message a link highlights is not hidden under the bar). A line above the
+     conversation (the 5.4 line) takes the bar's place at the top instead. The other looks' bars are opaque, so they
+     keep the bar above the scroller, and the phone keeps its opaque header. */
+  :root:not([data-look]) .main-col:has(> .main > .chat-screen),
+  :root[data-look="glass"] .main-col:has(> .main > .chat-screen) {
+    --under-bar: calc(var(--header-h) + env(safe-area-inset-top));
+    position: relative;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  :root:not([data-look]) .main-col:has(> .main > .chat-screen) > .topbar,
+  :root[data-look="glass"] .main-col:has(> .main > .chat-screen) > .topbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+  }
+  :root:not([data-look]) .main-col:has(> .main > .chat-screen) > .main,
+  :root[data-look="glass"] .main-col:has(> .main > .chat-screen) > .main {
+    grid-row: 1;
+  }
+  :is(:root:not([data-look]), :root[data-look="glass"]) .main-col > .main > .chat-screen > .chat-view:first-child > .chat-scroll-wrap:first-child > .chat-scroll {
+    padding-top: var(--under-bar);
+    scroll-padding-top: var(--under-bar);
+  }
+  :is(:root:not([data-look]), :root[data-look="glass"]) .main-col > .main > .chat-screen > .chat-gone:first-child,
+  :is(:root:not([data-look]), :root[data-look="glass"]) .main-col > .main > .chat-screen > .chat-view:first-child > .chat-gone:first-child {
+    padding-top: calc(var(--under-bar) + var(--s2));
+  }
+  /* The drop overlay (base.css .drop-target) keeps to the chat below the bar. */
+  :is(:root:not([data-look]), :root[data-look="glass"]) .main-col > .main > .chat-screen > .drop-target {
+    top: calc(var(--under-bar) + var(--s2));
+  }
+}
+
+/* While a card waits, the line under it that says how many dropped files the next message holds (ChatScreen): it is
+   the last row of the chat, so it keeps a gap above the bottom edge and its safe area. */
+.chat-screen > .chat-files-wait {
+  padding-bottom: max(var(--s3), env(safe-area-inset-bottom));
+}
+/* The line above the composer while a Take back waits for the command in the message box (ChatScreen). */
+.chat-screen > .chat-take-back-wait {
+  padding-bottom: var(--s2);
+}
+
+/* The title bar's Open in terminal while the Terminal pane is open (D38): marked as the pane bar marks its open
+   pane, and a click closes it. */
+.scr-bar-tools > .on,
+.touch .scr-bar-tools > .on {
+  background: var(--selected);
+  color: var(--accent-ui);
+}
+
+/* ---- Row 82: the panes' width handles (ui/PaneHandle.tsx) and the sidebar's Hide sidebar and Show sidebar. The two
+   width variables are registered as not inherited: the shell's own columns read them (Shell.tsx), nothing under the
+   shell does, so a drag's move restyles the shell and its handle only and never the transcript (an inherited variable
+   restyled every element on the page at each move: 13 to 22 ms a move on a long chat, FIX-W19f). Their initial values
+   are the defaults (panes.ts SIDEBAR_W, size.ts PANEL_W). */
+@property --sidebar-w {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 248px;
+}
+@property --side-w {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 320px;
+}
+/* A handle lies on its pane's inner edge, over the shell: Shell.tsx sets its left (the sidebar's) or right (the side
+   pane's) in px, and the drag moves it with the width. It is 8 px wide on a laptop, mostly on the side away from a
+   scroll bar (the chat list's and the chat's sit on the edge), and 20 px on touch, 12 px of it over the chat column's
+   padding and 8 px over the pane; on touch it starts under the title bar, so it never takes a tap meant for the title
+   bar's last button (the tablet's Session menu), and a grip on the edge shows it, since touch has no hover. Its
+   hairline lights in the focus colour while it drags and with the keyboard's focus, and darkens on hover. While a drag
+   runs (data-dragging on the handle) a layer of the handle's covers the window, so the cursor stays the resize cursor
+   and no hover lights under the pointer; the drag's pointerdown is cancelled, so no text is selected. */
+.pane-handle {
+  position: absolute;
+  z-index: 6; /* over the title bar (5), under a pane or a drawer over the chat */
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.pane-handle-start {
+  margin-left: -2px;
+}
+.pane-handle-end {
+  margin-right: -6px;
+}
+.pane-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 2px;
+  background: transparent;
+  transition: background-color var(--t-reveal) var(--ease);
+  pointer-events: none;
+}
+.pane-handle:hover::after {
+  background: var(--hairline-strong);
+}
+.pane-handle:focus-visible::after,
+.pane-handle[data-dragging]::after {
+  background: var(--ring);
+}
+.touch .pane-handle {
+  top: calc(var(--header-h) + env(safe-area-inset-top));
+  width: 20px;
+}
+.touch .pane-handle-start {
+  margin-left: -8px;
+}
+.touch .pane-handle-start::after {
+  left: 7px;
+}
+.touch .pane-handle-end {
+  margin-right: -8px;
+}
+.touch .pane-handle-end::after {
+  left: 11px;
+}
+.touch .pane-handle:hover::after {
+  background: transparent;
+}
+.touch .pane-handle:focus-visible::after,
+.touch .pane-handle[data-dragging]::after {
+  background: var(--ring);
+}
+/* The touch grip: a 4 x 32 px pill on the edge's line, in the middle of the handle (not a stripe: owner row 29). */
+.pane-grip {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  width: 4px;
+  height: 32px;
+  margin: -16px 0 0 -2px;
+  border-radius: var(--r-pill);
+  background: var(--hairline-strong);
+  pointer-events: none;
+  transition: background-color var(--t-reveal) var(--ease);
+}
+.pane-handle-end .pane-grip {
+  left: 12px;
+}
+.pane-handle:focus-visible .pane-grip,
+.pane-handle[data-dragging] .pane-grip {
+  background: var(--ring);
+}
+.pane-handle[data-dragging]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  cursor: col-resize;
+}
+/* Row 93: while a pane slides (layout/slide.ts) its handle, which waits at the pane's place, does not show. */
+.shell[data-slide~="sidebar"] > .pane-handle-start,
+.shell[data-slide~="side"] > .pane-handle-end {
+  visibility: hidden;
+}
+
+/* Hide sidebar at the start of the sidebar's head, on the title bar's line, before "kitespan"; Show sidebar takes its
+   place at the start of the title bar while the sidebar is hidden, as the chats button does under 1,000 px. On touch
+   Hide sidebar is a named tool of the head's row instead (ChatListBody, screens.css), and the brand's line starts at
+   the head's own padding. */
+.shell > .sidebar {
+  position: relative;
+}
+.sidebar-hide {
+  position: absolute;
+  z-index: 1;
+  top: calc((var(--header-h) - 28px) / 2);
+  left: var(--s2);
+}
+.shell > .sidebar .scr-list-head {
+  padding-left: calc(var(--s2) + 28px + var(--s2));
+}
+.touch .sidebar-hide {
+  position: static;
+}
+.touch .shell > .sidebar .scr-list-head {
+  padding-left: var(--s4);
+}
+.scr-bar:not(.scr-bar-touch) > .scr-bar-sidebar {
+  flex: none;
+  margin-left: calc(-1 * var(--s2));
+}
+
+/* ---- U4 (DESIGN-U4 5, 7, 8, 12): two views in the side panel, one above the other (Shell.tsx, layout/split.ts). The
+   upper half's height is one variable on the column, registered as not inherited, so a drag of the divider restyles
+   the column and the divider only, and lays out the two halves; the chat keeps its width, so the transcript never
+   wraps again. Tokens only: the seam is the lower half's hairline, the divider's line the look's hairline on hover and
+   its focus colour while it drags and with the keyboard's focus, and on touch a grip on the seam, the width handles'
+   grip turned. No motion of its own: a half comes and goes at once, and the heights never animate. */
+@property --split-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+/* One view in the docked side: its half is no box of its own, so the view lays out as before. */
+.split-half {
+  display: contents;
+}
+/* Two views: two rows, the upper half's height from --split-top (Shell.tsx), the lower one the rest. Each half scrolls
+   inside itself; a side panel view (Details, Files) scrolls in its half as it scrolls in the column alone. */
+.side-col.split,
+.side-pane.split {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+}
+.split > .split-half {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.split > .split-half:is([data-kind="details"], [data-kind="files"]) {
+  display: block;
+  overflow: auto;
+  background: var(--group-bg);
+}
+.split > .split-lower {
+  border-top: 1px solid var(--hairline);
+}
+/* On touch the divider takes 16 px above the seam (below): a Details or Files upper half ends with that much room, so
+   its last control (Context's Compact) lies clear of the divider's grab room. */
+.touch .split > .split-upper:is([data-kind="details"], [data-kind="files"]) {
+  padding-bottom: 16px;
+}
+/* A folded half (a short column, the tablet's keyboard): its head alone shows. */
+.split > .split-half.is-folded {
+  overflow: hidden;
+}
+/* A folded Details or Files half has no head of its own (a laptop; the tablet's cards, Uploads and a file): one row
+   with the view's name, as the side chat's title reads, and no link (Shell.tsx). It fills the folded row; the seam
+   is the lower half's own line. */
+.split-fold-head {
+  height: calc(var(--header-h) + 1px);
+  padding: 0 var(--s4);
+  overflow: hidden;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+  line-height: var(--header-h);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* The lower half's head is not at the top of the screen: no safe-area inset above it (a home-screen app). */
+.shell :is(.side-col, .side-pane).split > .split-lower :is(.side-pane-head, .term-head, .sc-head) {
+  min-height: var(--header-h);
+  padding-top: 0;
+}
+.shell :is(.side-col, .side-pane).split > .split-lower .srch-head {
+  min-height: var(--header-h);
+  padding-top: var(--s2);
+}
+.touch .shell-laptop .split > .split-lower .side-mode-column {
+  padding-top: var(--s3);
+}
+/* A tablet half's side panel view with no head (the cards, Uploads, a file: SidePanel.tsx side-no-head). The upper
+   half runs to the top of the screen, so in a home-screen app the top safe area, which the head held, is its own top
+   padding (0 in a browser tab). */
+.shell-medium .side-pane.split > .split-upper > .side-no-head {
+  padding-top: env(safe-area-inset-top);
+}
+/* The divider lies on the seam, over the halves: 8 px of grab room on a laptop, 4 px above the seam and 4 below; on
+   touch 20 px, 16 above and 4 below, so it never takes a tap meant for the lower half's head (the Terminal's Close and
+   Copy the command). Shell.tsx sets its top in px, and the drag moves it with --split-top. While it drags, a layer of
+   its own covers the window, so the cursor stays the resize cursor and no hover lights under the pointer. */
+.split-divider {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  left: 0;
+  height: 8px;
+  cursor: row-resize;
+  touch-action: none;
+  outline: none;
+}
+.split-divider::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: transparent;
+  pointer-events: none;
+}
+.split-divider:hover::after {
+  background: var(--hairline-strong);
+}
+.split-divider:focus-visible::after,
+.split-divider[data-dragging]::after {
+  background: var(--ring);
+}
+.split-divider[data-dragging]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  cursor: row-resize;
+}
+.touch .split-divider {
+  height: 20px;
+}
+.touch .split-divider::after {
+  top: 15px;
+}
+.touch .split-divider:hover::after {
+  background: transparent;
+}
+.touch .split-divider:focus-visible::after,
+.touch .split-divider[data-dragging]::after {
+  background: var(--ring);
+}
+/* The touch grip: a 32 x 4 px pill on the seam, in the middle of the column. */
+.split-grip {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 32px;
+  height: 4px;
+  margin-left: -16px;
+  border-radius: var(--r-pill);
+  background: var(--hairline-strong);
+  pointer-events: none;
+}
+.split-divider:focus-visible .split-grip,
+.split-divider[data-dragging] .split-grip {
+  background: var(--ring);
+}

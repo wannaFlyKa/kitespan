@@ -1,0 +1,34 @@
+#!/bin/sh
+# A fake bun for install.sh's tests (DESIGN-I1 2.15). `--version` prints $FAKE_BUN_VERSION (1.3.14 when it is not set),
+# or exits $FAKE_BUN_VERSION_EXIT. `install --cwd <folder> ...` and `run --cwd <folder> build` append their arguments,
+# as one line, to $FAKE_LOG; then install sleeps $FAKE_BUN_INSTALL_SLEEP seconds, exits $FAKE_BUN_INSTALL_EXIT, or makes
+# <folder>/node_modules; and the build exits $FAKE_BUN_BUILD_EXIT, writes nothing when $FAKE_BUN_BUILD_NOPAGE is set, or
+# writes <folder>/dist/web/index.html and build.json.
+if [ "${1-}" = --version ]; then
+  [ -z "${FAKE_BUN_VERSION_EXIT-}" ] || exit "$FAKE_BUN_VERSION_EXIT"
+  printf '%s\n' "${FAKE_BUN_VERSION-1.3.14}"
+  exit 0
+fi
+printf 'bun %s\n' "$*" >>"$FAKE_LOG"
+what=$1
+dir=""
+while [ "$#" -gt 0 ]; do
+  [ "$1" = --cwd ] && dir=$2
+  shift
+done
+[ -n "$dir" ] || exit 64
+case $what in
+  install)
+    [ -z "${FAKE_BUN_INSTALL_SLEEP-}" ] || sleep "$FAKE_BUN_INSTALL_SLEEP"
+    [ -z "${FAKE_BUN_INSTALL_EXIT-}" ] || exit "$FAKE_BUN_INSTALL_EXIT"
+    mkdir -p "$dir/node_modules"
+    ;;
+  run)
+    [ -z "${FAKE_BUN_BUILD_EXIT-}" ] || exit "$FAKE_BUN_BUILD_EXIT"
+    [ -z "${FAKE_BUN_BUILD_NOPAGE-}" ] || exit 0
+    mkdir -p "$dir/dist/web"
+    printf '<!doctype html><title>kitespan</title>\n' >"$dir/dist/web/index.html"
+    printf '{"v":1,"head":null}\n' >"$dir/dist/web/build.json"
+    ;;
+  *) exit 64 ;;
+esac

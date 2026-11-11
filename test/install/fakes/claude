@@ -1,0 +1,6 @@
+#!/bin/sh
+# A fake Claude Code for install.sh's tests: `--version` prints $FAKE_CLAUDE_VERSION, or becomes a sleep of
+# $FAKE_CLAUDE_SLEEP seconds; anything else is refused. It never runs a model.
+[ "${1-}" = --version ] || exit 64
+[ -z "${FAKE_CLAUDE_SLEEP-}" ] || exec sleep "$FAKE_CLAUDE_SLEEP"
+printf '%s\n' "${FAKE_CLAUDE_VERSION-}"

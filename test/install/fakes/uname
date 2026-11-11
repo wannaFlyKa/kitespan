@@ -1,0 +1,3 @@
+#!/bin/sh
+# A fake uname for install.sh's tests: the system's name is $FAKE_UNAME (Linux when it is not set).
+printf '%s\n' "${FAKE_UNAME-Linux}"

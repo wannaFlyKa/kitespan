@@ -1,0 +1,1695 @@
+/* The panels area (agent U4): the side panel, its detail views and the uploads (.side-), the download page (.file-),
+   Settings and the Look picker (.set-, .look-) and the later-milestone screens (.later-). Only the tokens of
+   tokens.css and the shared classes of base.css (.group, .seg, .switch, .btn, .field), so each of the four looks
+   restyles this area in light and dark (prototype design plan v3). Layout widths and 1 px hairlines are the only
+   numbers. */
+
+/* A link drawn as a button keeps the button's ink. */
+.side-panel a.btn,
+.side-page a.btn,
+.set-page a.btn,
+.later a.btn {
+  color: var(--text);
+  text-decoration: none;
+}
+.side-panel a.btn.primary,
+.side-page a.btn.primary,
+.set-page a.btn.primary,
+.later a.btn.primary {
+  color: var(--accent-ink);
+}
+
+/* ---------- The side panel (DESIGN.md 6.7): grouped lists on the look's grouped background ---------- */
+.side-panel {
+  container: side / inline-size; /* the narrow pane's rules below ask its width */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
+  background: var(--group-bg);
+}
+.side-mode-column {
+  padding: var(--s3) var(--s3) var(--s5);
+}
+/* The one header row of a view below the cards (D51): "< Context" over the view in the column. */
+.side-mode-column > .side-back {
+  margin: 0 0 var(--s3) calc(-1 * var(--s1));
+}
+.side-mode-pane > .side-cards,
+.side-mode-pane > .side-detail {
+  padding: var(--s3) var(--s3) var(--s5);
+}
+/* The pane's head: "< Context" at the left (none on the cards), Close at the right; no title beside the lit pane bar
+   button (M34). */
+.side-pane-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: var(--header-h);
+  padding: 0 var(--s2);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--group-bg);
+}
+.side-pane-head > .side-back {
+  align-self: center; /* U4: in the middle of the head, not at its top (.side-back's own flex-start) */
+  min-width: 0;
+}
+/* The phone's Details sheet: the grouped background behind the groups, as an iOS grouped sheet; a view below the
+   cards puts "< Context" in the title row, at the left of Done, with no second title row (M27). */
+.sheet:has(> .side-mode-sheet),
+.sheet:has(> .side-mode-sheet) > .sheet-head {
+  background: var(--group-bg);
+}
+.side-mode-sheet {
+  background: transparent;
+}
+.side-sheet-back {
+  grid-column: 1 / 3;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+.side-sheet-back > .side-back {
+  max-width: 100%;
+}
+
+.side-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.side-card {
+  min-width: 0;
+}
+.side-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1);
+  min-height: var(--row-h);
+  margin-bottom: var(--s1);
+  padding-left: var(--s3);
+}
+.side-card-title {
+  border-radius: var(--r-row);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
+a.side-card-title:hover {
+  color: var(--accent-text);
+}
+/* The fold chevron is quiet at rest whether open or not (base.css fills an expanded icon button). */
+.icon-btn.side-fold[aria-expanded] {
+  background: transparent;
+  color: var(--dim);
+}
+.icon-btn.side-fold[aria-expanded]:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.side-fold svg {
+  transition: transform var(--t-reveal) var(--ease);
+}
+.side-fold[aria-expanded="false"] svg {
+  transform: rotate(-90deg);
+}
+.side-group {
+  min-width: 0;
+}
+.side-group .group-row {
+  min-height: var(--row-h);
+}
+.side-glyph {
+  flex: none;
+  color: var(--dim);
+}
+.side-row-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-dim {
+  color: var(--dim);
+}
+.side-num {
+  font-variant-numeric: tabular-nums;
+}
+.side-grow {
+  flex: 1;
+}
+/* The label and its value share a line while both fit whole; else the value moves whole to its own line under the
+   label (a narrow pane, a large text size), as an iOS row does at a large text size. Only a value wider than the
+   whole row ends with an ellipsis. */
+.side-link-body {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px var(--s3);
+  min-width: 0;
+}
+.side-link-label {
+  flex: 1 0 auto;
+  white-space: nowrap;
+}
+.group-value.side-link-value {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--s2);
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.side-link-words {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The Connectors card's problem count (D51): failed in --danger, needs sign-in in --warn. */
+.side-bad {
+  color: var(--danger);
+}
+.side-warn {
+  color: var(--warn);
+}
+.side-meter {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+  overflow: hidden;
+}
+.side-meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 4px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+/* The connector dots: --ok when connected, --danger failed, --warn when it needs sign-in, a ring while pending. */
+.side-sdot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--faint);
+}
+.side-sdot-connected {
+  background: var(--ok);
+}
+.side-sdot-failed {
+  background: var(--danger);
+}
+.side-sdot-needs-auth {
+  background: var(--warn);
+}
+.side-sdot-pending {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--faint);
+}
+/* A path on one line (D51): the folder part dimmed before the name; the folder part gives way first in a narrow row,
+   so the name stays readable. The folder part is cut at its start, so the slash before the name stays
+   ("...http/retry.ts", never "s...retry.ts"), and when not even 4em of it fits beside the name it goes whole to a
+   second line under the name (G-26: that line shows; a row that fits stays one line). The line runs right to left
+   with the name first (order), so the name always keeps the first line; the DOM order (folder, then name) stays for
+   reading and copying, and the line packs to the left as before. A name wider than the row wraps, never cut: at its
+   own punctuation first (PathLine's breakable, T-31: before "." and "_", after "/"; a hyphen breaks after itself),
+   and anywhere only inside a part that is wider than the whole row. */
+.side-pl {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.side-pl-dir {
+  flex: 1 1 4em;
+  min-width: 0;
+  max-width: max-content;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.side-pl-name {
+  order: -1;
+  flex: none;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+/* An Outputs row: the file opens its download page; the button beside it downloads it. */
+.side-out {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-right: var(--s1);
+}
+.side-out-link {
+  flex: 1;
+  min-width: 0;
+}
+.side-dl {
+  color: var(--dim);
+}
+.group-row.side-more {
+  color: var(--accent-ui);
+}
+.side-empty {
+  margin: 0;
+  padding: 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-prose);
+}
+/* A download that did not pass its probe: the line under its row. */
+.side-row-line {
+  margin: 0;
+  padding: 0 var(--s3) var(--s2) calc(var(--s3) + 16px + var(--s3));
+  color: var(--warn);
+  font-size: var(--fs-small);
+}
+
+/* A detail view: the card's groups. */
+.side-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+  animation: side-in var(--t-reveal) var(--ease);
+}
+@keyframes side-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-detail {
+    animation: fade-in var(--t-reveal) linear;
+  }
+}
+.side-back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 2px;
+  min-height: var(--row-h);
+  max-width: 100%;
+  padding: 0 var(--s2) 0 var(--s1);
+  border-radius: var(--r-row);
+  color: var(--accent-ui);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
+.side-back span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-back svg {
+  flex: none;
+}
+.side-back:hover {
+  background: var(--hover);
+}
+.side-foot {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-prose);
+}
+.side-foot a {
+  color: var(--accent-text);
+}
+.side-foot-line {
+  display: block;
+  margin-bottom: var(--s1);
+  color: var(--warn);
+}
+/* On touch the foot's link (the Uploads list's Change the folder) is 44 px tall. */
+.touch .side-foot a.side-foot-link {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: var(--touch);
+}
+.side-notice {
+  margin: 0;
+}
+.side-path {
+  overflow-wrap: anywhere;
+  font-size: var(--fs-small);
+}
+/* One name of a path (PathText): it moves to the next line whole, and breaks only when wider than the column. */
+.side-path-part {
+  display: inline-block;
+  max-width: 100%;
+}
+.side-copy {
+  align-self: flex-start;
+  margin-left: -7px;
+}
+.side-copy .copy-btn {
+  color: var(--accent-ui);
+}
+.side-copy-icon .copy-btn {
+  color: var(--dim);
+}
+
+/* A fact: its name over its value (Environment). */
+.group-row.side-fact {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+}
+.side-fact-label {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.side-fact-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Context detail: the percent and the stacked bar, then one row per category. */
+.side-ctx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s3);
+}
+.side-big {
+  margin: 0;
+  font-size: var(--fs-large);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-large);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.side-big-sub {
+  margin-left: var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+}
+.side-stack {
+  display: flex;
+  height: 8px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--fill);
+}
+.side-stack i {
+  display: block;
+  height: 100%;
+}
+.side-kv-k {
+  flex: 1;
+  color: var(--text);
+}
+.side-sw {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: calc(var(--r-row) / 3);
+}
+.side-sw-free {
+  background: var(--fill-strong);
+}
+.side-kv-v {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+.side-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+}
+
+/* Connectors detail: one row per server, its dot, name and status, and Reconnect. */
+.group-row.side-conn {
+  gap: var(--s3);
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+}
+.side-conn[data-marked] {
+  background: var(--accent-wash);
+}
+.side-conn-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-conn[data-status="failed"] .side-conn-status {
+  color: var(--danger);
+}
+.side-conn[data-status="needs-auth"] .side-conn-status {
+  color: var(--warn);
+}
+.side-conn-error {
+  overflow-wrap: anywhere;
+}
+.btn.side-reconnect {
+  flex: none;
+  padding: 0 var(--s2);
+  font-size: var(--fs-small);
+}
+
+/* Outputs detail: one line per file, then Copy path and Download. */
+.group-row.side-file {
+  gap: var(--s3);
+}
+.side-file-text {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--row-h);
+  border-radius: var(--r-row);
+  color: var(--text);
+  text-decoration: none;
+}
+a.side-file-text:hover .side-pl-name {
+  color: var(--accent-text);
+}
+.side-file-tools {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin: -4px -4px -4px auto;
+}
+/* A row's words and its button (Connectors): the button stays at the row's end, and moves under the words when the
+   words would keep less than about seven letters beside it. */
+.side-wrap {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  min-width: 0;
+}
+.side-wrap > .side-wrap-main {
+  flex: 1 1 7em;
+  min-width: 0;
+}
+.side-wrap > .btn.side-reconnect {
+  margin-left: auto;
+}
+
+/* The uploads (D37): one row per upload, its path on one line over its size, then Download, Copy path and Remove. */
+.side-up {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+  min-height: var(--row-h);
+  padding: var(--s2) var(--s1) var(--s2) var(--s3);
+}
+.side-up-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-row);
+  background: var(--fill);
+  color: var(--accent-ui);
+}
+.side-up[data-state="failed"] .side-up-icon,
+.side-up[data-state="failed"] .side-up-line {
+  color: var(--danger);
+}
+.side-up-text {
+  flex: 1;
+  min-width: 0;
+}
+.side-up-tools {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+.icon-btn.side-up-btn {
+  color: var(--dim);
+}
+.icon-btn.side-up-remove:hover {
+  color: var(--danger);
+}
+.side-up-copy .copy-btn {
+  color: var(--dim);
+}
+/* The row's "..." (its menu: Download, Copy path, Remove), shown only where the pane is narrow (below). */
+.icon-btn.side-up-more {
+  display: none;
+}
+
+/* A narrow side pane (DESIGN-T1 2.7): the 250 px pane at 626 x 890, and the 307 and 320 px panes at a large text
+   size. The threshold is 23em of the panel's own text (the em of a container query is the container's font), 299 px
+   at Settings text size 1 and 389 px at 1.3, so the rules follow the text the user chose. There an upload's three
+   buttons fold into its "...", the Environment card's folder row puts the parent folder under the name, and a
+   session row's value words may wrap. */
+@container side (width < 23em) {
+  .side-pane .side-up > .side-up-tools {
+    display: none;
+  }
+  .side-pane .side-up > .icon-btn.side-up-more {
+    display: inline-grid;
+  }
+  .side-pane .group-row.side-row:has(.side-row-parent) {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .side-pane .side-row:has(.side-row-parent) > .side-row-text {
+    flex: 1 1 calc(100% - 16px - var(--s3));
+  }
+  .side-pane .side-row > .side-row-parent {
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow: hidden;
+    padding-left: calc(16px + var(--s3));
+    font-size: var(--fs-meta);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+  }
+  .side-pane .side-link-words {
+    white-space: normal;
+  }
+}
+/* The Environment card's names (the machine, the folder, a worktree's branch) wrap in a side pane instead of ending in an
+   ellipsis: touch has no tooltip to show the rest, and a host name of 26 characters is wider than the 250 and 307 px
+   panes of 626 and 768 (the folder's parent keeps its own rule above). */
+.side-pane [data-testid="side-environment"] .side-row > .side-row-text {
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+/* A count of the Connectors line keeps whole ("1 needs sign-in"): the line wraps at the comma between the counts. */
+.side-pane .side-link-words :is(.side-bad, .side-warn) {
+  white-space: nowrap;
+}
+/* A file's name (NameText) wraps in place of an ellipsis, first before a dot or after a hyphen or an underscore: two
+   lines in a narrow pane, three at a large text size; only a name longer than three lines ends with one. */
+.side-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* Touch: 44 px targets (base.css gives the group rows, buttons, icon buttons and Copy theirs). */
+.touch .side-card-head {
+  min-height: var(--touch);
+  margin-bottom: 0;
+  padding-left: var(--s4);
+}
+.touch .side-card-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+.touch .side-back {
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+.touch .side-empty {
+  padding: 0 var(--s4);
+  font-size: var(--fs-ui);
+}
+.touch .side-up {
+  padding: var(--s1) 0 var(--s1) var(--s4);
+}
+.touch .btn.side-reconnect {
+  min-height: var(--touch);
+  padding: 0 var(--s3);
+  font-size: var(--fs-ui);
+}
+.touch .side-path {
+  font-size: var(--fs-ui);
+}
+.touch .side-fact-label,
+.touch .side-foot,
+.touch .side-row-line {
+  font-size: var(--fs-ui);
+}
+.touch .side-file-text {
+  min-height: var(--touch);
+}
+.touch .side-row-line {
+  padding-left: calc(var(--s4) + 16px + var(--s3));
+}
+.side-mode-sheet .side-cards {
+  gap: var(--s4);
+}
+
+/* ---------- A page of its own: the uploads on the phone, and the download page of a file ---------- */
+.side-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--group-bg);
+}
+.side-page-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--s4) var(--s5) var(--s6);
+}
+.side-page-inner > .side-back {
+  margin-left: calc(-1 * var(--s1));
+}
+.side-page-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.side-page .side-uploads,
+.side-page .side-file-view {
+  animation: none;
+}
+.file-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+  margin-top: var(--s2);
+}
+.file-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--accent-ui);
+}
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s1);
+}
+.shell-phone .side-page-inner {
+  padding: var(--s2) var(--s4) var(--s6);
+}
+body[data-size="phone"] .file-actions .btn.primary {
+  flex: 1 1 100%;
+}
+
+/* ---------- Settings (DESIGN.md 6.8): the section list with icon tiles, then one section as grouped lists ---------- */
+.set-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--group-bg);
+}
+.set-wide {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--s5) var(--s5) var(--s6);
+}
+.set-body {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: start;
+}
+.set-nav {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.set-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: calc(var(--row-h) + 4px);
+  padding: 2px var(--s2);
+  border-radius: var(--r-row);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  text-decoration: none;
+}
+.set-nav-item:hover {
+  background: var(--hover);
+}
+/* The section that is open: the look's highlight (the accent in the glass look, a quiet fill in the others). */
+.set-nav-item[aria-current="page"] {
+  background: var(--menu-hover-bg);
+  color: var(--menu-hover-text);
+}
+.group-icon.set-tile {
+  width: 22px;
+  height: 22px;
+}
+.touch .set-nav-item {
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+.touch .group-icon.set-tile {
+  width: 29px;
+  height: 29px;
+}
+.set-section {
+  container: set-section / inline-size;
+  min-width: 0;
+  max-width: 760px;
+}
+.set-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 36px;
+  margin-bottom: var(--s3);
+}
+.set-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+}
+.set-notice {
+  margin: 0 0 var(--s3);
+}
+.set-notice a {
+  color: var(--accent-text);
+}
+.set-section > .fallback-line {
+  margin: 0 0 var(--s3);
+}
+.set-block {
+  margin-bottom: var(--s5);
+}
+.group-title.set-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: 0;
+}
+.set-group-foot {
+  line-height: var(--lh-prose);
+}
+
+/* One row of a group: the words on the left, the control on the right; a narrow section stacks them. */
+.set-row {
+  position: relative;
+  min-width: 0;
+  padding: var(--s3);
+  scroll-margin: var(--s6);
+}
+.set-row:focus {
+  outline: none;
+}
+/* A row's path focuses it; the accent wash shows where it is. */
+.set-row[data-focused] {
+  background: var(--accent-wash);
+}
+.set-row-main {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  min-width: 0;
+}
+.set-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+/* A wide control (a segmented control, or a control with its Save) goes under the words when beside them it would
+   leave the words narrower than 240 px, as in a narrow section. */
+.set-row-main:has(> .set-control :is(.set-seg, .set-save)) {
+  flex-wrap: wrap;
+  row-gap: var(--s3);
+}
+.set-row-main:has(> .set-control :is(.set-seg, .set-save)) > .set-row-text {
+  flex-basis: 240px;
+}
+.set-label-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--s2);
+}
+.set-label {
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+}
+.set-help {
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.set-help code,
+.set-label code,
+.set-more code {
+  font-size: inherit;
+}
+.set-row-line {
+  color: var(--warn);
+  font-size: var(--fs-small);
+}
+.set-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: none;
+  max-width: 55%;
+  color: var(--dim);
+  text-align: right;
+}
+.set-path {
+  color: var(--text);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.set-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.set-dim {
+  color: var(--dim);
+}
+/* Skills and plugins (Settings > Claude Code): one name per line, a plugin's version dimmed after it. */
+.set-loaded {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+  font-size: var(--fs-small);
+}
+.set-loaded-row {
+  overflow-wrap: anywhere;
+}
+.set-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s2);
+  flex: none;
+  max-width: 100%;
+}
+.set-save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.set-unsaved {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.set-saved {
+  color: var(--ok);
+  font-size: var(--fs-small);
+  animation: fade-in var(--t-reveal) var(--ease);
+}
+/* The risky Save names the value in --warn on the warn wash (DESIGN.md 6.8). */
+.btn.set-risky {
+  background-color: var(--warn-wash);
+  box-shadow: none;
+  color: var(--warn);
+  font-weight: var(--weight-strong);
+}
+/* A choice as a menu (no native select): the value and a chevron on the button's fill; the menu or sheet it opens
+   lists the choices with a check on the current one. */
+.btn.set-menu-btn {
+  justify-content: space-between;
+  min-width: 120px;
+  max-width: 100%;
+}
+.set-menu-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.set-menu-chevron {
+  flex: none;
+  color: var(--dim);
+}
+.set-menu-list {
+  display: grid;
+  gap: 1px;
+}
+.set-menu-label {
+  flex: 1;
+  min-width: 0;
+}
+.sheet:has(> .set-menu-sheet),
+.sheet:has(> .set-menu-sheet) > .sheet-head {
+  background: var(--group-bg);
+}
+.set-menu-sheet {
+  padding-bottom: var(--s2);
+}
+.set-num-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.set-num {
+  width: 72px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.set-num[aria-invalid="true"] {
+  border-color: var(--warn);
+}
+.set-unit {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+/* Text size: A- and A+ on the segmented control's --fill track, with the size between them. */
+.set-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-btn);
+  background: var(--fill);
+}
+.set-step {
+  min-width: 36px;
+  height: 24px;
+  padding: 0 var(--s2);
+  border: 0;
+  border-radius: var(--r-thumb);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: var(--weight-strong);
+}
+.set-step-up {
+  font-size: var(--fs-prose);
+}
+.set-step:hover:not(:disabled) {
+  background: var(--hover);
+}
+.set-step:active:not(:disabled) {
+  background: var(--seg-thumb);
+}
+.set-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.set-step-value {
+  min-width: 48px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.set-count {
+  color: var(--dim);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+
+/* The "i" beside a row's label: it opens the row's own view (D51), quiet until hovered. */
+.set-more-link {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  color: var(--dim);
+}
+.set-row-text a.set-more-link {
+  color: var(--dim);
+}
+.set-row-text a.set-more-link:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+/* The row's own view: its longer explanation under its label. */
+.set-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  max-width: 64ch;
+  margin-top: var(--s1);
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-prose);
+}
+.set-more-head {
+  color: var(--text);
+}
+/* A row that opens a view of its own (Keyboard shortcuts, About's Restart): its name and a chevron. On touch it starts
+   where the group's other rows do (.touch .set-row). */
+.group-row.set-link-row {
+  min-height: calc(var(--row-h) + 2 * var(--s3) - 12px);
+  padding-left: var(--s3);
+  color: var(--text);
+  text-decoration: none;
+}
+.touch .group-row.set-link-row {
+  padding-left: var(--s4);
+}
+.set-link-label {
+  flex: 1;
+}
+.set-folder-line {
+  margin: var(--s2) 0 0;
+}
+/* What a row holds at full width under its line: the shortcut list, the paths. */
+.set-row-more {
+  margin-top: var(--s3);
+  min-width: 0;
+}
+.set-keys {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.set-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  min-height: 32px;
+  padding: 2px 0;
+}
+.set-key + .set-key {
+  box-shadow: inset 0 1px 0 var(--hairline);
+}
+.set-key dt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-small);
+}
+.set-key-note {
+  color: var(--dim);
+  font-size: var(--fs-caption);
+}
+.set-key dd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s1) var(--s2);
+  margin: 0;
+  flex: none;
+}
+.set-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.set-or {
+  margin: 0 var(--s1);
+  color: var(--dim);
+  font-size: var(--fs-caption);
+}
+.set-combo > .set-or:first-child {
+  margin-left: 0;
+}
+/* A key is a label, not code: the UI font on a small --fill key face. */
+.set-keys kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.85em;
+  min-height: 1.85em;
+  padding: 0 0.4em;
+  border-radius: var(--r-row);
+  background: var(--fill);
+  box-shadow: inset 0 -1px 0 var(--hairline-strong);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
+  line-height: 1;
+}
+/* The model picker's rows: the name and its alias, then where it came from and its efforts. */
+.set-row.set-model {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 2fr);
+  gap: 2px var(--s4);
+  font-size: var(--fs-small);
+}
+.set-model-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.set-model-label {
+  color: var(--text);
+  font-size: var(--fs-ui);
+}
+.set-model-name code {
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.set-model-facts {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--dim);
+}
+.set-drift {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.set-row-text a {
+  color: var(--accent-text);
+  font-size: var(--fs-small);
+}
+
+/* Chats > Uploads > Upload folder: four choices, each its folder and what that means, a check on the one in use. */
+.set-choices {
+  display: flex;
+  flex-direction: column;
+  margin: var(--s3) calc(-1 * var(--s3)) 0;
+}
+.set-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3);
+  cursor: pointer;
+}
+.set-choice::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--s3);
+  height: 1px;
+  background: var(--hairline);
+}
+.set-choice:hover {
+  background: var(--hover);
+}
+.set-choice:active {
+  background: var(--fill);
+}
+.set-choice-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.set-choice:has(.set-choice-input:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.set-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.set-choice-label {
+  color: var(--text);
+  font-size: var(--fs-ui);
+}
+.set-choice-path {
+  color: var(--text);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.set-choice-hint {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.set-choice-check {
+  visibility: hidden;
+  color: var(--accent);
+}
+.set-choice[data-on] .set-choice-check {
+  visibility: visible;
+}
+.set-custom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0 calc(-1 * var(--s3)) calc(-1 * var(--s3));
+  padding: var(--s2) var(--s3) var(--s3) calc(2 * var(--s3));
+  border-top: 1px solid var(--hairline);
+}
+.set-custom-label {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.set-custom-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+.set-custom-field {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+/* Appearance > Look (plan v3 section 5): four live tiles; each preview wears its own look, the frame the page's. */
+.look-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3);
+  margin-top: var(--s3);
+}
+.look-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.look-tile:focus-visible {
+  outline-offset: 2px;
+}
+/* --look-r is the page look's card radius, read here and inherited by the preview, so the frame and the preview
+   it holds share one curve whatever look the preview wears. */
+.look-frame {
+  --look-r: var(--r-card);
+  display: block;
+  padding: 3px;
+  border-radius: calc(var(--r-card) + 3px);
+  transition: box-shadow var(--t-reveal) var(--ease), background-color var(--t-reveal) var(--ease);
+}
+.look-tile:hover .look-frame {
+  background: var(--hover);
+}
+.look-tile[aria-checked="true"] .look-frame {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+.look-preview {
+  display: grid;
+  grid-template-columns: 20% minmax(0, 1fr);
+  height: 88px;
+  overflow: hidden;
+  border-radius: var(--look-r);
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.look-side {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 5px;
+  border-right: 1px solid var(--hairline);
+  background: var(--panel);
+}
+.look-side i {
+  display: block;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+}
+.look-side i.look-side-on {
+  height: 7px;
+  background: var(--selected);
+  box-shadow: inset 0 0 0 2px var(--fill-strong);
+}
+.look-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 7px 7px;
+}
+.look-bubble {
+  align-self: flex-end;
+  width: 50%;
+  height: 13px;
+  border-radius: calc(var(--r-bubble) / 2);
+  background: var(--bubble-bg);
+}
+.look-reply {
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-prose);
+  font-size: var(--fs-caption);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.look-line {
+  width: 72%;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+}
+.look-composer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 20px;
+  margin-top: auto;
+  padding: 2px 3px;
+  border: 1px solid var(--composer-border);
+  border-radius: calc(var(--r-composer) / 2);
+  background: var(--composer-bg);
+  box-shadow: var(--composer-shadow);
+}
+.look-send {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: calc(var(--r-send) / 2);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.look-name {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 0 var(--s1);
+  font-size: var(--fs-ui);
+}
+.look-tile[aria-checked="true"] .look-name {
+  font-weight: var(--weight-strong);
+}
+.look-check {
+  flex: none;
+  color: var(--accent);
+}
+@container set-section (max-width: 600px) {
+  .look-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* About, and the restart route of a later milestone. */
+.set-about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: 0 var(--s3) var(--s4);
+}
+.set-about p {
+  margin: 0;
+}
+.set-claim {
+  max-width: 60ch;
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+.set-warn-line {
+  max-width: 72ch;
+  color: var(--warn);
+  font-size: var(--fs-small);
+}
+.set-restart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.set-restart > p {
+  margin: 0;
+}
+/* The chats a restart would stop: plain lines under their list's title, not rows to press. */
+.set-restart-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+}
+.set-restart-list > li {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+/* Their titles start where the lines do: no group row's inset here (.group-title's, or .touch .group-title's). */
+.set-restart .group-title.set-group-title {
+  padding: 0;
+}
+/* Restart now with its clause right under it (D51): the start of the button row on a laptop, where the clause wraps in
+   the room left of the other buttons; full width at the end of the phone's stack. */
+.set-restart .dialog-actions {
+  align-items: flex-start;
+}
+.set-restart-now {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+  min-width: 0;
+  margin-right: auto;
+}
+.set-restart-now > .set-help {
+  margin: 0;
+}
+body[data-size="phone"] .set-restart-now {
+  align-items: stretch;
+  margin-right: 0;
+}
+
+/* Touch: iOS sizes for the rows; base.css gives the controls their 44 px targets. */
+.touch .set-row {
+  padding: var(--s3) var(--s4);
+}
+.touch .set-label,
+.touch .set-choice-label {
+  font-size: var(--fs-touch);
+}
+.touch .set-help,
+.touch .set-more,
+.touch .set-choice-hint,
+.touch .set-choice-path,
+.touch .set-unsaved,
+.touch .set-saved {
+  font-size: var(--fs-ui);
+}
+/* The "i" and a row that opens its own view reach 44 px on touch. */
+/* Its 44 px reach the row's help line below: above it, so a tap there still opens the row's view. */
+.touch .set-more-link {
+  position: relative;
+  z-index: 1;
+  width: var(--touch);
+  height: var(--touch);
+  margin: -10px -12px;
+}
+.touch .set-choices {
+  margin: var(--s3) calc(-1 * var(--s4)) 0;
+}
+.touch .set-choice {
+  min-height: var(--touch);
+  padding: var(--s2) var(--s4);
+}
+.touch .set-choice::before {
+  left: var(--s4);
+}
+.touch .set-custom {
+  margin: 0 calc(-1 * var(--s4)) calc(-1 * var(--s3));
+  padding: var(--s3) var(--s4);
+}
+/* On touch the track is as tall as the segmented control's, and each step's target reaches 44 px past it. */
+.touch .set-step {
+  position: relative;
+  min-width: var(--touch);
+  height: 32px;
+}
+.touch .set-step::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+.touch .look-name {
+  font-size: var(--fs-touch);
+}
+
+/* The phone: the list of sections, then one section per screen with a large title; the title bar has Done on the
+   list and Back on a section. */
+.set-screen {
+  padding: var(--s3) var(--s4) var(--s6);
+}
+.set-list-label {
+  flex: 1;
+}
+.set-phone .set-title-row {
+  margin-bottom: var(--s3);
+}
+.set-phone .set-title {
+  font-size: var(--fs-large);
+  letter-spacing: var(--tracking-large);
+}
+
+/* Narrow sections stack each row: the words, then the control. */
+@container set-section (max-width: 520px) {
+  .set-row-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s3);
+  }
+  .set-row-switch .set-row-main {
+    flex-direction: row;
+    align-items: center;
+  }
+  /* In a column the 240 px basis would be the words' height: they take their own height, and the control follows. */
+  .set-row:not(.set-row-switch) > .set-row-main:has(> .set-control :is(.set-seg, .set-save)) > .set-row-text {
+    flex-basis: auto;
+  }
+  .set-control {
+    justify-content: flex-start;
+  }
+  /* A menu takes the width, as a segmented control does here, and keeps its whole value: Save goes under it. */
+  .btn.set-menu-btn {
+    flex: 1 0 auto;
+  }
+  .set-value {
+    align-items: flex-start;
+    max-width: none;
+    text-align: left;
+  }
+  .set-row[data-readonly] .set-row-main {
+    gap: var(--s1);
+  }
+  .set-row.set-model {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* R130, Settings > Notifications: a device's name is plain text that is a button; a click or a tap turns it into a
+   field, as the title bar's rename does. "This device" is dim. In a narrow section a device keeps its name and its
+   Turn off on one line, as a switch row does, so the phone's list is one line per device; its field stacks over Save. */
+.nt-name-btn {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-row);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-ui);
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.nt-name-btn:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 3px;
+}
+.nt-name-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.touch .nt-name-btn {
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+.field.nt-name {
+  width: 100%;
+  max-width: 280px;
+}
+.nt-you {
+  font-size: var(--fs-small);
+}
+.touch .nt-you {
+  font-size: var(--fs-ui);
+}
+@container set-section (max-width: 520px) {
+  .set-row.nt-dev:not(:has(.nt-name)) .set-row-main {
+    flex-direction: row;
+    align-items: center;
+  }
+  .set-row.nt-dev .set-control {
+    justify-content: flex-end;
+  }
+  .field.nt-name {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .set-wide {
+    padding: var(--s4) var(--s4) var(--s6);
+  }
+  .set-body {
+    grid-template-columns: 172px minmax(0, 1fr);
+    gap: var(--s4);
+  }
+}
+
+/* ---------- The later-milestone screens ---------- */
+.later {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.later-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s3);
+  max-width: 520px;
+  margin: 12vh auto var(--s6);
+  padding: 0 var(--s5);
+}
+.later-inner > p {
+  margin: 0;
+}
+.later-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+}
+.later-when {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.later-inner .btn {
+  margin-top: var(--s2);
+}
+.shell-phone .later-inner {
+  margin-top: var(--s5);
+  padding: 0 var(--s4);
+}

@@ -1,0 +1,27 @@
+{
+  "_about": "MCP elicitation cards: a form-mode request, then a URL-mode request that the server completes by itself (elicitation_complete).",
+  "turns": [
+    {
+      "steps": [
+        {
+          "ask": { "subtype": "elicitation", "mcp_server_name": "tickets", "message": "Which project should the ticket go to?", "mode": "form", "requested_schema": { "type": "object", "properties": { "project": { "type": "string" } }, "required": ["project"] }, "title": "New ticket", "display_name": "Tickets" },
+          "then": {
+            "accept": [{ "say": { "id": "msg_el_1", "text": "Filed the ticket." } }],
+            "decline": [{ "say": { "id": "msg_el_2", "text": "No ticket filed." } }],
+            "cancel": [{ "say": { "id": "msg_el_3", "text": "Cancelled." } }]
+          }
+        },
+        { "emit": { "type": "result", "subtype": "success", "result": "", "num_turns": 1 } }
+      ]
+    },
+    {
+      "steps": [
+        { "ask": { "subtype": "elicitation", "mcp_server_name": "tickets", "message": "Sign in to the ticket service.", "mode": "url", "url": "https://tickets.example.com/sign-in", "elicitation_id": "elicit-fake-1" }, "wait": false },
+        { "sleep": 150 },
+        { "emit": { "type": "system", "subtype": "elicitation_complete", "mcp_server_name": "tickets", "elicitation_id": "elicit-fake-1" } },
+        { "sleep": 150 },
+        { "emit": { "type": "result", "subtype": "success", "result": "", "num_turns": 1 } }
+      ]
+    }
+  ]
+}

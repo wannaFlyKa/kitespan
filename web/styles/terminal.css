@@ -1,0 +1,312 @@
+/* The Terminal pane (D38; terminal/TerminalPane.tsx): the chat's login shell. Tokens only: the terminal's own colours
+   come from the same tokens (terminal/xterm.ts reads them from this pane's computed style), on --bg, the ground on
+   which every look makes its text and state colours AA. Its places (Shell.tsx): the side column wherever the side
+   panel docks (wider than the cards when there is room); over the chat where the panel goes over the chat too; the
+   medium docked pane; the phone's own page, whose title bar holds the folder and Copy the command (M28). On touch the
+   key bar sits at its foot. xterm's own sheet (about 1 KB gzipped) is part of the app's sheet: TerminalPane.tsx
+   imports it, because the bundler does not load a sheet that the lazy xterm chunk imports. */
+.term-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg);
+}
+
+/* The one header: the folder, Copy the command and Close, on the pane's ground with a hairline under it. */
+.term-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  min-height: var(--header-h);
+  padding: 0 var(--s2) 0 var(--s3);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+/* The folder's own name, as the sidebar and the Environment card name it (its full path is the title); a name too
+   long for the header ends in an ellipsis. */
+.term-folder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.term-copy {
+  flex: none;
+  padding: 0 var(--s2);
+}
+/* On touch the button keeps its 44 px height but the UI size, so the folder keeps its room in a 320 px pane. */
+.touch .term-copy {
+  padding: 0 var(--s2);
+  font-size: var(--fs-ui);
+}
+
+/* The terminal fills the rest; FitAddon sizes the rows and columns to the box (a short debounce on resize). */
+.term-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+/* While another page sets the shell's size, the terminal draws at that size: wider than the box, it is cut at the
+   box's edge, never past the pane. */
+.term-host {
+  position: absolute;
+  inset: var(--s2) var(--s1) var(--s2) var(--s3);
+  overflow: hidden;
+}
+.term-host > .term-xterm,
+.term-host .xterm {
+  height: 100%;
+}
+/* xterm's sheet paints its viewport black and gives it a browser scroll bar (overflow-y: scroll). In xterm 6 the
+   viewport is an empty layer under the rows that never scrolls (the scrollable element over it does), so it shows
+   neither: under the last row the pane's own ground shows, and no browser bar or arrow shows at its foot. */
+.term-host .xterm .xterm-viewport {
+  background-color: transparent;
+  scrollbar-width: none;
+}
+.term-host .xterm .xterm-viewport::-webkit-scrollbar {
+  display: none;
+}
+/* The one scroll bar: xterm 6 draws it over the rows (its scrollable element) and colours the slider from its theme
+   in a sheet of its own; here the slider is the look's --fill-strong pill, 8 px of the bar's 14 px, the same while it
+   is hovered or dragged. */
+.term-host .xterm .xterm-scrollable-element > .scrollbar > .slider,
+.term-host .xterm .xterm-scrollable-element > .scrollbar > .slider:hover,
+.term-host .xterm .xterm-scrollable-element > .scrollbar > .slider.active {
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+  background-clip: content-box;
+}
+.term-host .xterm .xterm-scrollable-element > .scrollbar.vertical > .slider {
+  padding: 0 3px;
+}
+.term-host .xterm:focus,
+.term-host .xterm .xterm-helper-textarea:focus {
+  outline: none;
+}
+/* The field xterm types into is out of sight; it shows no ground of its own where a browser paints one. */
+.term-host .xterm .xterm-helper-textarea {
+  background: transparent;
+}
+/* A tap on the terminal focuses that field, and iOS zooms the page when a field under 16 px takes the focus, so on
+   touch it is a touch field's size (--fs-input, 16 px or more, DESIGN.md 7.5). It is out of sight, so nothing on screen
+   changes; xterm sizes the composition view on its own. */
+.touch .term-host .xterm .xterm-helper-textarea {
+  font-size: var(--fs-input);
+}
+/* The word a touch keyboard or an input method composes, at the cursor: xterm's sheet draws it white on black; here
+   it is the look's text on a card (--elevated) with a hairline ring, underlined as composing text is. */
+.term-host .xterm .composition-view {
+  border-radius: var(--r-row);
+  background: var(--elevated);
+  box-shadow: 0 0 0 1px var(--hairline);
+  color: var(--text);
+  text-decoration: underline;
+}
+.term-wait {
+  margin: 0;
+  padding: var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-ui);
+}
+/* One line above the terminal, only while it holds (principle 0): the fork line and "Then type /<command>.", the
+   no-session line, "Reconnecting...", or why no shell opens (in --text: it is the pane's one message then). */
+.term-note {
+  flex: none;
+  padding: var(--s2) var(--s3) 0;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.term-note p {
+  margin: 0;
+}
+.term-note-problem {
+  color: var(--text);
+  font-size: var(--fs-ui);
+}
+/* The phone's page only: the 5.4 line of a link that could not be read in full, under the title bar, in the shape
+   of the chat's own line (the chat that shows it at other sizes is hidden under the page). */
+.term-link {
+  flex: none;
+  padding: var(--s2) var(--s3) 0;
+}
+.term-link .notice {
+  margin: 0;
+}
+
+/* The laptop's column (its width from Shell.tsx), the medium docked pane, and the layer over the chat (its shadow from
+   layout.css): the terminal scrolls inside itself, so the pane does not. */
+.side-col.term-col,
+.side-pane.term-docked,
+.side-pane.term-over {
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* The phone: its own page under the title bar (Back to the chat); the key bar rides above the keyboard with the
+   page (Shell.tsx sizes the page to the visual viewport while the keyboard is up, and the shell on a tablet too while
+   the pane has the focus). The key bar is at the foot of
+   the pane on every touch device (DESIGN.md 7.7: a control for every key). */
+.shell-phone[data-terminal="page"] > .main > .chat-screen {
+  display: none;
+}
+/* The phone's title bar holds the folder and Copy the command after "Terminal" (TerminalPane.tsx BarTools): the
+   heading keeps its word, the folder's name takes what is left. */
+.term-bar {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s1);
+  min-width: 0;
+}
+.scr-bar:has(> .term-bar) > .scr-bar-heading {
+  flex: none;
+}
+.term-bar .term-folder {
+  flex: 0 1 auto;
+}
+/* A row of 44 px keys at a pane's foot. The browser pane's key row (browser/Keyboard.tsx) wraps, the four arrows kept
+   together, and each line's keys share its width. */
+.term-keys {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  padding: var(--s1) var(--s2) max(var(--s1), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--panel);
+}
+/* The Terminal's key bar is one row at every size (DESIGN-T1 T-12; terminal/keybar.ts), so a pane keeps its rows and
+   the copy keys stay in view: Copy and Paste are pinned at its end, after a hairline, outside the part that scrolls;
+   Esc, Tab, Ctrl, Select, the four signs and the arrows scroll sideways before them, with no scroll bar drawn. While
+   more keys lie past that part's end, the end fades over its last 32 px (data-more), so a key shows half-faded at the
+   edge and the row reads as one that scrolls. */
+.term-keys.is-one-row {
+  container: term-keys / inline-size;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.term-keys-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--s1);
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.term-keys-scroll::-webkit-scrollbar {
+  display: none;
+}
+.term-keys-scroll[data-more] {
+  -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent);
+}
+.term-keys-scroll > .term-key,
+.term-keys-scroll > .term-arrows {
+  flex: 0 0 auto;
+}
+.term-keys-pin {
+  display: flex;
+  flex: none;
+  gap: var(--s1);
+  padding-left: var(--s1);
+  border-left: 1px solid var(--hairline);
+}
+.term-arrows {
+  display: flex;
+  flex: 4 0 calc(4 * var(--touch) + 3 * var(--s1));
+  gap: var(--s1);
+}
+.term-key {
+  display: inline-grid;
+  flex: 1 0 var(--touch);
+  place-items: center;
+  min-width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-btn);
+  background: var(--fill);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  touch-action: manipulation;
+}
+.term-key:active {
+  background: var(--fill-strong);
+}
+/* A key with a word (Select, Copy, Paste) has room round it; Copy says "Copied" for a moment in the width of the
+   longer word (both words in one grid cell, the longer one unseen), so the row does not move. */
+.term-key-word {
+  padding: 0 var(--s3);
+}
+/* A narrow bar (the 250 px pane at 626): the pinned words take less room round them, so the part that scrolls keeps
+   two keys' width and Select is one sideways scroll away (DESIGN-T1 2.8). Each key stays 44 px or more. */
+@container term-keys (width < 300px) {
+  .term-keys-pin .term-key-word {
+    padding: 0 var(--s1);
+  }
+}
+.term-key > .term-key-face,
+.term-key > .term-key-room {
+  grid-area: 1 / 1;
+}
+.term-key-room {
+  visibility: hidden;
+}
+/* Copy while nothing is selected, a key before the terminal has loaded. */
+.term-key:disabled {
+  opacity: 0.4;
+}
+/* Pressed (Ctrl, Select): the accent fill with its ink, and a mark that is not a colour (G-46): a short 3 px bar in the
+   ink inside the key's foot, with the word in the strong weight. The fill alone is 2.56:1 against a resting key in
+   Glass dark, under the 3:1 that a state needs; the ink on the fill is 4.63:1 or more in every look. */
+.term-key[aria-pressed="true"] {
+  position: relative;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: var(--weight-strong);
+}
+.term-key[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 30%;
+  bottom: 6px;
+  left: 30%;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--accent-ink);
+}
+/* While Select is on, a finger's drag on the terminal is Select's (xterm.ts): the browser neither pans nor zooms, and
+   shows no callout and no selection of its own. */
+.term-host .term-xterm.is-selecting,
+.term-host .term-xterm.is-selecting * {
+  -webkit-touch-callout: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* A refused Copy's text, selected, to copy with the system's menu (TerminalPane.tsx KeyLineNote). */
+.term-copy-field {
+  display: block;
+  width: 100%;
+  margin: var(--s1) 0;
+  font-family: var(--font-mono);
+  resize: none;
+}
+/* The shell while it rides the on-screen keyboard with the Terminal pane (Shell.tsx sets its height and its move):
+   the phone's page, the medium pane, the large tablet's column or layer. */
+.shell.term-riding {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}

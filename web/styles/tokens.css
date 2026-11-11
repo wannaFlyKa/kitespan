@@ -1,0 +1,1186 @@
+/* Design tokens: four looks the user picks in Settings > Appearance (prototype design plan v3, the owner's D36), each in
+   light and dark. A look is a token set: components use only these tokens, so switching the look restyles the app.
+
+   How a look and a theme apply. The page carries them on <html>: data-look ("glass", "paper", "mono", "editor";
+   absent means glass) and data-theme ("light", "dark"; absent means follow the device). index.html's inline script
+   sets both before the first paint; App.tsx keeps them in step with Settings. No selector needs :root, so any element
+   can carry its own look: a preview tile is <div data-look="paper" data-theme="dark"> (leave data-theme off to follow
+   the device). For each look:
+     [data-look="X"]                         its light colours, and its shape and type (both themes)
+     [data-look="X"][data-theme="dark"]      its dark colours
+     @media (prefers-color-scheme: dark)  [data-look="X"]:not([data-theme="light"])   the System theme on a dark device
+   The glass blocks also match :root (and :root:not([data-look])), so a page with no attribute is glass.
+
+   Every look defines every token below (test/web/tokens.test.ts checks it). The names an earlier round used
+   (--ui-font, --mono-font, --fw-bold, --r-chip, --r-popover, --bubble, --material-sidebar and the rest) still work:
+   they point at the new values.
+
+   Contrast (WCAG 2), computed from these values by test/web/tokens.test.ts, which fails under 4.5:1 (3:1 for
+   the ring). Text on --bg, --dim also on --panel, --accent-ink on --accent. The test also holds --accent-ink on
+   --accent-hover and --accent-dim (the primary button's hover and pressed fills), --accent-ink on --danger-fill (a
+   filled danger button, such as Delete chat) and --dim on --elevated to 4.5:1. And it holds the words to 4.5:1, and
+   the dots to 3:1, on the tinted grounds the areas draw, each translucent token blended over the surface under it:
+   the open chat's row (--selected on --panel, and on --bg), a chip or a secondary button (--fill or --btn-bg on
+   --elevated, --bg or --composer-bg), a row that a link marks or a ticked choice (--accent-wash on --elevated or
+   --bg), code (--code-bg) and the warn wash (--warn-wash: the risky Save and the Bypass mode pill). Each value that
+   missed was lifted to the nearest value on its own hue that passes:
+     glass light    --dim #6e6e73 to #65656a, --accent-text #0066cc to #0063c7, --ok #248a3d to #218038,
+                    --danger and --danger-fill #d70015 to #cd0014
+     glass dark     --dim #a1a1a6 to #aaaaae, --accent #0a84ff to #0072e5 (white on #0a84ff is 3.65:1),
+                    --accent-text #4da3ff to #55a7ff, --danger #ff453a to #ff7b74 (4.09:1 on --elevated)
+     paper light    --accent-text #a14f2b to #9e4e2a, --ok #4d7c4d to #4b794b, --warn #b45309 to #aa4f09
+     paper dark     --accent-text #e3896b to #e59074, --warn #e0a050 to #e1a253, --danger and --danger-fill #f87171
+                    to #f98383
+     mono light     --ok #10a37f to #0d8063
+     mono dark      --danger and --danger-fill #f87171 to #f97e7e
+     editor light   --ok #2e8b57 to #2a8050, --warn #b45309 to #b05109, --danger and --danger-fill #d32f2f to #c42929
+   --danger-fill is --danger except in glass dark, where white on #ff7b74 is 2.52:1: there it is #df2d22 (4.63:1), the
+   same hue. A filled secondary button (--btn-bg) never holds a --danger label; a destructive action is
+   .btn.primary.danger (--danger-fill) or .btn.ghost.danger and .btn.plain.danger (no fill), base.css.
+     look     theme   text   dim  dim/panel  accent-text   ok   warn  danger  ink/accent  ring
+     glass    light  16.83  5.80      5.32         5.82  4.99  5.28   5.82       4.70  4.70
+     glass    dark   15.63  7.35      6.78         6.77  8.42  8.28   6.76       4.63  4.66
+     paper    light  15.80  6.26      5.98         5.57  4.82  5.20   6.14       5.03  4.78
+     paper    dark   14.39  7.36      8.08         6.19  7.23  6.85   6.21       5.33  4.86
+     mono     light  19.44  6.58      6.25         6.00  4.90  5.02   5.67      19.44 19.44
+     mono     dark   13.63  7.77      8.65         7.64  8.38  7.50   6.37      16.45 13.63
+     editor   light  16.48  6.19      5.83         5.74  4.88  5.21   5.68      16.48  5.74
+     editor   dark   13.97  6.79      7.04         6.90  8.71 12.57   7.23      14.49  6.90
+   The state dots must be seen, so the test holds each fill to 3:1 (WCAG 1.4.11) on --bg and on --panel, where the chat
+   lists and the sidebar draw them, and the chat dots also on the open chat's --selected row: --ok-fill (running),
+   --warn-fill (reconnecting, in the list's foot), the needs-you dot --attn-dot (row 116: each look's own warm
+   gold-amber; also on a hovered row and on --elevated) and the unread dot --unread-dot (--accent; in glass dark --ring,
+   the system blue #0a84ff, and in paper its ink --text, the blocks after the looks). It holds --danger to 4.5:1 on
+   --elevated too (error words on cards and sheets). Eight fills were lifted, each keeping its hue: glass light
+   --ok-fill #34c759 to #279442 and --warn-fill #ff9500 to #ce7800, paper light --ok-fill #5f9a5f to #568c56 and
+   --warn-fill #d97706 to #d27306, mono light --ok-fill #10a37f to #0f9675 and --warn-fill #f59e0b to #c78008, and
+   editor light --warn-fill #d97706 to #d67506. The light needs-you dots were lifted on their hue to 3.2:1 on the open
+   row (3.21:1 the lowest, mono and editor light).
+     look     theme   ok-fill  /panel  warn-fill  /panel  needs you  /panel  unread  /panel  danger/elevated
+     glass    light      3.89    3.57       3.33    3.06       4.10    3.76    4.70    4.31             5.82
+     glass    dark       8.42    7.76       8.28    7.63      12.05   11.11    4.66    4.30             5.53
+     paper    light      3.77    3.61       3.22    3.07       3.93    3.76   15.80   15.10             6.47
+     paper    dark       7.23    7.94       6.72    7.38       8.52    9.35   14.39   15.80             5.42
+     mono     light      3.72    3.54       3.22    3.06       3.87    3.67   19.44   18.46             5.67
+     mono     dark       8.38    9.33       7.50    8.35       9.88   11.00   13.63   15.18             5.30
+     editor   light      4.25    4.00       3.28    3.09       3.97    3.74   16.48   15.52             5.68
+     editor   dark       8.71    9.04      12.57   13.04       9.09    9.44   13.97   14.49             6.71
+   --faint is for icons and placeholders only, never for text that carries meaning.
+
+   Colour roles (DESIGN.md 6.13). --accent fills primary buttons and the send button and marks a selection (the checks
+   in menus, pickers and the Look tiles). --accent-text is for links in prose. --accent-ui is for text buttons (Cancel,
+   Done, Download, Copy path, Show more) and file icons: the link colour in glass, paper and editor, and --text in mono,
+   whose chrome has no blue. "Needs you" (owner row 116) is a warm gold-amber of each look's own, never its accent:
+   --attn is the words Needs input, the count badge's number and the waiting card's icon (4.5:1 on every ground they sit
+   on), --attn-dot the waiting dot, with its slow pulse (--attn-rim) in the dot's colour; in light the dot and the word
+   are lifted on their hue, in dark they are the look's bright amber. "Unread" (a turn ended that no device has looked
+   at since) is --unread-dot, the look's accent (paper's ink), still, as Mail marks unread mail. The composer's focused
+   rim is --composer-focus-edge with --composer-focus-shadow (--ring in every look but mono, whose composer keeps its
+   hairline and gains a deeper shadow); --ring stays the keyboard's :focus-visible ring. */
+
+/* ---- glass (the default): quiet chrome, translucent materials, a blue accent, the system face. ---- */
+:root,
+[data-look="glass"] {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --font-prose: var(--font-ui);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --fs-caption: calc(11px * var(--text-scale));
+  --fs-meta: calc(12px * var(--text-scale));
+  --fs-small: calc(12px * var(--text-scale));
+  --fs-ui: calc(13px * var(--text-scale));
+  --fs-prose: calc(15px * var(--text-scale));
+  --fs-prose-phone: calc(17px * var(--text-scale));
+  --fs-touch: calc(17px * var(--text-scale));
+  --fs-input: calc(17px * max(1, var(--text-scale)));
+  --fs-h3: calc(17px * var(--text-scale));
+  --fs-title: calc(20px * var(--text-scale));
+  --fs-large: calc(28px * var(--text-scale));
+  --lh-prose: 1.5;
+  --tracking-title: -0.01em;
+  --tracking-large: -0.02em;
+  --weight-strong: 600;
+  --r-row: 6px;
+  --r-btn: 8px;
+  --r-btn-touch: 12px;
+  --r-field: 10px;
+  --r-card: 12px;
+  --r-menu: 12px;
+  --r-bubble: 18px;
+  --r-composer: 14px;
+  --r-composer-phone: 18px;
+  --r-capsule: 18px;
+  --r-sheet: 14px;
+  --r-send: 999px;
+  --row-h: 28px;
+  --btn-h: 28px;
+  --menu-row-h: 24px;
+  --header-h: 44px;
+  --material-filter: blur(20px) saturate(180%);
+
+  --bg: #ffffff;
+  --panel: #f5f5f7;
+  --elevated: #ffffff;
+  --hover: rgba(0, 0, 0, 0.04);
+  --selected: rgba(0, 0, 0, 0.07);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-strong: rgba(118, 118, 128, 0.2);
+  --hairline: rgba(0, 0, 0, 0.1);
+  --hairline-strong: rgba(0, 0, 0, 0.16);
+  --text: #1d1d1f;
+  --dim: #65656a;
+  --faint: #86868b;
+  --accent: #0071e3;
+  --accent-ink: #ffffff;
+  --accent-text: #0063c7;
+  --accent-hover: #0068d1;
+  --accent-dim: #0058b0;
+  --accent-wash: rgba(0, 113, 227, 0.1);
+  --accent-rim: rgba(0, 113, 227, 0.28);
+  --ring: #0071e3;
+  --ring-wash: rgba(0, 113, 227, 0.25);
+  --accent-ui: var(--accent-text);
+  --attn: #825f00;
+  --attn-dot: #a27600;
+  --attn-rim: rgba(162, 118, 0, 0.3);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #218038;
+  --ok-fill: #279442;
+  --warn: #c93400;
+  --warn-fill: #ce7800;
+  --warn-wash: rgba(255, 149, 0, 0.14);
+  --danger: #cd0014;
+  --danger-fill: #cd0014;
+  --danger-wash: rgba(215, 0, 21, 0.08);
+  --scrim: rgba(0, 0, 0, 0.25);
+  --code-bg: #f5f5f7;
+  --bubble-bg: rgba(118, 118, 128, 0.12);
+  --bubble-text: #1d1d1f;
+  --composer-bg: #ffffff;
+  --composer-border: transparent;
+  --composer-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --btn-bg: rgba(118, 118, 128, 0.12);
+  --btn-edge: transparent;
+  --menu-hover-bg: #0071e3;
+  --menu-hover-text: #ffffff;
+  --switch-on: #34c759;
+  --knob: #ffffff;
+  --seg-thumb: #ffffff;
+  --group-bg: #f5f5f7;
+  --tile-ink: #ffffff;
+  --tile-grey: #8e8e93;
+  --tile-blue: #007aff;
+  --tile-green: #34c759;
+  --tile-orange: #ff9500;
+  --tile-red: #ff3b30;
+  --tile-purple: #af52de;
+  --tile-indigo: #5856d6;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.18);
+  --shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --shadow-knob: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --material-bg: rgba(245, 245, 247, 0.8);
+  --material-bar: rgba(255, 255, 255, 0.8);
+}
+
+:root:not([data-look])[data-theme="dark"],
+[data-look="glass"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1c1c1e;
+  --panel: #232325;
+  --elevated: #2c2c2e;
+  --hover: rgba(255, 255, 255, 0.06);
+  --selected: rgba(255, 255, 255, 0.1);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-strong: rgba(118, 118, 128, 0.32);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+  --text: #f5f5f7;
+  --dim: #aaaaae;
+  --faint: #8e8e93;
+  --accent: #0072e5;
+  --accent-ink: #ffffff;
+  --accent-text: #55a7ff;
+  --accent-hover: #0068d1;
+  --accent-dim: #0058b0;
+  --accent-wash: rgba(10, 132, 255, 0.16);
+  --accent-rim: rgba(10, 132, 255, 0.32);
+  --ring: #0a84ff;
+  --ring-wash: rgba(10, 132, 255, 0.3);
+  --accent-ui: var(--accent-text);
+  --attn: #ffd60a;
+  --attn-dot: #ffd60a;
+  --attn-rim: rgba(255, 214, 10, 0.34);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #30d158;
+  --ok-fill: #30d158;
+  --warn: #ff9f0a;
+  --warn-fill: #ff9f0a;
+  --warn-wash: rgba(255, 159, 10, 0.14);
+  --danger: #ff7b74;
+  --danger-fill: #df2d22;
+  --danger-wash: rgba(255, 105, 97, 0.14);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --code-bg: #232325;
+  --bubble-bg: #2c2c2e;
+  --bubble-text: #f5f5f7;
+  --composer-bg: #2c2c2e;
+  --composer-border: transparent;
+  --composer-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --btn-bg: rgba(118, 118, 128, 0.24);
+  --btn-edge: transparent;
+  --menu-hover-bg: #0072e5;
+  --menu-hover-text: #ffffff;
+  --switch-on: #30d158;
+  --knob: #ffffff;
+  --seg-thumb: #636366;
+  --group-bg: #1c1c1e;
+  --tile-ink: #ffffff;
+  --tile-grey: #636366;
+  --tile-blue: #0a84ff;
+  --tile-green: #30d158;
+  --tile-orange: #ff9f0a;
+  --tile-red: #ff453a;
+  --tile-purple: #bf5af2;
+  --tile-indigo: #5e5ce6;
+  --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.6);
+  --shadow-thumb: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+  --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  --material-bg: rgba(35, 35, 37, 0.78);
+  --material-bar: rgba(28, 28, 30, 0.78);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-look]):not([data-theme="light"]),
+  [data-look="glass"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1c1c1e;
+    --panel: #232325;
+    --elevated: #2c2c2e;
+    --hover: rgba(255, 255, 255, 0.06);
+    --selected: rgba(255, 255, 255, 0.1);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-strong: rgba(118, 118, 128, 0.32);
+    --hairline: rgba(255, 255, 255, 0.1);
+    --hairline-strong: rgba(255, 255, 255, 0.16);
+    --text: #f5f5f7;
+    --dim: #aaaaae;
+    --faint: #8e8e93;
+    --accent: #0072e5;
+    --accent-ink: #ffffff;
+    --accent-text: #55a7ff;
+    --accent-hover: #0068d1;
+    --accent-dim: #0058b0;
+    --accent-wash: rgba(10, 132, 255, 0.16);
+    --accent-rim: rgba(10, 132, 255, 0.32);
+    --ring: #0a84ff;
+    --ring-wash: rgba(10, 132, 255, 0.3);
+    --accent-ui: var(--accent-text);
+    --attn: #ffd60a;
+    --attn-dot: #ffd60a;
+    --attn-rim: rgba(255, 214, 10, 0.34);
+    --composer-focus-edge: var(--ring);
+    --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+    --ok: #30d158;
+    --ok-fill: #30d158;
+    --warn: #ff9f0a;
+    --warn-fill: #ff9f0a;
+    --warn-wash: rgba(255, 159, 10, 0.14);
+    --danger: #ff7b74;
+    --danger-fill: #df2d22;
+    --danger-wash: rgba(255, 105, 97, 0.14);
+    --scrim: rgba(0, 0, 0, 0.5);
+    --code-bg: #232325;
+    --bubble-bg: #2c2c2e;
+    --bubble-text: #f5f5f7;
+    --composer-bg: #2c2c2e;
+    --composer-border: transparent;
+    --composer-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --btn-bg: rgba(118, 118, 128, 0.24);
+    --btn-edge: transparent;
+    --menu-hover-bg: #0072e5;
+    --menu-hover-text: #ffffff;
+    --switch-on: #30d158;
+    --knob: #ffffff;
+    --seg-thumb: #636366;
+    --group-bg: #1c1c1e;
+    --tile-ink: #ffffff;
+    --tile-grey: #636366;
+    --tile-blue: #0a84ff;
+    --tile-green: #30d158;
+    --tile-orange: #ff9f0a;
+    --tile-red: #ff453a;
+    --tile-purple: #bf5af2;
+    --tile-indigo: #5e5ce6;
+    --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.6);
+    --shadow-thumb: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+    --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+    --material-bg: rgba(35, 35, 37, 0.78);
+    --material-bar: rgba(28, 28, 30, 0.78);
+  }
+}
+
+/* ---- paper: warm paper, a serif voice for replies, the clay accent. Solid surfaces. ---- */
+[data-look="paper"] {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --font-prose: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --fs-caption: calc(11px * var(--text-scale));
+  --fs-meta: calc(12px * var(--text-scale));
+  --fs-small: calc(12px * var(--text-scale));
+  --fs-ui: calc(13px * var(--text-scale));
+  --fs-prose: calc(16px * var(--text-scale));
+  --fs-prose-phone: calc(17px * var(--text-scale));
+  --fs-touch: calc(16px * var(--text-scale));
+  --fs-input: calc(16px * max(1, var(--text-scale)));
+  --fs-h3: calc(17px * var(--text-scale));
+  --fs-title: calc(20px * var(--text-scale));
+  --fs-large: calc(28px * var(--text-scale));
+  --lh-prose: 1.6;
+  --tracking-title: -0.005em;
+  --tracking-large: -0.01em;
+  --weight-strong: 600;
+  --r-row: 8px;
+  --r-btn: 8px;
+  --r-btn-touch: 10px;
+  --r-field: 10px;
+  --r-card: 12px;
+  --r-menu: 10px;
+  --r-bubble: 16px;
+  --r-composer: 20px;
+  --r-composer-phone: 20px;
+  --r-capsule: 20px;
+  --r-sheet: 16px;
+  --r-send: 10px;
+  --row-h: 30px;
+  --btn-h: 30px;
+  --menu-row-h: 30px;
+  --header-h: 48px;
+  --material-filter: none;
+
+  --bg: #faf9f5;
+  --panel: #f5f4ed;
+  --elevated: #ffffff;
+  --hover: rgba(31, 30, 29, 0.05);
+  --selected: rgba(31, 30, 29, 0.08);
+  --fill: rgba(31, 30, 29, 0.06);
+  --fill-strong: rgba(31, 30, 29, 0.11);
+  --hairline: rgba(31, 30, 29, 0.12);
+  --hairline-strong: rgba(31, 30, 29, 0.2);
+  --text: #1f1e1d;
+  --dim: #5e5d59;
+  --faint: #8a8985;
+  --accent: #ae5630;
+  --accent-ink: #ffffff;
+  --accent-text: #9e4e2a;
+  --accent-hover: #9f4e2b;
+  --accent-dim: #8c4425;
+  --accent-wash: rgba(174, 86, 48, 0.08);
+  --accent-rim: rgba(174, 86, 48, 0.24);
+  --ring: #ae5630;
+  --ring-wash: rgba(174, 86, 48, 0.2);
+  --accent-ui: var(--accent-text);
+  --attn: #815e0d;
+  --attn-dot: #a17510;
+  --attn-rim: rgba(161, 117, 16, 0.3);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #4b794b;
+  --ok-fill: #568c56;
+  --warn: #aa4f09;
+  --warn-fill: #d27306;
+  --warn-wash: rgba(217, 119, 6, 0.12);
+  --danger: #b91c1c;
+  --danger-fill: #b91c1c;
+  --danger-wash: rgba(185, 28, 28, 0.08);
+  --scrim: rgba(31, 30, 29, 0.3);
+  --code-bg: #f5f4ed;
+  --bubble-bg: #f0eee6;
+  --bubble-text: #1f1e1d;
+  --composer-bg: #ffffff;
+  --composer-border: rgba(31, 30, 29, 0.12);
+  --composer-shadow: 0 2px 10px rgba(31, 30, 29, 0.05), 0 1px 2px rgba(31, 30, 29, 0.04);
+  --btn-bg: #ffffff;
+  --btn-edge: rgba(31, 30, 29, 0.12);
+  --menu-hover-bg: rgba(31, 30, 29, 0.06);
+  --menu-hover-text: #1f1e1d;
+  --switch-on: #ae5630;
+  --knob: #ffffff;
+  --seg-thumb: #ffffff;
+  --group-bg: #f5f4ed;
+  --tile-ink: #5e5d59;
+  --tile-grey: rgba(31, 30, 29, 0.07);
+  --tile-blue: rgba(31, 30, 29, 0.07);
+  --tile-green: rgba(31, 30, 29, 0.07);
+  --tile-orange: rgba(31, 30, 29, 0.07);
+  --tile-red: rgba(31, 30, 29, 0.07);
+  --tile-purple: rgba(31, 30, 29, 0.07);
+  --tile-indigo: rgba(31, 30, 29, 0.07);
+  --shadow-1: 0 1px 2px rgba(31, 30, 29, 0.05), 0 0 0 1px rgba(31, 30, 29, 0.08);
+  --shadow-2: 0 8px 28px rgba(31, 30, 29, 0.12), 0 0 0 1px rgba(31, 30, 29, 0.08);
+  --shadow-3: 0 18px 48px rgba(31, 30, 29, 0.18), 0 0 0 1px rgba(31, 30, 29, 0.06);
+  --shadow-thumb: 0 1px 3px rgba(31, 30, 29, 0.12), 0 0 0 0.5px rgba(31, 30, 29, 0.08);
+  --shadow-knob: 0 2px 4px rgba(31, 30, 29, 0.18), 0 0 0 0.5px rgba(31, 30, 29, 0.06);
+  --material-bg: #f5f4ed;
+  --material-bar: #faf9f5;
+}
+
+[data-look="paper"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #262624;
+  --panel: #1f1e1d;
+  --elevated: #30302e;
+  --hover: rgba(250, 249, 245, 0.05);
+  --selected: rgba(250, 249, 245, 0.08);
+  --fill: rgba(250, 249, 245, 0.07);
+  --fill-strong: rgba(250, 249, 245, 0.12);
+  --hairline: rgba(250, 249, 245, 0.1);
+  --hairline-strong: rgba(250, 249, 245, 0.2);
+  --text: #faf9f5;
+  --dim: #b7b5a9;
+  --faint: #87867f;
+  --accent: #d97757;
+  --accent-ink: #1f1e1d;
+  --accent-text: #e59074;
+  --accent-hover: #e28567;
+  --accent-dim: #e8977c;
+  --accent-wash: rgba(217, 119, 87, 0.12);
+  --accent-rim: rgba(217, 119, 87, 0.3);
+  --ring: #d97757;
+  --ring-wash: rgba(217, 119, 87, 0.25);
+  --accent-ui: var(--accent-text);
+  --attn: #e6bd5c;
+  --attn-dot: #e6bd5c;
+  --attn-rim: rgba(230, 189, 92, 0.34);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #8fbf8f;
+  --ok-fill: #8fbf8f;
+  --warn: #e1a253;
+  --warn-fill: #e0a050;
+  --warn-wash: rgba(224, 160, 80, 0.14);
+  --danger: #f98383;
+  --danger-fill: #f98383;
+  --danger-wash: rgba(248, 113, 113, 0.12);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --code-bg: #1f1e1d;
+  --bubble-bg: #393937;
+  --bubble-text: #faf9f5;
+  --composer-bg: #30302e;
+  --composer-border: rgba(250, 249, 245, 0.1);
+  --composer-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --btn-bg: rgba(250, 249, 245, 0.07);
+  --btn-edge: rgba(250, 249, 245, 0.1);
+  --menu-hover-bg: rgba(250, 249, 245, 0.07);
+  --menu-hover-text: #faf9f5;
+  --switch-on: #d97757;
+  --knob: #ffffff;
+  --seg-thumb: #4a4945;
+  --group-bg: #262624;
+  --tile-ink: #b7b5a9;
+  --tile-grey: rgba(250, 249, 245, 0.08);
+  --tile-blue: rgba(250, 249, 245, 0.08);
+  --tile-green: rgba(250, 249, 245, 0.08);
+  --tile-orange: rgba(250, 249, 245, 0.08);
+  --tile-red: rgba(250, 249, 245, 0.08);
+  --tile-purple: rgba(250, 249, 245, 0.08);
+  --tile-indigo: rgba(250, 249, 245, 0.08);
+  --shadow-1: 0 0 0 1px rgba(250, 249, 245, 0.06);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(250, 249, 245, 0.08);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 249, 245, 0.06);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --material-bg: #1f1e1d;
+  --material-bar: #262624;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-look="paper"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #262624;
+    --panel: #1f1e1d;
+    --elevated: #30302e;
+    --hover: rgba(250, 249, 245, 0.05);
+    --selected: rgba(250, 249, 245, 0.08);
+    --fill: rgba(250, 249, 245, 0.07);
+    --fill-strong: rgba(250, 249, 245, 0.12);
+    --hairline: rgba(250, 249, 245, 0.1);
+    --hairline-strong: rgba(250, 249, 245, 0.2);
+    --text: #faf9f5;
+    --dim: #b7b5a9;
+    --faint: #87867f;
+    --accent: #d97757;
+    --accent-ink: #1f1e1d;
+    --accent-text: #e59074;
+    --accent-hover: #e28567;
+    --accent-dim: #e8977c;
+    --accent-wash: rgba(217, 119, 87, 0.12);
+    --accent-rim: rgba(217, 119, 87, 0.3);
+    --ring: #d97757;
+    --ring-wash: rgba(217, 119, 87, 0.25);
+    --accent-ui: var(--accent-text);
+    --attn: #e6bd5c;
+    --attn-dot: #e6bd5c;
+    --attn-rim: rgba(230, 189, 92, 0.34);
+    --composer-focus-edge: var(--ring);
+    --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+    --ok: #8fbf8f;
+    --ok-fill: #8fbf8f;
+    --warn: #e1a253;
+    --warn-fill: #e0a050;
+    --warn-wash: rgba(224, 160, 80, 0.14);
+    --danger: #f98383;
+    --danger-fill: #f98383;
+    --danger-wash: rgba(248, 113, 113, 0.12);
+    --scrim: rgba(0, 0, 0, 0.5);
+    --code-bg: #1f1e1d;
+    --bubble-bg: #393937;
+    --bubble-text: #faf9f5;
+    --composer-bg: #30302e;
+    --composer-border: rgba(250, 249, 245, 0.1);
+    --composer-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    --btn-bg: rgba(250, 249, 245, 0.07);
+    --btn-edge: rgba(250, 249, 245, 0.1);
+    --menu-hover-bg: rgba(250, 249, 245, 0.07);
+    --menu-hover-text: #faf9f5;
+    --switch-on: #d97757;
+    --knob: #ffffff;
+    --seg-thumb: #4a4945;
+    --group-bg: #262624;
+    --tile-ink: #b7b5a9;
+    --tile-grey: rgba(250, 249, 245, 0.08);
+    --tile-blue: rgba(250, 249, 245, 0.08);
+    --tile-green: rgba(250, 249, 245, 0.08);
+    --tile-orange: rgba(250, 249, 245, 0.08);
+    --tile-red: rgba(250, 249, 245, 0.08);
+    --tile-purple: rgba(250, 249, 245, 0.08);
+    --tile-indigo: rgba(250, 249, 245, 0.08);
+    --shadow-1: 0 0 0 1px rgba(250, 249, 245, 0.06);
+    --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(250, 249, 245, 0.08);
+    --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 249, 245, 0.06);
+    --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.35);
+    --material-bg: #1f1e1d;
+    --material-bar: #262624;
+  }
+}
+
+/* ---- mono: clean monochrome, a pill composer, black-and-white buttons. Solid surfaces. ---- */
+[data-look="mono"] {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --font-prose: var(--font-ui);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --fs-caption: calc(11px * var(--text-scale));
+  --fs-meta: calc(12px * var(--text-scale));
+  --fs-small: calc(13px * var(--text-scale));
+  --fs-ui: calc(14px * var(--text-scale));
+  --fs-prose: calc(16px * var(--text-scale));
+  --fs-prose-phone: calc(17px * var(--text-scale));
+  --fs-touch: calc(16px * var(--text-scale));
+  --fs-input: calc(16px * max(1, var(--text-scale)));
+  --fs-h3: calc(18px * var(--text-scale));
+  --fs-title: calc(20px * var(--text-scale));
+  --fs-large: calc(28px * var(--text-scale));
+  --lh-prose: 1.7;
+  --tracking-title: -0.01em;
+  --tracking-large: -0.015em;
+  --weight-strong: 600;
+  --r-row: 8px;
+  --r-btn: 999px;
+  --r-btn-touch: 999px;
+  --r-field: 12px;
+  --r-card: 16px;
+  --r-menu: 12px;
+  --r-bubble: 22px;
+  --r-composer: 28px;
+  --r-composer-phone: 28px;
+  --r-capsule: 28px;
+  --r-sheet: 20px;
+  --r-send: 999px;
+  --row-h: 32px;
+  --btn-h: 32px;
+  --menu-row-h: 36px;
+  --header-h: 52px;
+  --material-filter: none;
+
+  --bg: #ffffff;
+  --panel: #f9f9f9;
+  --elevated: #ffffff;
+  --hover: rgba(0, 0, 0, 0.04);
+  --selected: rgba(0, 0, 0, 0.06);
+  --fill: rgba(0, 0, 0, 0.05);
+  --fill-strong: rgba(0, 0, 0, 0.1);
+  --hairline: rgba(0, 0, 0, 0.08);
+  --hairline-strong: rgba(0, 0, 0, 0.15);
+  --text: #0d0d0d;
+  --dim: #5d5d5d;
+  --faint: #8f8f8f;
+  --accent: #0d0d0d;
+  --accent-ink: #ffffff;
+  --accent-text: #2964aa;
+  --accent-hover: #2f2f2f;
+  --accent-dim: #424242;
+  --accent-wash: rgba(0, 0, 0, 0.04);
+  --accent-rim: rgba(0, 0, 0, 0.14);
+  --ring: #0d0d0d;
+  --ring-wash: rgba(0, 0, 0, 0.1);
+  --accent-ui: var(--text);
+  --attn: #856300;
+  --attn-dot: #a57b00;
+  --attn-rim: rgba(165, 123, 0, 0.3);
+  --composer-focus-edge: var(--hairline-strong);
+  --composer-focus-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --ok: #0d8063;
+  --ok-fill: #0f9675;
+  --warn: #b45309;
+  --warn-fill: #c78008;
+  --warn-wash: rgba(245, 158, 11, 0.12);
+  --danger: #d0021b;
+  --danger-fill: #d0021b;
+  --danger-wash: rgba(208, 2, 27, 0.07);
+  --scrim: rgba(0, 0, 0, 0.35);
+  --code-bg: #f9f9f9;
+  --bubble-bg: #f4f4f4;
+  --bubble-text: #0d0d0d;
+  --composer-bg: #ffffff;
+  --composer-border: rgba(0, 0, 0, 0.08);
+  --composer-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --btn-bg: #ffffff;
+  --btn-edge: rgba(0, 0, 0, 0.08);
+  --menu-hover-bg: rgba(0, 0, 0, 0.05);
+  --menu-hover-text: #0d0d0d;
+  --switch-on: #10a37f;
+  --knob: #ffffff;
+  --seg-thumb: #ffffff;
+  --group-bg: #f9f9f9;
+  --tile-ink: #5d5d5d;
+  --tile-grey: rgba(0, 0, 0, 0.05);
+  --tile-blue: rgba(0, 0, 0, 0.05);
+  --tile-green: rgba(0, 0, 0, 0.05);
+  --tile-orange: rgba(0, 0, 0, 0.05);
+  --tile-red: rgba(0, 0, 0, 0.05);
+  --tile-purple: rgba(0, 0, 0, 0.05);
+  --tile-indigo: rgba(0, 0, 0, 0.05);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.07);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  --material-bg: #f9f9f9;
+  --material-bar: #ffffff;
+}
+
+[data-look="mono"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #212121;
+  --panel: #171717;
+  --elevated: #2f2f2f;
+  --hover: rgba(255, 255, 255, 0.06);
+  --selected: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.07);
+  --fill-strong: rgba(255, 255, 255, 0.12);
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+  --text: #ececec;
+  --dim: #b4b4b4;
+  --faint: #8f8f8f;
+  --accent: #ececec;
+  --accent-ink: #0d0d0d;
+  --accent-text: #8ab4f8;
+  --accent-hover: #d4d4d4;
+  --accent-dim: #bdbdbd;
+  --accent-wash: rgba(255, 255, 255, 0.05);
+  --accent-rim: rgba(255, 255, 255, 0.18);
+  --ring: #ececec;
+  --ring-wash: rgba(255, 255, 255, 0.14);
+  --accent-ui: var(--text);
+  --attn: #f5c518;
+  --attn-dot: #f5c518;
+  --attn-rim: rgba(245, 197, 24, 0.34);
+  --composer-focus-edge: var(--hairline-strong);
+  --composer-focus-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --ok: #34d399;
+  --ok-fill: #34d399;
+  --warn: #f59e0b;
+  --warn-fill: #f59e0b;
+  --warn-wash: rgba(245, 158, 11, 0.14);
+  --danger: #f97e7e;
+  --danger-fill: #f97e7e;
+  --danger-wash: rgba(248, 113, 113, 0.12);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --code-bg: #171717;
+  --bubble-bg: #303030;
+  --bubble-text: #ececec;
+  --composer-bg: #303030;
+  --composer-border: rgba(255, 255, 255, 0.06);
+  --composer-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --btn-bg: rgba(255, 255, 255, 0.07);
+  --btn-edge: rgba(255, 255, 255, 0.08);
+  --menu-hover-bg: rgba(255, 255, 255, 0.07);
+  --menu-hover-text: #ececec;
+  --switch-on: #10a37f;
+  --knob: #ffffff;
+  --seg-thumb: #4a4a4a;
+  --group-bg: #212121;
+  --tile-ink: #b4b4b4;
+  --tile-grey: rgba(255, 255, 255, 0.08);
+  --tile-blue: rgba(255, 255, 255, 0.08);
+  --tile-green: rgba(255, 255, 255, 0.08);
+  --tile-orange: rgba(255, 255, 255, 0.08);
+  --tile-red: rgba(255, 255, 255, 0.08);
+  --tile-purple: rgba(255, 255, 255, 0.08);
+  --tile-indigo: rgba(255, 255, 255, 0.08);
+  --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --material-bg: #171717;
+  --material-bar: #212121;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-look="mono"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #212121;
+    --panel: #171717;
+    --elevated: #2f2f2f;
+    --hover: rgba(255, 255, 255, 0.06);
+    --selected: rgba(255, 255, 255, 0.08);
+    --fill: rgba(255, 255, 255, 0.07);
+    --fill-strong: rgba(255, 255, 255, 0.12);
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-strong: rgba(255, 255, 255, 0.16);
+    --text: #ececec;
+    --dim: #b4b4b4;
+    --faint: #8f8f8f;
+    --accent: #ececec;
+    --accent-ink: #0d0d0d;
+    --accent-text: #8ab4f8;
+    --accent-hover: #d4d4d4;
+    --accent-dim: #bdbdbd;
+    --accent-wash: rgba(255, 255, 255, 0.05);
+    --accent-rim: rgba(255, 255, 255, 0.18);
+    --ring: #ececec;
+    --ring-wash: rgba(255, 255, 255, 0.14);
+    --accent-ui: var(--text);
+    --attn: #f5c518;
+    --attn-dot: #f5c518;
+    --attn-rim: rgba(245, 197, 24, 0.34);
+    --composer-focus-edge: var(--hairline-strong);
+    --composer-focus-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --ok: #34d399;
+    --ok-fill: #34d399;
+    --warn: #f59e0b;
+    --warn-fill: #f59e0b;
+    --warn-wash: rgba(245, 158, 11, 0.14);
+    --danger: #f97e7e;
+    --danger-fill: #f97e7e;
+    --danger-wash: rgba(248, 113, 113, 0.12);
+    --scrim: rgba(0, 0, 0, 0.6);
+    --code-bg: #171717;
+    --bubble-bg: #303030;
+    --bubble-text: #ececec;
+    --composer-bg: #303030;
+    --composer-border: rgba(255, 255, 255, 0.06);
+    --composer-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    --btn-bg: rgba(255, 255, 255, 0.07);
+    --btn-edge: rgba(255, 255, 255, 0.08);
+    --menu-hover-bg: rgba(255, 255, 255, 0.07);
+    --menu-hover-text: #ececec;
+    --switch-on: #10a37f;
+    --knob: #ffffff;
+    --seg-thumb: #4a4a4a;
+    --group-bg: #212121;
+    --tile-ink: #b4b4b4;
+    --tile-grey: rgba(255, 255, 255, 0.08);
+    --tile-blue: rgba(255, 255, 255, 0.08);
+    --tile-green: rgba(255, 255, 255, 0.08);
+    --tile-orange: rgba(255, 255, 255, 0.08);
+    --tile-red: rgba(255, 255, 255, 0.08);
+    --tile-purple: rgba(255, 255, 255, 0.08);
+    --tile-indigo: rgba(255, 255, 255, 0.08);
+    --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.6);
+    --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.35);
+    --material-bg: #171717;
+    --material-bar: #212121;
+  }
+}
+
+/* ---- editor: a code editor's feel. Dark first, compact, crisp borders, small radii. Solid surfaces. ---- */
+[data-look="editor"] {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --font-prose: var(--font-ui);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --fs-caption: calc(11px * var(--text-scale));
+  --fs-meta: calc(12px * var(--text-scale));
+  --fs-small: calc(12px * var(--text-scale));
+  --fs-ui: calc(13px * var(--text-scale));
+  --fs-prose: calc(14px * var(--text-scale));
+  --fs-prose-phone: calc(15px * var(--text-scale));
+  --fs-touch: calc(15px * var(--text-scale));
+  --fs-input: calc(16px * max(1, var(--text-scale)));
+  --fs-h3: calc(15px * var(--text-scale));
+  --fs-title: calc(17px * var(--text-scale));
+  --fs-large: calc(22px * var(--text-scale));
+  --lh-prose: 1.55;
+  --tracking-title: 0em;
+  --tracking-large: -0.01em;
+  --weight-strong: 600;
+  --r-row: 4px;
+  --r-btn: 6px;
+  --r-btn-touch: 8px;
+  --r-field: 6px;
+  --r-card: 8px;
+  --r-menu: 6px;
+  --r-bubble: 8px;
+  --r-composer: 10px;
+  --r-composer-phone: 10px;
+  --r-capsule: 10px;
+  --r-sheet: 10px;
+  --r-send: 6px;
+  --row-h: 26px;
+  --btn-h: 26px;
+  --menu-row-h: 24px;
+  --header-h: 36px;
+  --material-filter: none;
+
+  --bg: #ffffff;
+  --panel: #f8f8f8;
+  --elevated: #ffffff;
+  --hover: rgba(0, 0, 0, 0.04);
+  --selected: rgba(0, 0, 0, 0.07);
+  --fill: rgba(0, 0, 0, 0.05);
+  --fill-strong: rgba(0, 0, 0, 0.1);
+  --hairline: #e5e5e5;
+  --hairline-strong: #d0d0d0;
+  --text: #1f1f1f;
+  --dim: #616161;
+  --faint: #8f8f8f;
+  --accent: #1f1f1f;
+  --accent-ink: #ffffff;
+  --accent-text: #1d5fd6;
+  --accent-hover: #333333;
+  --accent-dim: #474747;
+  --accent-wash: rgba(29, 95, 214, 0.08);
+  --accent-rim: rgba(29, 95, 214, 0.24);
+  --ring: #1d5fd6;
+  --ring-wash: rgba(29, 95, 214, 0.18);
+  --accent-ui: var(--accent-text);
+  --attn: #856003;
+  --attn-dot: #a57804;
+  --attn-rim: rgba(165, 120, 4, 0.3);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #2a8050;
+  --ok-fill: #2e8b57;
+  --warn: #b05109;
+  --warn-fill: #d67506;
+  --warn-wash: rgba(217, 119, 6, 0.12);
+  --danger: #c42929;
+  --danger-fill: #c42929;
+  --danger-wash: rgba(211, 47, 47, 0.08);
+  --scrim: rgba(0, 0, 0, 0.3);
+  --code-bg: #f8f8f8;
+  --bubble-bg: #f3f3f3;
+  --bubble-text: #1f1f1f;
+  --composer-bg: #ffffff;
+  --composer-border: #e5e5e5;
+  --composer-shadow: none;
+  --btn-bg: rgba(0, 0, 0, 0.05);
+  --btn-edge: #e5e5e5;
+  --menu-hover-bg: rgba(29, 95, 214, 0.1);
+  --menu-hover-text: #1f1f1f;
+  --switch-on: #1d5fd6;
+  --knob: #ffffff;
+  --seg-thumb: #ffffff;
+  --group-bg: #f8f8f8;
+  --tile-ink: #616161;
+  --tile-grey: rgba(0, 0, 0, 0.05);
+  --tile-blue: rgba(0, 0, 0, 0.05);
+  --tile-green: rgba(0, 0, 0, 0.05);
+  --tile-orange: rgba(0, 0, 0, 0.05);
+  --tile-red: rgba(0, 0, 0, 0.05);
+  --tile-purple: rgba(0, 0, 0, 0.05);
+  --tile-indigo: rgba(0, 0, 0, 0.05);
+  --shadow-1: 0 0 0 1px #e5e5e5;
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.08), 0 0 0 1px #e5e5e5;
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.14), 0 0 0 1px #e5e5e5;
+  --shadow-thumb: 0 0 0 1px #e0e0e0, 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --material-bg: #f8f8f8;
+  --material-bar: #ffffff;
+}
+
+[data-look="editor"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #181818;
+  --panel: #141414;
+  --elevated: #1f1f1f;
+  --hover: rgba(255, 255, 255, 0.05);
+  --selected: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.06);
+  --fill-strong: rgba(255, 255, 255, 0.11);
+  --hairline: #2a2a2a;
+  --hairline-strong: #3a3a3a;
+  --text: #e4e4e4;
+  --dim: #a0a0a0;
+  --faint: #6b6b6b;
+  --accent: #e4e4e4;
+  --accent-ink: #141414;
+  --accent-text: #6aa1ff;
+  --accent-hover: #cfcfcf;
+  --accent-dim: #b8b8b8;
+  --accent-wash: rgba(106, 161, 255, 0.1);
+  --accent-rim: rgba(106, 161, 255, 0.28);
+  --ring: #6aa1ff;
+  --ring-wash: rgba(106, 161, 255, 0.22);
+  --accent-ui: var(--accent-text);
+  --attn: #e2b340;
+  --attn-dot: #e2b340;
+  --attn-rim: rgba(226, 179, 64, 0.34);
+  --composer-focus-edge: var(--ring);
+  --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+  --ok: #4ec9b0;
+  --ok-fill: #4ec9b0;
+  --warn: #dcdcaa;
+  --warn-fill: #dcdcaa;
+  --warn-wash: rgba(220, 220, 170, 0.12);
+  --danger: #f48771;
+  --danger-fill: #f48771;
+  --danger-wash: rgba(244, 135, 113, 0.12);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --code-bg: #141414;
+  --bubble-bg: #252525;
+  --bubble-text: #e4e4e4;
+  --composer-bg: #1f1f1f;
+  --composer-border: #2f2f2f;
+  --composer-shadow: none;
+  --btn-bg: rgba(255, 255, 255, 0.06);
+  --btn-edge: #2a2a2a;
+  --menu-hover-bg: rgba(106, 161, 255, 0.16);
+  --menu-hover-text: #e4e4e4;
+  --switch-on: #3b78e7;
+  --knob: #ffffff;
+  --seg-thumb: #333333;
+  --group-bg: #181818;
+  --tile-ink: #a0a0a0;
+  --tile-grey: rgba(255, 255, 255, 0.07);
+  --tile-blue: rgba(255, 255, 255, 0.07);
+  --tile-green: rgba(255, 255, 255, 0.07);
+  --tile-orange: rgba(255, 255, 255, 0.07);
+  --tile-red: rgba(255, 255, 255, 0.07);
+  --tile-purple: rgba(255, 255, 255, 0.07);
+  --tile-indigo: rgba(255, 255, 255, 0.07);
+  --shadow-1: 0 0 0 1px #2a2a2a;
+  --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px #2f2f2f;
+  --shadow-3: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px #2f2f2f;
+  --shadow-thumb: 0 0 0 1px #3a3a3a;
+  --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --material-bg: #141414;
+  --material-bar: #181818;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-look="editor"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #181818;
+    --panel: #141414;
+    --elevated: #1f1f1f;
+    --hover: rgba(255, 255, 255, 0.05);
+    --selected: rgba(255, 255, 255, 0.08);
+    --fill: rgba(255, 255, 255, 0.06);
+    --fill-strong: rgba(255, 255, 255, 0.11);
+    --hairline: #2a2a2a;
+    --hairline-strong: #3a3a3a;
+    --text: #e4e4e4;
+    --dim: #a0a0a0;
+    --faint: #6b6b6b;
+    --accent: #e4e4e4;
+    --accent-ink: #141414;
+    --accent-text: #6aa1ff;
+    --accent-hover: #cfcfcf;
+    --accent-dim: #b8b8b8;
+    --accent-wash: rgba(106, 161, 255, 0.1);
+    --accent-rim: rgba(106, 161, 255, 0.28);
+    --ring: #6aa1ff;
+    --ring-wash: rgba(106, 161, 255, 0.22);
+    --accent-ui: var(--accent-text);
+    --attn: #e2b340;
+    --attn-dot: #e2b340;
+    --attn-rim: rgba(226, 179, 64, 0.34);
+    --composer-focus-edge: var(--ring);
+    --composer-focus-shadow: 0 0 0 3px var(--ring-wash), var(--composer-shadow);
+    --ok: #4ec9b0;
+    --ok-fill: #4ec9b0;
+    --warn: #dcdcaa;
+    --warn-fill: #dcdcaa;
+    --warn-wash: rgba(220, 220, 170, 0.12);
+    --danger: #f48771;
+    --danger-fill: #f48771;
+    --danger-wash: rgba(244, 135, 113, 0.12);
+    --scrim: rgba(0, 0, 0, 0.6);
+    --code-bg: #141414;
+    --bubble-bg: #252525;
+    --bubble-text: #e4e4e4;
+    --composer-bg: #1f1f1f;
+    --composer-border: #2f2f2f;
+    --composer-shadow: none;
+    --btn-bg: rgba(255, 255, 255, 0.06);
+    --btn-edge: #2a2a2a;
+    --menu-hover-bg: rgba(106, 161, 255, 0.16);
+    --menu-hover-text: #e4e4e4;
+    --switch-on: #3b78e7;
+    --knob: #ffffff;
+    --seg-thumb: #333333;
+    --group-bg: #181818;
+    --tile-ink: #a0a0a0;
+    --tile-grey: rgba(255, 255, 255, 0.07);
+    --tile-blue: rgba(255, 255, 255, 0.07);
+    --tile-green: rgba(255, 255, 255, 0.07);
+    --tile-orange: rgba(255, 255, 255, 0.07);
+    --tile-red: rgba(255, 255, 255, 0.07);
+    --tile-purple: rgba(255, 255, 255, 0.07);
+    --tile-indigo: rgba(255, 255, 255, 0.07);
+    --shadow-1: 0 0 0 1px #2a2a2a;
+    --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px #2f2f2f;
+    --shadow-3: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px #2f2f2f;
+    --shadow-thumb: 0 0 0 1px #3a3a3a;
+    --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --material-bg: #141414;
+    --material-bar: #181818;
+  }
+}
+
+/* ---- The older names (every earlier round's token keeps working), and the tokens made from a look's own: declared
+   on every element that carries a look, so a preview tile resolves them from its own look. --r-thumb is the
+   segmented control's thumb and segments, 2 px inside the track's --r-btn. */
+:root,
+[data-look] {
+  --r-thumb: calc(var(--r-btn) - 2px);
+  --ui-font: var(--font-ui);
+  --mono-font: var(--font-mono);
+  --fw-bold: var(--weight-strong);
+  --track-title: var(--tracking-title);
+  --track-large: var(--tracking-large);
+  --fs-h2: var(--fs-title);
+  --fs-h1: var(--fs-large);
+  --r-chip: var(--r-row);
+  --r-popover: var(--r-menu);
+  --bubble: var(--bubble-bg);
+  --material-sidebar: var(--material-bg);
+  --unread-dot: var(--accent);
+  --menu-dot-ring: none;
+}
+/* Glass's highlighted menu row is its solid accent, on which a search result's needs-you and failed dots fall under
+   3:1 (light 1.15:1 and 1.24:1, dark failed 1.84:1): base.css rings them in the row's white text there. Every other
+   look's highlight is a light tint, on which the dots hold 3:1, so they have no ring. */
+:root:not([data-look]),
+[data-look="glass"] {
+  --menu-dot-ring: 1px solid var(--menu-hover-text);
+}
+/* The unread dot holds no text, so glass dark draws it in the system blue #0a84ff (its --ring) and not in the --accent
+   that D40 lifted for its white label: #0072e5 is 2.49:1 on the open chat's --selected row, #0a84ff 3.16:1. */
+:root:not([data-look])[data-theme="dark"],
+[data-look="glass"][data-theme="dark"] {
+  --unread-dot: var(--ring);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-look]):not([data-theme="light"]),
+  [data-look="glass"]:not([data-theme="light"]) {
+    --unread-dot: var(--ring);
+  }
+}
+/* Paper's accent is a clay red, too near its Failed red for a dot with no word beside it (CIEDE2000 about 12, against
+   29 to 48 in the other looks), so paper's unread dot is its ink: in light and dark it is the one dot of no hue. */
+[data-look="paper"] {
+  --unread-dot: var(--text);
+}
+
+/* ---- The same in every look: the text size, spacing, motion, the touch target and the layout widths. */
+:root {
+  /* Settings > Appearance > Text size sets --text-scale (0.9 to 1.3) on the root; every --fs-* token is a size times
+     it, and a touch field (--fs-input) never goes under 16 px. Weights: 400 and --weight-strong only. */
+  --text-scale: 1;
+  --fw-regular: 400;
+  --lh-ui: 1.3;
+  --measure: 72ch;
+  --r-pill: 999px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  /* Motion (plan v2 rule 8): popovers and reveals 160 ms, switches 200 ms, sheets 280 ms on an ease-out spring. */
+  --t-reveal: 160ms;
+  --t-toggle: 200ms;
+  --t-sheet: 280ms;
+  --t-hue: 240ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Touch rows, buttons and menu rows are 44 px in every look (the laptop sizes, --row-h, --btn-h and --menu-row-h,
+     are the look's). Layout (DESIGN.md 6.2, 7.3; layout/size.ts holds the same numbers): the laptop sidebar, the
+     side panel's column and the laptop pane, the pane bar (56 px on touch), and the medium docked pane: 320 px from
+     an 800 px window, else 40% of the window. The title bar is --header-h: the look's height on a laptop, 44 px on
+     touch and on the phone (plus the safe area there). */
+  --touch: 44px;
+  --sidebar-w: 248px;
+  --panel-w: 320px;
+  --pane-bar-w: 48px;
+  --pane-w: 40vw;
+}
+@media (min-width: 800px) {
+  :root {
+    --pane-w: 320px;
+  }
+}
+/* Touch and the phone (main.tsx and App.tsx set the class and data-size on the body). The rules also name a nested
+   look, so a preview tile on a phone takes the phone's sizes and not its look's laptop ones. */
+body.touch,
+body.touch [data-look] {
+  --pane-bar-w: 56px;
+  --row-h: var(--touch);
+  --btn-h: var(--touch);
+  --menu-row-h: var(--touch);
+  --header-h: 44px;
+}
+body[data-size="phone"],
+body[data-size="phone"] [data-look] {
+  --header-h: 44px;
+  --fs-prose: var(--fs-prose-phone);
+  --r-composer: var(--r-composer-phone);
+}
+
+/* Reduced motion: the system's setting, or Settings > Appearance > Reduce motion (data-motion on the root). Motion
+   turns to opacity only (base.css swaps the slides for fades). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-reveal: 0ms;
+    --t-toggle: 0ms;
+    --t-sheet: 0ms;
+    --t-hue: 0ms;
+  }
+}
+:root[data-motion="reduce"] {
+  --t-reveal: 0ms;
+  --t-toggle: 0ms;
+  --t-sheet: 0ms;
+  --t-hue: 0ms;
+}

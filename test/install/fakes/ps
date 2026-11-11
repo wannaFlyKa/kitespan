@@ -1,0 +1,5 @@
+#!/bin/sh
+# A fake ps for install.sh's tests: whatever the options, it prints $FAKE_PS (lines of "<pid> <arguments>"), or fails
+# when $FAKE_PS_FAIL is set.
+[ -z "${FAKE_PS_FAIL-}" ] || exit 1
+[ -z "${FAKE_PS-}" ] || printf '%s\n' "$FAKE_PS"

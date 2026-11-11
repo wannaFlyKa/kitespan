@@ -1,0 +1,1325 @@
+/* Base styles and the shared components (prototype design plans v2 and v3). Every value here is a token of tokens.css
+   (no literal colour, radius, font, font size or shadow), so the look the user picks restyles these too; the same
+   holds for every area's own file. Use these classes instead of writing an area's own copy; an area file only adds
+   its own layout and prefixed classes.
+     .btn            a button with no border (a look may add a hairline edge, --btn-edge): the default is secondary
+                     (--btn-bg); .primary (--accent, --accent-ink label, --weight-strong), .danger (a --danger label
+                     and no fill, as .ghost.danger: a --danger label on --btn-bg misses AA; with .primary a
+                     --danger-fill), .ghost and .plain (no fill, --accent-ui label, or --danger with .danger).
+                     --btn-h and --r-btn on a laptop; 44 px, --r-btn-touch and --fs-touch on touch.
+                     .icon-btn: an icon only, no fill at rest, 28 px on a laptop and 44 px on touch.
+     .chip           a small --fill pill (the composer's mode, model and effort, small state tags).
+     .dot            the state dots: .starting (--dim), .running (--ok-fill), .waiting (--attn-dot with the
+                     needs-you pulse), .failed (--danger); .idle and .sleeping draw no dot and keep its place.
+     .menu           a popover (a laptop, and a tablet's anchored menus) with .menu-row rows: --menu-row-h, the
+                     look's highlight (--menu-hover-bg); iOS rows (44 px) on touch. The areas draw menu rows in it
+                     and .group lists only in a sheet (usePopupSheet in ui/primitives.tsx).
+                     .menu-check (--accent) marks the checked row; .row-hint is a row's second line;
+                     .menu-sep a separator.
+     .scrim .sheet   the bottom sheet (the phone, and a Popup with no anchor): opaque, --r-sheet top corners, the .sheet-grip grabber, the
+                     .sheet-head title row (.sheet-title centred, .sheet-done at the top right). Popup in
+                     ui/primitives.tsx draws it.
+     .dialog         a centred modal (Dialog in ui/primitives.tsx); .dialog-actions holds its buttons.
+     .field          a text field, a text area or a select: the only control with an edge (--hairline-strong).
+     .notice         the one plain line that says what is gone or changed.
+     .seg            the segmented control (Segmented in ui/Segmented.tsx): .seg-item segments; .seg-block fills
+                     the width, .seg-small is the compact size.
+     .switch         the iOS toggle (Switch in ui/Switch.tsx): a real checkbox inside; --switch-on when on.
+     .group          a grouped inset list: .group-row rows with inset hairlines, .group-icon (a tile; .tile-blue,
+                     .tile-green, .tile-orange, .tile-red, .tile-purple, .tile-indigo, .tile-grey), .group-text with
+                     .group-label and .group-sub, .group-value, .group-chevron, .group-check; .group-title above a
+                     group, .group-foot under it, .group-surface for the page behind the groups.
+     .drop-target    the drop overlay while files are dragged over the chat (DropOverlay in ui/files.tsx).
+     .attach-chip    an attachment in the composer (AttachChip in ui/files.tsx).
+     .copy .toast .visually-hidden .mono   as before.
+   An element with data-look (a preview tile) takes its look's text colour and font here; give it its own background
+   (var(--bg)) in the area's file. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+/* The page's height (DESIGN 7.8): 100%, then 100svh where the browser has it, then 100dvh, which follows the
+   browser's own bars (layout.css .shell does the same). */
+html,
+body,
+#root {
+  height: 100%;
+  height: 100svh;
+  height: 100dvh;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--t-hue) var(--ease), color var(--t-hue) var(--ease);
+}
+body [data-look] {
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+/* A switch of look or theme repaints at once: App.tsx sets data-switching on the root for one frame, so no colour
+   animates half-way (DESIGN.md 6.13). */
+:root[data-switching] *,
+:root[data-switching] *::before,
+:root[data-switching] *::after {
+  transition: none !important;
+}
+code,
+kbd,
+pre,
+samp,
+.mono {
+  font-family: var(--font-mono);
+}
+/* A command to copy (the minimum version's `claude update`): one tap or click selects it whole. */
+.select-all {
+  -webkit-user-select: all;
+  user-select: all;
+}
+a {
+  color: var(--accent-text);
+}
+::selection {
+  background: var(--accent-rim);
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+/* Hidden until found (U2's folded work) keeps its box for the browser's Find; it takes no room (chat.css). */
+[hidden]:not([hidden="until-found"]) {
+  display: none !important;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Buttons: fills, never outlines (a look's --btn-edge is at most a hairline). One primary per surface. A hover
+   lays --hover over the fill. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--btn-h);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-btn);
+  background-color: var(--btn-bg);
+  box-shadow: inset 0 0 0 1px var(--btn-edge);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--t-reveal) var(--ease), opacity var(--t-reveal) var(--ease);
+}
+.btn:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+.btn:active {
+  background-color: var(--fill-strong);
+}
+.btn.primary {
+  background-color: var(--accent);
+  box-shadow: none;
+  color: var(--accent-ink);
+  font-weight: var(--weight-strong);
+}
+.btn.primary:hover {
+  background-image: none;
+  background-color: var(--accent-hover);
+}
+.btn.primary:active {
+  background-color: var(--accent-dim);
+}
+.btn.danger {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--danger);
+}
+.btn.primary.danger {
+  background-color: var(--danger-fill);
+  color: var(--accent-ink);
+}
+.btn.primary.danger:hover,
+.btn.primary.danger:active {
+  background-color: var(--danger-fill);
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+.btn.ghost,
+.btn.plain {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--accent-ui);
+}
+.btn.ghost:active,
+.btn.plain:active {
+  background-color: var(--fill);
+}
+.btn.ghost.danger,
+.btn.plain.danger {
+  color: var(--danger);
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+.btn:disabled:hover {
+  background-image: none;
+}
+.touch .btn {
+  min-height: var(--touch);
+  padding: 0 var(--s4);
+  border-radius: var(--r-btn-touch);
+  font-size: var(--fs-touch);
+}
+.touch .btn:hover {
+  background-image: none; /* a tap leaves :hover on; touch shows the press instead */
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--dim);
+  text-decoration: none;
+  transition: background-color var(--t-reveal) var(--ease), color var(--t-reveal) var(--ease);
+}
+.icon-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.icon-btn:active,
+.icon-btn[aria-expanded="true"] {
+  background: var(--fill-strong);
+  color: var(--text);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+.touch .icon-btn {
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: var(--r-field);
+}
+.touch .icon-btn:hover {
+  background: transparent;
+}
+.touch .icon-btn:active,
+.touch .icon-btn[aria-expanded="true"] {
+  background: var(--fill);
+}
+
+/* ---- Chips: a small --fill pill. On touch the pill stays small and its target grows to 44 px. */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background-color: var(--fill);
+  color: var(--text);
+  font-size: var(--fs-small);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+button.chip:hover,
+a.chip:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+.chip[aria-expanded="true"],
+button.chip:active {
+  background-color: var(--fill-strong);
+}
+.touch .chip {
+  height: 32px;
+  padding: 0 12px;
+  font-size: var(--fs-ui);
+}
+.touch button.chip::after,
+.touch a.chip::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+
+/* ---- State dots (DESIGN.md 6.2, owner row 116): starting (a dim dot), running (green), needs you (--attn-dot, a
+   warm gold-amber of the look's own, with the slow pulse in its colour; the words Needs input and the count badge are
+   --attn, DESIGN.md 6.13), failed (a --danger dot) and unread (--unread-dot, the look's accent, still: a turn ended
+   that no device has looked at since). An idle or sleeping chat has no dot: the dot keeps its place, so the titles of
+   a list line up. Each fill is 3:1 on --bg, --panel and the open chat's --selected row (test/web/tokens.test.ts). */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  flex: none;
+  background: transparent;
+}
+.dot.starting {
+  background: var(--dim);
+}
+.dot.running {
+  background: var(--ok-fill);
+}
+.dot.failed {
+  background: var(--danger);
+}
+.dot.unread {
+  background: var(--unread-dot);
+}
+.dot.waiting {
+  background: var(--attn-dot);
+  animation: needs-you 2.4s var(--ease) infinite;
+}
+@keyframes needs-you {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--attn-rim);
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--attn-rim);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot.waiting {
+    animation: none;
+  }
+}
+/* Settings > Appearance > Reduce motion set to On: every animation and transition is off (DESIGN.md 6.13). */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* ---- Popovers and menus. Laptop: --r-menu corners, --shadow-2, rows of --menu-row-h with the look's highlight
+   (glass: the accent with white text, as macOS menus; the others a quiet fill). Touch: 44 px rows at --fs-touch with
+   hairlines, a grey press and no highlight (iOS). Both are opaque. A menu is the newest surface wherever it opens, so
+   it draws over the modal layers too (the scrim at 50; the drawers, sheets and dialogs at 51): a chat row's menu
+   opens inside the chat-list drawer, and its items take the tap (test/web/layers.test.ts). */
+.menu {
+  position: absolute;
+  z-index: 52;
+  min-width: 240px;
+  max-width: min(420px, calc(100vw - 16px));
+  max-height: min(60vh, 520px);
+  overflow: auto;
+  padding: 6px;
+  border-radius: var(--r-menu);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  transform-origin: top left;
+  animation: pop-in var(--t-reveal) var(--ease);
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--menu-row-h);
+  padding: 4px var(--s2);
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  text-align: left;
+  text-decoration: none;
+}
+.menu-row:hover,
+.menu-row[data-active="true"],
+.menu-row:focus-visible {
+  outline: none;
+  background: var(--menu-hover-bg);
+  color: var(--menu-hover-text);
+}
+/* Row 116: a dot on a highlighted menu row (a search result's Needs input or Failed) keeps 3:1 there: where the
+   highlight is the look's solid accent (glass), --menu-dot-ring rings it in the row's text colour. An outline, so the
+   needs-you pulse keeps its box-shadow. */
+.menu-row:hover .dot,
+.menu-row[data-active="true"] .dot,
+.menu-row:focus-visible .dot {
+  outline: var(--menu-dot-ring);
+}
+.menu-row:hover .row-hint,
+.menu-row[data-active="true"] .row-hint,
+.menu-row:focus-visible .row-hint,
+.menu-row:hover .menu-check,
+.menu-row[data-active="true"] .menu-check,
+.menu-row:focus-visible .menu-check {
+  color: inherit;
+}
+.menu-row:disabled,
+.menu-row[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+  color: var(--text);
+}
+.menu-row[aria-checked="true"] .menu-check {
+  visibility: visible;
+}
+.menu-check {
+  visibility: hidden;
+  flex: none;
+  color: var(--accent);
+}
+.menu-row .row-hint {
+  display: block;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.menu-sep {
+  height: 1px;
+  margin: 5px var(--s2);
+  border: 0;
+  background: var(--hairline);
+}
+.touch .menu-row {
+  min-height: var(--touch);
+  padding: 10px var(--s4);
+  border-radius: 0;
+  font-size: var(--fs-touch);
+}
+.touch .menu-row + .menu-row {
+  box-shadow: inset 0 1px 0 var(--hairline);
+}
+.touch .menu-row:hover,
+.touch .menu-row:focus-visible {
+  background: transparent;
+  color: var(--text);
+}
+.touch .menu-row:hover .row-hint,
+.touch .menu-row:focus-visible .row-hint {
+  color: var(--dim);
+}
+.touch .menu-row:hover .menu-check,
+.touch .menu-row:focus-visible .menu-check {
+  color: var(--accent);
+}
+.touch .menu-row:active,
+.touch .menu-row[data-active="true"] {
+  background: var(--fill);
+  color: var(--text);
+}
+.touch .menu-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.touch .menu-row .row-hint {
+  font-size: var(--fs-ui);
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+/* ---- Sheets (touch and phone) and dialogs. Sheets stay opaque: WebKit bleeds blur in sheets. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--scrim);
+  animation: fade-in var(--t-reveal) var(--ease);
+}
+.sheet {
+  position: fixed;
+  z-index: 51;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 86dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  /* A notched phone in landscape: the rows, the title row and Done stay inside the left and right safe areas. */
+  --sheet-pad-l: max(var(--s4), env(safe-area-inset-left));
+  --sheet-pad-r: max(var(--s4), env(safe-area-inset-right));
+  /* The home indicator's inset replaces the base padding, never adds to it (7.8). */
+  padding: 0 var(--sheet-pad-r) max(var(--s4), env(safe-area-inset-bottom)) var(--sheet-pad-l);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--elevated);
+  box-shadow: var(--shadow-3);
+  animation: sheet-up var(--t-sheet) var(--ease-spring);
+}
+/* A sheet whose field has the focus while the on-screen keyboard is up (Modal.tsx CancelSheet): it hangs from the
+   top, moved down until its foot is the visual viewport's, and is at most as tall as the visual viewport (7.8). */
+.sheet.is-riding {
+  top: 0;
+  bottom: auto;
+}
+/* A tablet (medium, and a large tablet in the laptop layout) keeps the sheet at a readable width, centred over the
+   bottom edge. */
+body[data-size="medium"] .sheet,
+body.touch[data-size="laptop"] .sheet {
+  max-width: 600px;
+  margin-inline: auto;
+}
+.sheet-grip {
+  width: 36px;
+  height: 5px;
+  margin: 6px auto 0;
+  border-radius: var(--r-pill);
+  background: var(--hairline-strong);
+}
+/* The title row (7.6): the title centred in --fs-h3 and --weight-strong, Done at the top right in --accent-ui and
+   --weight-strong. It stays at the top while the sheet's content scrolls. */
+.sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(64px, 1fr) minmax(0, auto) minmax(64px, 1fr);
+  align-items: center;
+  min-height: 48px;
+  margin: 0 calc(-1 * var(--sheet-pad-r)) var(--s2) calc(-1 * var(--sheet-pad-l));
+  padding: 0 max(var(--s2), env(safe-area-inset-right)) 0 max(var(--s2), env(safe-area-inset-left));
+  background: var(--elevated);
+}
+.sheet-title {
+  grid-column: 2;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-strong);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sheet-done {
+  grid-column: 3;
+  justify-self: end;
+}
+.btn.sheet-done {
+  padding: 0 var(--s2);
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-ui);
+  font-weight: var(--weight-strong);
+}
+/* A sheet or dialog takes the focus itself when nothing in it should; its ring would only frame the whole box. */
+.sheet:focus,
+.dialog:focus {
+  outline: none;
+}
+.dialog {
+  position: fixed;
+  z-index: 51;
+  top: 50%;
+  left: 50%;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 64px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  padding: var(--s5);
+  border-radius: var(--r-sheet);
+  background: var(--elevated);
+  box-shadow: var(--shadow-3);
+  animation: dialog-in var(--t-reveal) var(--ease);
+}
+.dialog h2 {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+}
+.dialog p {
+  margin: 0 0 var(--s4);
+  color: var(--dim);
+}
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap; /* three buttons at touch sizes may not fit one row of a 480 px dialog: they wrap, never clip */
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+body[data-size="phone"] .dialog {
+  padding: var(--s5) var(--s4) var(--s4);
+}
+/* The phone stacks the buttons full width, the primary one first: a dialog lists them so there (FIX-Q1, ui/primitives
+   readingOrder), and they show in the DOM's order, the one Tab and a screen reader follow. */
+body[data-size="phone"] .dialog-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+/* Reduced motion: opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .menu {
+    animation: fade-in 120ms linear;
+  }
+  .dialog {
+    animation: fade-in 120ms linear;
+  }
+}
+
+/* ---- Text fields: the only controls with an edge (--hairline-strong); focus shows the --ring edge and halo. */
+.field {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-field);
+  background: var(--elevated);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  transition: border-color var(--t-reveal) var(--ease), box-shadow var(--t-reveal) var(--ease);
+}
+.field::placeholder {
+  color: var(--faint);
+}
+.field:focus,
+.field:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--ring-wash);
+}
+.field:disabled,
+.field[readonly] {
+  background: var(--fill);
+  border-color: transparent;
+}
+textarea.field {
+  resize: vertical;
+}
+.touch .field {
+  min-height: var(--touch);
+  padding: 10px var(--s3);
+  font-size: var(--fs-input);
+}
+
+/* ---- Copy (ui/Copy.tsx, DESIGN.md 7.10): the icon alone or with its word; "Copy failed" in --danger with its hint. */
+/* Positioned, so its visually hidden live region ("Copied") is placed inside it: else every reply's would lie at its
+   own place down the transcript outside the scroller, and the chat's hidden-overflow column would scroll when a field
+   takes the focus. */
+.copy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.copy-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.copy-btn:active {
+  background: var(--fill-strong);
+}
+.touch .copy-btn {
+  height: var(--touch);
+  min-width: var(--touch);
+}
+.copy.is-failed .copy-btn {
+  color: var(--danger);
+}
+.copy-hint {
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+
+/* ---- Toasts (ui/Toasts.tsx, DESIGN.md 6.3): a small --elevated card at the top right, under the header. */
+.toasts {
+  position: fixed;
+  z-index: 45;
+  top: calc(var(--header-h) + env(safe-area-inset-top) + var(--s2));
+  right: max(var(--s3), env(safe-area-inset-right));
+  width: min(296px, calc(100vw - 2 * var(--s3))); /* inside the side panel's 320 px column */
+  pointer-events: none;
+}
+body[data-size="phone"] .toasts {
+  left: max(var(--s3), env(safe-area-inset-left));
+  width: auto;
+}
+/* Beside a pane bar (medium touch, a narrow laptop's chat) the toast keeps clear of the bar's buttons. */
+.shell:has(> .pane-bar) ~ .toasts {
+  right: calc(var(--pane-bar-w) + var(--s3));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  border-radius: var(--r-menu);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  pointer-events: auto;
+  animation: pop-in var(--t-reveal) var(--ease);
+}
+.toast-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 0;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  overflow-wrap: anywhere;
+}
+.toast-close {
+  flex: none;
+}
+.touch .toast-text {
+  padding: 12px 0;
+  font-size: var(--fs-prose);
+}
+
+/* ---- The one plain line that says what is gone or changed (DESIGN.md section 5 rule 5). */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-field);
+  background: var(--fill);
+  color: var(--text);
+  font-size: var(--fs-ui);
+}
+
+/* ---- The segmented control: a --fill track, a raised segment that slides (the thumb is the track's ::before,
+   placed by --seg-index of --seg-count, which Segmented sets). Segments share the width equally. The track takes
+   the look's button radius (a pill in the mono look) and the thumb sits 2 px inside it (--r-thumb). */
+.seg {
+  --seg-count: 1;
+  --seg-index: 0;
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  padding: 2px;
+  border-radius: var(--r-btn);
+  background: var(--fill);
+  isolation: isolate;
+  vertical-align: middle;
+}
+.seg-block {
+  display: grid;
+  width: 100%;
+}
+.seg::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--seg-count));
+  border-radius: var(--r-thumb);
+  background: var(--seg-thumb);
+  box-shadow: var(--shadow-thumb);
+  transform: translateX(calc(100% * var(--seg-index)));
+  transition: transform var(--t-toggle) var(--ease-spring);
+}
+.seg[data-none="true"]::before {
+  visibility: hidden; /* no segment is on */
+}
+.seg-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-thumb);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+/* The separators between two segments that are not on, as in AppKit and UIKit. */
+.seg-item + .seg-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 1px;
+  background: var(--hairline-strong);
+  transition: opacity var(--t-toggle) var(--ease);
+}
+.seg-item[aria-checked="true"]::before,
+.seg-item[aria-checked="true"] + .seg-item::before {
+  opacity: 0;
+}
+.seg-item[aria-checked="true"] {
+  font-weight: var(--weight-strong);
+}
+.seg-item:not([aria-checked="true"]):hover {
+  background: var(--hover);
+}
+.seg-item:not([aria-checked="true"]):active {
+  background: var(--fill);
+}
+.seg-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+.seg-item:focus-visible {
+  outline-offset: 0;
+}
+/* The label keeps the width of its semibold form, so turning a segment on does not move the others. */
+.seg-label {
+  display: inline-grid;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.seg-label::after {
+  content: attr(data-label);
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: var(--weight-strong);
+}
+.seg-small .seg-item {
+  height: 20px;
+  padding: 0 8px;
+  font-size: var(--fs-small);
+}
+/* On touch a segment is 32 px and its target 44 px: the target reaches 4 px past the track above and below, so the
+   track keeps that much room clear of its neighbours (its margin), and a tap meant for the button above or below it
+   (the sidebar's New chat) never lands on a segment. */
+.touch .seg {
+  margin-block: 4px;
+}
+.touch .seg-item {
+  height: 32px;
+  padding: 0 var(--s3);
+  font-size: var(--fs-ui);
+}
+.touch .seg-item::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+.touch .seg-item:not([aria-checked="true"]):hover {
+  background: transparent;
+}
+
+/* ---- The switch: the iOS toggle. The checkbox inside covers the track, so a click, a tap and Space all reach it;
+   the track and the knob only draw it. 38x22 on a laptop, 51x31 on touch; --switch-on when on. */
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  vertical-align: middle;
+}
+.switch-input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.switch-input:disabled {
+  cursor: default;
+}
+.switch-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+  transition: background-color var(--t-toggle) var(--ease);
+}
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-pill);
+  background: var(--knob);
+  box-shadow: var(--shadow-knob);
+  transition: transform var(--t-toggle) var(--ease-spring);
+}
+.switch-input:checked + .switch-track {
+  background: var(--switch-on);
+}
+.switch-input:checked + .switch-track .switch-knob {
+  transform: translateX(16px);
+}
+.switch-input:focus-visible + .switch-track {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.switch-input:disabled + .switch-track {
+  opacity: 0.4;
+}
+.touch .switch {
+  width: 51px;
+  height: 31px;
+}
+.touch .switch-knob {
+  width: 27px;
+  height: 27px;
+}
+.touch .switch-input:checked + .switch-track .switch-knob {
+  transform: translateX(20px);
+}
+/* On touch the target is 44 px tall (6.5 px above and below the 31 px track); the track stays 31. */
+.touch .switch-input {
+  inset: -6.5px 0;
+  height: auto;
+}
+
+/* ---- Grouped inset lists (System Settings, iOS Settings): --elevated rows on --group-bg, --r-card corners, hairlines
+   inset to the text (after the leading tile), a trailing value in --dim and a chevron for a row that opens something.
+   A row is a .group-row, directly in the .group or inside one wrapper (an li) per row; the rows' ::before is the
+   separator, so a row does not use its own ::before. The glass look's tiles are iOS colours with a white icon; the
+   other looks' tiles are quiet fills with a --tile-ink icon. */
+.group-surface {
+  background: var(--group-bg);
+}
+.group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--r-card);
+  background: var(--elevated);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  isolation: isolate; /* the rows' separators stay inside, so a scrolled sheet never paints them over its title row */
+}
+.group > * {
+  position: relative;
+}
+.group > * + *::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: var(--group-inset, var(--s3));
+  height: 1px;
+  background: var(--hairline);
+  pointer-events: none;
+}
+.group > :has(.group-icon) {
+  --group-inset: calc(var(--s3) + 24px + var(--s3));
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 40px;
+  padding: 6px var(--s3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  text-align: left;
+  text-decoration: none;
+}
+a.group-row:hover,
+button.group-row:hover,
+label.group-row:hover {
+  background: var(--hover);
+}
+a.group-row:active,
+button.group-row:active {
+  background: var(--fill);
+}
+/* The ring follows the group's rounded corners on its first and last rows (an outline takes the border radius). */
+.group-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: var(--r-row);
+}
+.group > .group-row:first-child:focus-visible,
+.group > :first-child > .group-row:focus-visible {
+  border-top-left-radius: var(--r-card);
+  border-top-right-radius: var(--r-card);
+}
+.group > .group-row:last-child:focus-visible,
+.group > :last-child > .group-row:focus-visible {
+  border-bottom-left-radius: var(--r-card);
+  border-bottom-right-radius: var(--r-card);
+}
+.group-row:disabled,
+.group-row[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+.group-row.danger {
+  color: var(--danger);
+}
+.group-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-row);
+  background: var(--tile-grey);
+  color: var(--tile-ink);
+}
+.group-icon.tile-blue {
+  background: var(--tile-blue);
+}
+.group-icon.tile-green {
+  background: var(--tile-green);
+}
+.group-icon.tile-orange {
+  background: var(--tile-orange);
+}
+.group-icon.tile-red {
+  background: var(--tile-red);
+}
+.group-icon.tile-purple {
+  background: var(--tile-purple);
+}
+.group-icon.tile-indigo {
+  background: var(--tile-indigo);
+}
+.group-icon.tile-grey {
+  background: var(--tile-grey);
+}
+.group-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.group-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.group-sub {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.group-value {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 55%;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-chevron {
+  flex: none;
+  color: var(--faint);
+}
+.group-check {
+  flex: none;
+  visibility: hidden;
+  color: var(--accent);
+}
+.group-row[aria-checked="true"] .group-check,
+.group-row[aria-selected="true"] .group-check,
+.group-row[aria-current="true"] .group-check,
+.group-row[aria-current="page"] .group-check {
+  visibility: visible;
+}
+.group-title {
+  margin: var(--s5) 0 6px;
+  padding: 0 var(--s3);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+.group-foot {
+  margin: 6px 0 0;
+  padding: 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.touch .group-row {
+  min-height: var(--touch);
+  padding: 10px var(--s4);
+  font-size: var(--fs-touch);
+}
+.touch .group > * + *::before {
+  left: var(--group-inset, var(--s4));
+}
+.touch .group > :has(.group-icon) {
+  --group-inset: calc(var(--s4) + 29px + var(--s3));
+}
+.touch .group-icon {
+  width: 29px;
+  height: 29px;
+}
+.touch .group-sub {
+  font-size: var(--fs-ui);
+}
+.touch .group-title {
+  padding: 0 var(--s4);
+  color: var(--dim);
+  font-weight: var(--fw-regular);
+}
+.touch .group-foot {
+  padding: 0 var(--s4);
+  font-size: var(--fs-ui);
+}
+.touch a.group-row:hover,
+.touch button.group-row:hover,
+.touch label.group-row:hover {
+  background: transparent;
+}
+.touch a.group-row:active,
+.touch button.group-row:active {
+  background: var(--fill);
+}
+
+/* ---- Files (D37). The drop overlay: while files are dragged over the chat, a --accent-wash wash with a dashed 2 px
+   --accent edge in --r-card, and one line. It never takes the pointer, so the drop lands on the chat. */
+.drop-target {
+  position: absolute;
+  z-index: 25;
+  inset: var(--s2);
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  border: 2px dashed var(--accent);
+  border-radius: var(--r-card);
+  background: var(--accent-wash);
+  pointer-events: none;
+  animation: fade-in var(--t-reveal) var(--ease);
+}
+.drop-target-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  max-width: 100%;
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--fs-prose);
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+.drop-target-line svg {
+  flex: none;
+  color: var(--accent-ui);
+}
+/* The second line while a card waits: where the dropped files wait. */
+.drop-target-note {
+  display: block;
+  color: var(--dim);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+}
+.drop-target-path {
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+}
+
+/* The attachment chip: an icon tile, the name over the size, a progress ring while it uploads, and Remove. */
+.attach-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  max-width: 260px;
+  min-height: 40px;
+  padding: 4px;
+  border-radius: var(--r-field);
+  background: var(--fill);
+  color: var(--text);
+  font-size: var(--fs-small);
+  line-height: 1.25;
+  vertical-align: middle;
+}
+.attach-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-row);
+  background: var(--elevated);
+  color: var(--accent-ui);
+}
+.attach-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.attach-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attach-size {
+  color: var(--dim);
+  font-size: var(--fs-caption);
+}
+.attach-ring {
+  flex: none;
+  color: var(--accent);
+}
+.attach-ring-track {
+  fill: none;
+  stroke: var(--fill-strong);
+  stroke-width: 2.5;
+}
+.attach-ring-fill {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--t-reveal) var(--ease);
+}
+.attach-remove {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+  color: var(--dim);
+}
+.attach-remove:hover {
+  color: var(--text);
+}
+.attach-remove::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.touch .attach-remove::after {
+  inset: -12px;
+}
+.attach-chip.is-failed {
+  background: var(--danger-wash);
+}
+.attach-chip.is-failed .attach-icon {
+  color: var(--danger);
+}
+/* The reason a file was refused is --text: --danger on the danger wash misses AA, so the icon and the wash carry
+   the colour. */
+.attach-chip.is-failed .attach-size {
+  color: var(--text);
+}
+.touch .attach-chip {
+  min-height: 44px;
+  font-size: var(--fs-ui);
+}
+.touch .attach-size {
+  font-size: var(--fs-small);
+}
+
+/* ---- Scrollbars: thin and quiet, as macOS overlay scrollbars. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--fill-strong);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

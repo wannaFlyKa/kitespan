@@ -1,0 +1,2336 @@
+/* The chat area (DESIGN.md 6.2, 6.3, 6.13, 7.10; prototype design plan v3 section 4): the conversation column, every
+   row kind, the safe markdown, the downloads a chat offers (D37), and the waiting card that takes the composer's
+   place. The user's message is a bubble on the right (--bubble-bg, --r-bubble); Claude's reply is prose on the page
+   (--font-prose at --fs-prose); tool rows and Claude Code's own lines are quiet one-line rows; code sits on --code-bg;
+   the subagent and workflow blocks and the cards are --elevated with a hairline and --shadow-1; buttons are base.css
+   .btn. Every colour, radius, font, font size and shadow is a token of tokens.css (test/web/markdown.test.ts
+   checks it), so the look the user picks restyles all of it. Sizes in em are relative to the token-sized text
+   around them. */
+
+.chat-view {
+  --chat-pad: var(--s5);
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+[data-size="phone"] .chat-view {
+  --chat-pad: var(--s3);
+}
+/* ChatScreen's own lines around .chat-view (the files line, the Take back line, the notice) have its shape, so they
+   need the same sides. */
+.chat-screen > .chat-gone {
+  --chat-pad: var(--s5);
+}
+[data-size="phone"] .chat-screen > .chat-gone {
+  --chat-pad: var(--s3);
+}
+
+/* The rows outside the scroller (the 5.4 line and the waiting card) copy its shape: a full-width box with the same
+   scrollbar gutters, and inside it the column's measure (72ch of the prose size) and side padding. So they line up
+   with the column on every platform, whatever their own text size is. */
+.chat-gone,
+.chat-dock {
+  flex: none;
+  overflow: hidden;
+  scrollbar-gutter: stable both-edges;
+}
+.chat-measure {
+  box-sizing: content-box;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--chat-pad);
+  font-size: var(--fs-prose);
+}
+.chat-gone {
+  padding-top: var(--s2);
+}
+.chat-gone .notice {
+  margin: 0;
+}
+
+/* ---- the column ---- */
+.chat-scroll-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chat-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* U2: the page keeps the reader's place itself (chat/anchor.ts), so the browser's own anchoring does not move the
+     view a second time. */
+  overflow-anchor: none;
+  /* Gutters on both sides keep the column centred on the same line as the card below it. */
+  scrollbar-gutter: stable both-edges;
+}
+.chat-col {
+  box-sizing: content-box;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: var(--s5) var(--chat-pad) var(--s6);
+  font-size: var(--fs-prose);
+}
+/* S1: each row is its own stacking context, so a frame of a reply's reveal restacks and hit-tests that row alone, not
+   every positioned box of the transcript (a long chat's frame cost grew with its history). No row clips or skips its
+   paint (contain, content-visibility): a row line's hover and ring, a turn's thread and the linked row's wash reach
+   past the row's box. */
+.chat-col > * {
+  isolation: isolate;
+}
+.chat-col > * + * {
+  margin-top: var(--s4);
+}
+.chat-col > * + .chat-compact,
+.chat-col > .chat-compact + * {
+  margin-top: var(--s2);
+}
+.chat-col > .chat-compact + .chat-compact {
+  margin-top: 2px;
+}
+.chat-col > * + .chat-item-user,
+.chat-col > * + .chat-item-slash {
+  margin-top: var(--s5);
+}
+.chat-col > .chat-item-user + * {
+  margin-top: var(--s2);
+}
+.chat-item {
+  min-width: 0;
+  border-radius: var(--r-row);
+  transition: background-color var(--t-reveal) var(--ease), box-shadow var(--t-reveal) var(--ease);
+}
+.chat-item:focus {
+  outline: none;
+}
+/* The row a /m/<message> link names: a wash in the look's accent, a little wider than the row. */
+.chat-item.is-highlight {
+  background: var(--accent-wash);
+  box-shadow: 0 0 0 6px var(--accent-wash);
+}
+/* U5 (DESIGN-U5 9): the search's words in that row, marked as Find marks them (chat/marks.ts): the ring's wash finds
+   the word at a glance, the ring's underline says it without colour (3.86:1 or more on the row's wash in every look;
+   the accent gave glass dark only 3.05:1). No highlight API: the row's wash alone. */
+::highlight(kitespan-match) {
+  background-color: var(--ring-wash);
+  text-decoration: underline 2px var(--ring);
+  text-underline-offset: 3px;
+}
+
+/* An empty chat: one line in the look's prose voice (the paper look's serif). */
+.chat-greeting {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+  text-align: center;
+}
+.chat-greeting h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-prose);
+  font-size: var(--fs-large);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-large);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+[data-size="phone"] .chat-greeting h2 {
+  font-size: var(--fs-title);
+}
+
+/* ---- the user's message: the look's bubble, on the right, in the UI font ---- */
+.chat-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.chat-bubble {
+  max-width: min(85%, 560px);
+  padding: 8px 14px;
+  border-radius: var(--r-bubble);
+  background: var(--bubble-bg);
+  color: var(--bubble-text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-prose);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Touch reads at the phone's prose size, as the system's own apps do. */
+.touch .chat-bubble {
+  font-size: var(--fs-prose-phone);
+}
+[data-size="phone"] .chat-bubble {
+  max-width: 88%;
+}
+.chat-bubble.is-command {
+  font-size: var(--fs-ui);
+}
+/* Row 111: a queued message is the plain bubble (no Queued word; Send now under the last one says that it waits). A
+   message the server has not taken yet while the socket is down is an outline (a ring all round, no fill) with its
+   words at full contrast, and no word (the chat says Reconnecting...). */
+.chat-user.is-unsent .chat-bubble {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+.chat-user-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s2);
+  min-height: 28px;
+  margin-top: 2px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+/* Take back in the bubble's menu beside Copy: a text item at Copy's size, shown with it (.chat-reveal). */
+.chat-foot-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chat-foot-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.chat-foot-btn:active {
+  background: var(--fill-strong);
+}
+.touch .chat-foot-btn {
+  height: var(--touch);
+  padding: 0 var(--s3);
+}
+/* A tap leaves :hover on (as base.css says of .btn): touch shows only the press, so Take back and Bring back stay
+   quiet after it. */
+.touch .chat-foot-btn:hover {
+  background: transparent;
+  color: var(--dim);
+}
+.touch .chat-foot-btn:active {
+  background: var(--fill-strong);
+}
+/* Send now (the owner's screenshot): under the last queued message, right-aligned to the bubble, a dim text button at
+   the bubble's meta size with no border and no fill in every look; on touch the target is 44 px and the text stays
+   small. Nothing moves, so Reduce motion has nothing to stop. */
+.chat-send-now {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chat-send-now:hover {
+  color: var(--text);
+}
+.touch .chat-send-now {
+  justify-content: center;
+  height: var(--touch);
+  min-width: var(--touch);
+}
+/* Pressed: gone, its place kept until the message is drawn as sent (state/sendNow.ts). */
+.chat-send-now.is-pressed {
+  visibility: hidden;
+}
+
+/* The files a message refers to (D37): one tile each above the bubble, the composer's attachment chip (base.css
+   .attach-chip) as a button that downloads the file. */
+.chat-files {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+  max-width: min(85%, 560px);
+  margin-bottom: 6px;
+}
+[data-size="phone"] .chat-files {
+  max-width: 88%;
+}
+/* A message that is only files (D50, D51): the tiles stand alone, with no bubble under them. */
+.chat-user.is-files .chat-files {
+  margin-bottom: 0;
+}
+.chat-file {
+  padding-right: var(--s2);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-reveal) var(--ease);
+}
+.chat-file:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+.chat-file:active {
+  background-color: var(--fill-strong);
+}
+.chat-file-dl {
+  flex: none;
+  color: var(--dim);
+}
+.chat-file:hover .chat-file-dl {
+  color: var(--text);
+}
+.touch .chat-file:hover {
+  background-image: none;
+}
+/* On touch a tile's "..." (its menu: Download, Copy path) stands beside it: a button holds no button. */
+.chat-file-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+/* ---- Claude's reply ---- */
+.chat-assistant {
+  min-width: 0;
+}
+.chat-foot {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 0 0 -4px -7px;
+}
+.chat-foot-line {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.chat-working-row {
+  display: flex;
+  margin-left: -7px;
+}
+.chat-working {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+.chat-working svg {
+  animation: chat-turn 2.4s linear infinite;
+}
+
+/* Copy (ui/Copy.tsx, styled in base.css) shows on hover or focus on a laptop; on touch a reply's Copy is always there
+   and a message's after a tap, with a queued message's Take back (the bubble's menu); a link to the message shows its
+   menu at once. A tool row's Download (.chat-dl) shows the same way. S1: Copy and Take back hide by their colour, not
+   their opacity: a box with opacity below 1 is a layer of its own, a long chat had two for each turn, and every
+   frame's hit test and paint walked them (the Download is a layer anyway, by its transform). Hidden, they still take
+   the keyboard focus, which shows them. Their colour is mixed with transparent by --chat-reveal (0 hidden, 1 shown),
+   and only that number fades, so only showing and hiding fade, as the opacity did, and a hover's colour changes at
+   once. Hidden, they keep their own colour in forced colours too (the system's would show them). */
+@property --chat-reveal {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+body:not(.touch) .chat-reveal {
+  transition: --chat-reveal var(--t-reveal) var(--ease);
+}
+body:not(.touch) .chat-foot-btn.chat-reveal,
+body:not(.touch) .chat-reveal .copy-btn {
+  color: color-mix(in srgb, var(--dim) calc(var(--chat-reveal) * 100%), transparent);
+}
+body:not(.touch) .chat-foot-btn.chat-reveal:hover,
+body:not(.touch) .chat-reveal .copy-btn:hover {
+  color: color-mix(in srgb, var(--text) calc(var(--chat-reveal) * 100%), transparent);
+}
+body:not(.touch) .chat-reveal.is-failed .copy-btn {
+  color: var(--danger);
+}
+body:not(.touch) .chat-user:not(:hover, :focus-within, .show-actions) .chat-reveal:not(.is-failed),
+body:not(.touch) .chat-assistant:not(:hover, :focus-within) .chat-reveal:not(.is-failed) {
+  --chat-reveal: 0;
+  forced-color-adjust: none;
+}
+body:not(.touch) .chat-dl {
+  opacity: 0;
+  transition: opacity var(--t-reveal) var(--ease);
+}
+body:not(.touch) .chat-row-line:hover .chat-dl,
+body:not(.touch) .chat-row-line:focus-within .chat-dl {
+  opacity: 1;
+}
+.touch .chat-user:not(.show-actions) .chat-reveal:not(.is-failed) {
+  display: none;
+}
+
+/* ---- markdown: Claude's prose in the look's prose font ---- */
+.chat-md {
+  color: var(--text);
+  font-family: var(--font-prose);
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+  overflow-wrap: anywhere;
+}
+.touch .chat-md {
+  font-size: var(--fs-prose-phone);
+}
+.chat-md > :first-child {
+  margin-top: 0;
+}
+.chat-md > :last-child {
+  margin-bottom: 0;
+}
+/* S1: while a reply streams, each of its top blocks is its own stacking context, so a frame of its reveal restacks
+   the block it draws in, not the whole reply. Only then: a finished reply's blocks keep no layer each. */
+.chat-assistant.is-live .chat-md > * {
+  isolation: isolate;
+}
+.chat-md p {
+  margin: 0 0 0.75em;
+}
+.chat-md ul,
+.chat-md ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.5em;
+}
+.chat-md li {
+  margin: 0.2em 0;
+}
+.chat-md li > ul,
+.chat-md li > ol {
+  margin: 0.2em 0 0;
+}
+.chat-md li > p {
+  margin: 0 0 0.35em;
+}
+.chat-md .chat-md-tasks {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.chat-md-check {
+  margin: 0 0.55em 0 0;
+  vertical-align: -0.1em;
+  accent-color: var(--accent);
+}
+.chat-md-h {
+  margin: 1.1em 0 0.45em;
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  line-height: 1.3;
+}
+.chat-md-h1 {
+  font-size: 1.3em;
+}
+.chat-md-h2 {
+  font-size: 1.15em;
+}
+.chat-md-h3 {
+  font-size: 1.04em;
+}
+.chat-md-h4 {
+  font-size: 1em;
+  color: var(--dim);
+}
+/* The one side rule in the app (the owner: no side stripes unless they are needed): a Markdown quote, where the rule
+   is what says "quoted". Thin and grey, never a colour. */
+.chat-md blockquote {
+  margin: 0 0 0.75em;
+  padding: 0 0 0 0.9em;
+  border-left: 2px solid var(--fill-strong);
+  color: var(--dim);
+}
+.chat-md hr {
+  margin: 1.2em 0;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+}
+.chat-md a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.chat-md del {
+  color: var(--dim);
+}
+.chat-md strong {
+  font-weight: var(--weight-strong);
+}
+.chat-md code {
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-row);
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+.chat-md-href,
+.chat-md-img {
+  color: var(--dim);
+  font-size: 0.92em;
+}
+.chat-md-raw {
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  white-space: pre-wrap;
+}
+.chat-md-plain {
+  white-space: pre-wrap;
+}
+.chat-md-table {
+  max-width: 100%;
+  margin: 0 0 0.9em;
+  overflow-x: auto;
+}
+/* A table keeps the reply's voice and size, with the UI's tighter lines. */
+.chat-md table {
+  border-collapse: collapse;
+  line-height: var(--lh-ui);
+}
+.chat-md th,
+.chat-md td {
+  padding: 0.5em 0.9em 0.5em 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+}
+.chat-md th {
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+}
+.chat-md th + th,
+.chat-md td + td {
+  padding-left: 0.9em;
+}
+/* A code block: --code-bg with a hairline edge, the language on the left and the Copy icon on the right. */
+.chat-md-block {
+  margin: 0 0 0.9em;
+}
+.chat-md-code {
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+}
+.chat-md-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: 32px;
+  padding: 2px 2px 0 12px;
+  color: var(--dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-meta);
+  line-height: 1;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* The language label keeps its word whole (G-44). In the failed state the head wraps: the label and "Copy failed" keep
+   the first line, and the hint takes a line of its own under them at the end, at every width, so it never squeezes
+   the label (at 390 it broke "sh" into a letter a line). */
+.chat-md-lang {
+  flex: none;
+  white-space: nowrap;
+}
+.chat-md-code-head:has(> .copy.is-failed) {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+.chat-md-code-head > .copy.is-failed {
+  display: contents;
+}
+.chat-md-code-head > .copy.is-failed > .copy-hint {
+  flex: 1 1 100%;
+  padding: 0 var(--s2) var(--s1) 0;
+  text-align: right;
+  line-height: 1.3;
+}
+.chat-md-code pre {
+  margin: 0;
+  padding: 2px 12px 12px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  line-height: 1.55;
+  tab-size: 4;
+}
+.chat-md pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  white-space: pre;
+}
+/* highlight.js colours, from the look's own roles */
+.chat-md .hljs-keyword,
+.chat-md .hljs-selector-tag,
+.chat-md .hljs-built_in,
+.chat-md .hljs-type,
+.chat-md .hljs-literal {
+  color: var(--accent-text);
+}
+.chat-md .hljs-string,
+.chat-md .hljs-regexp,
+.chat-md .hljs-addition,
+.chat-md .hljs-attribute,
+.chat-md .hljs-template-tag {
+  color: var(--ok);
+}
+.chat-md .hljs-number,
+.chat-md .hljs-symbol,
+.chat-md .hljs-bullet,
+.chat-md .hljs-variable,
+.chat-md .hljs-template-variable {
+  color: var(--warn);
+}
+.chat-md .hljs-comment,
+.chat-md .hljs-quote,
+.chat-md .hljs-meta {
+  color: var(--dim);
+  font-style: italic;
+}
+.chat-md .hljs-deletion,
+.chat-md .hljs-name,
+.chat-md .hljs-tag,
+.chat-md .hljs-selector-id,
+.chat-md .hljs-selector-class {
+  color: var(--danger);
+}
+.chat-md .hljs-title,
+.chat-md .hljs-section,
+.chat-md .hljs-attr,
+.chat-md .hljs-params,
+.chat-md .hljs-property {
+  color: var(--text);
+}
+.chat-md .hljs-emphasis {
+  font-style: italic;
+}
+.chat-md .hljs-strong {
+  font-weight: var(--weight-strong);
+}
+
+/* ---- one-line rows: tools, summaries, thinking, records. Quiet: the whole row in --dim at the small size, the
+   target in mono, an icon in --faint; a hover brings it to --text. The look's row height and radius. ---- */
+.chat-row-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+.chat-row {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--row-h);
+  margin-left: -6px;
+  padding: 2px 8px 2px 6px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+  text-align: left;
+}
+button.chat-row:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+button.chat-row:active {
+  background: var(--fill);
+}
+.touch button.chat-row:hover {
+  background: transparent;
+  color: var(--dim);
+}
+.touch button.chat-row:active {
+  background: var(--fill);
+}
+.chat-row.is-static {
+  cursor: default;
+}
+.chat-row-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  color: var(--faint);
+}
+.chat-row-verb {
+  flex: none;
+}
+.chat-row-target,
+.chat-row-label,
+.chat-row-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-row-target {
+  flex: 0 1 auto;
+  font-size: var(--fs-meta);
+}
+.chat-row-meta {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--fs-meta);
+}
+.chat-tag {
+  flex: none;
+  font-size: var(--fs-meta);
+}
+.chat-tag.is-bad {
+  color: var(--danger);
+}
+.chat-tag.is-ok {
+  color: var(--ok);
+}
+.chat-chev {
+  flex: none;
+  margin-left: auto;
+  color: var(--faint);
+  transition: transform var(--t-reveal) var(--ease);
+}
+.chat-row-meta ~ .chat-chev,
+.chat-spin ~ .chat-chev,
+.chat-row-meta ~ .chat-spin {
+  margin-left: 0;
+}
+.chat-elapsed {
+  font-variant-numeric: tabular-nums;
+}
+[aria-expanded="true"] > .chat-chev {
+  transform: rotate(90deg);
+}
+/* A tool row's Download (base.css .icon-btn), beside the row. On a laptop it shows on hover or focus, in a gutter that
+   every row line keeps, so the rows' ends line up whether a row offers Download or not; on touch it always shows. */
+.chat-dl {
+  color: var(--dim);
+}
+body:not(.touch) .chat-row-line {
+  position: relative;
+  padding-right: calc(28px + var(--s2));
+}
+body:not(.touch) .chat-dl {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+.chat-row-body {
+  margin: 4px 0 8px 22px;
+  min-width: 0;
+}
+/* S59: one quiet line under the row of an MCP tool whose server declares an interactive view. */
+.chat-row-note {
+  margin: 0 0 2px 22px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+[data-size="phone"] .chat-row-note {
+  margin-left: 0;
+}
+/* R127 (DESIGN-R127 5.4): Trust this folder's line in the note's place, under the first visible line that holds the
+   refused row: the words in --dim with the folder's name in --text, then the row's small button; it wraps, so on the
+   phone the 44 px button goes to its own line, left aligned. Tokens only; no colour of its own (the row's Error tag
+   carries the colour), and nothing moves: the line changes in place. */
+.chat-row-note.chat-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--s2);
+  row-gap: 2px;
+  margin: 2px 0 var(--s1) 22px;
+}
+.chat-trust-words {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.chat-trust-path {
+  color: var(--text);
+}
+.chat-trust[data-state="trusted"] .chat-trust-words,
+.chat-trust[data-state="already"] .chat-trust-words {
+  color: var(--text);
+}
+.chat-trust[data-state="gone"] .chat-trust-path {
+  color: inherit;
+}
+[data-size="phone"] .chat-row-note.chat-trust {
+  margin-left: 0;
+  row-gap: var(--s1);
+}
+.touch .chat-row-note.chat-trust {
+  font-size: var(--fs-ui);
+}
+/* R131 (DESIGN-R131 5.3): a background session's line under its launch row, in the note's place (R127's), led by the
+   R116 dot: the session's name in --text, its state in agent view's words (Needs input in --attn, Failed in --danger,
+   the rest --dim, as the chat list's lead words), the reason in --dim, then the row's small button. The words and the
+   button share one row while they fit; the dot keeps its place in every state (an empty one is transparent) and hangs,
+   so names line up and a wrapped reason starts under the name. Tokens only, no motion of its own: the needs-input pulse
+   is the dot's (base.css), which Reduce motion stops. The class is not .chat-bg, Run in background's button. */
+.chat-row-note.chat-bgline {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) max-content;
+  justify-content: start;
+  align-items: center;
+  column-gap: var(--s3);
+  margin: 2px 0 var(--s1) 22px;
+}
+.chat-bgline-words {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding-left: calc(8px + var(--s2));
+  text-indent: calc(-8px - var(--s2));
+}
+.chat-bgline-words > .dot {
+  margin-right: var(--s2);
+  vertical-align: 0.05em;
+}
+.chat-bgline-name {
+  color: var(--text);
+}
+.chat-bgline-state {
+  color: var(--dim);
+}
+.chat-bgline-state.is-attn {
+  color: var(--attn);
+}
+.chat-bgline-state.is-bad {
+  color: var(--danger);
+}
+/* The phone: the words take the rest of the row, so every line's Open sits at the right edge and a list of lines keeps
+   its buttons in one column (a laptop and a tablet keep Open beside the words). */
+[data-size="phone"] .chat-row-note.chat-bgline {
+  margin-left: 0;
+  row-gap: var(--s1);
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.touch .chat-row-note.chat-bgline {
+  font-size: var(--fs-ui);
+}
+/* end R131 */
+[data-size="phone"] .chat-row-body {
+  margin-left: 0;
+}
+.chat-summary-body > * + * {
+  margin-top: 2px;
+}
+
+/* ---- U2 (DESIGN-U2 15): a finished turn's line and its work. The line is a row like the others (chat-row: the
+   look's height, 44 px on touch, its radius, the small size, the quiet colour), with the disclosure chevron in the
+   icon slot; only the chevron turns, on the reader's own press (--t-reveal, 0 under Reduce motion), and the work shows
+   or goes at once. The words
+   keep the UI face, with tabular numerals for the time. Open, one hairline in the gutter runs beside the work, which
+   shows where the work ends and the answer starts. Folded, the work stays in the page hidden until found (Find in page
+   looks in it) and takes no room. ---- */
+.chat-turn-line .chat-row-label {
+  flex: 0 1 auto;
+  font-variant-numeric: tabular-nums;
+}
+.chat-turn-chev {
+  color: var(--faint);
+}
+.chat-turn.is-turning .chat-turn-chev svg {
+  transition: transform var(--t-reveal) var(--ease);
+}
+.chat-turn.is-open > .chat-row-line .chat-turn-chev svg {
+  transform: rotate(90deg);
+}
+.chat-turn-line:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+/* The thread is one hairline in the column's side gutter, left of the rows: the rows keep their place and their width,
+   so when a watched turn ends and its work goes into the thread, nothing moves sideways or wraps again. */
+.chat-turn-work {
+  position: relative;
+  margin-top: var(--s2);
+}
+.chat-turn-work::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -13px;
+  border-left: 1px solid var(--hairline);
+}
+[data-size="phone"] .chat-turn-work::before {
+  left: -8px;
+}
+.chat-turn-work[hidden] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.chat-turn-work > * + * {
+  margin-top: var(--s4);
+}
+.chat-turn-work > * + .chat-compact,
+.chat-turn-work > .chat-compact + * {
+  margin-top: var(--s2);
+}
+.chat-turn-work > .chat-compact + .chat-compact {
+  margin-top: 2px;
+}
+.chat-col > .chat-item-turn.is-open + * {
+  margin-top: var(--s4);
+}
+.chat-think-body {
+  padding: 2px 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* A small action in a row (Run in background, Stop, Take back): a base.css .btn at the rows' small size. */
+body:not(.touch) .btn.chat-mini {
+  flex: none;
+  gap: 4px;
+  padding: 0 var(--s2);
+  font-size: var(--fs-small);
+}
+/* On touch it keeps the 44 px target with a narrower side padding, so at 390 px a running subagent's state, Run in
+   background and Stop share one line inside the block instead of leaving Stop alone on a second one. */
+.touch .btn.chat-mini {
+  flex: none;
+  padding: 0 var(--s3);
+}
+/* The phone: a running Bash row's Run in background leaves the row's head, which keeps the command readable, for a
+   line of its own under the command (the row's body while it is open). Styles only: the row's line lets its parts
+   join the row's column, and the button goes last; the element tree is the one of every other size. */
+[data-size="phone"] .chat-tool:has(> .chat-row-line > .chat-bg) {
+  display: flex;
+  flex-direction: column;
+}
+[data-size="phone"] .chat-row-line:has(> .chat-bg) {
+  display: contents;
+}
+[data-size="phone"] .chat-row-line > .chat-bg {
+  order: 1;
+  align-self: flex-start;
+  margin: 2px 0 var(--s2);
+}
+/* There the row's "..." keeps its place at the head's end, beside the command, not on a line of its own. */
+[data-size="phone"] .chat-tool:has(> .chat-row-line > .chat-bg) {
+  position: relative;
+}
+[data-size="phone"] .chat-tool:has(> .chat-row-line > .chat-bg) > .chat-row-line > .chat-row {
+  padding-right: calc(var(--touch) + var(--s1));
+}
+[data-size="phone"] .chat-row-line:has(> .chat-bg) > .chat-row-more {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.chat-spin {
+  position: relative;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  border: 1.5px solid var(--fill-strong);
+  border-top-color: var(--ok);
+  border-radius: var(--r-pill);
+  animation: chat-turn 0.8s linear infinite;
+}
+.chat-spin-still {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@keyframes chat-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- tool bodies: code, diffs, lists and commands on --code-bg ---- */
+.chat-lines {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-field);
+  background: var(--code-bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+.chat-lines + .chat-lines {
+  margin-top: var(--s2);
+}
+.chat-lines-in {
+  max-height: 360px;
+  overflow: auto;
+  padding: 6px 0;
+}
+.chat-line {
+  display: flex;
+  gap: 10px;
+  padding: 0 12px;
+}
+.chat-lines.is-code .chat-line {
+  width: max-content;
+  min-width: 100%;
+  white-space: pre;
+}
+.chat-lines.is-wrap .chat-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-ln {
+  flex: none;
+  min-width: 2.5ch;
+  color: var(--faint);
+  text-align: right;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chat-sign {
+  flex: none;
+  width: 1ch;
+  color: var(--faint);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chat-lt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The diff tints are the look's --ok and --danger, mixed thin. */
+.chat-line.is-add {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.chat-line.is-del {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.chat-line.is-add .chat-sign,
+.chat-diff-count .is-add {
+  color: var(--ok);
+}
+.chat-line.is-del .chat-sign,
+.chat-diff-count .is-del {
+  color: var(--danger);
+}
+.chat-line.is-out {
+  color: var(--dim);
+}
+.chat-lines-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--dim);
+}
+.chat-lines-head .mono {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-lines-more {
+  padding: 2px 12px 6px;
+  color: var(--dim);
+  font-family: var(--font-ui);
+}
+
+.chat-todos {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+}
+.chat-todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text);
+  font-size: var(--fs-small);
+}
+.chat-todo-box {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 1.5px solid var(--faint);
+  border-radius: calc(var(--r-row) / 2);
+}
+.chat-todo-item.is-completed .chat-todo-box {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+.chat-todo-item.is-completed .chat-todo-box::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 3.5px;
+  height: 7px;
+  border: solid var(--bg);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.chat-todo-item.is-in_progress .chat-todo-box {
+  border-color: var(--ok);
+}
+.chat-todo-item.is-in_progress .chat-todo-box::after {
+  content: "";
+  position: absolute;
+  inset: 2.5px;
+  border-radius: calc(var(--r-row) / 4);
+  background: var(--ok);
+}
+.chat-todo-item.is-completed .chat-todo-text {
+  color: var(--dim);
+  text-decoration: line-through;
+}
+
+/* ---- subagent and workflow blocks: --elevated, a hairline edge over --shadow-1, hairlines inside ---- */
+.chat-task {
+  min-width: 0;
+  border-radius: var(--r-card);
+  background: var(--elevated);
+  box-shadow: 0 0 0 1px var(--hairline), var(--shadow-1);
+}
+.chat-task-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2px var(--s2);
+  padding: 3px var(--s2) 3px 3px;
+}
+.chat-task-toggle {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s2);
+  min-height: 32px;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  text-align: left;
+}
+.chat-task-toggle:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.touch .chat-task-toggle {
+  min-height: var(--touch);
+}
+.touch .chat-task-toggle:hover {
+  background: transparent;
+  color: var(--dim);
+}
+.touch .chat-task-toggle:active {
+  background: var(--fill);
+}
+.chat-task-verb {
+  flex: none;
+  color: var(--text);
+  font-weight: var(--weight-strong);
+}
+/* The agent type or workflow name: a quiet --fill pill, never an outline. */
+.chat-chip-type {
+  flex: 0 1 auto;
+  max-width: calc(100% - 110px);
+  overflow: hidden;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The description gets its own line under the verb, so neither it nor the name has to shrink to a stub. */
+.chat-task-desc {
+  flex: 1 0 100%;
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1px 0 1px 26px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+/* The state and the task's buttons: on a narrow block they wrap inside it, flush right, instead of running past it. */
+.chat-task-side {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s2);
+  max-width: 100%;
+  min-height: 32px;
+  margin-left: auto;
+}
+.touch .chat-task-side {
+  min-height: var(--touch);
+}
+.chat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+.chat-pill i,
+.chat-wf-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--faint);
+}
+.chat-pill.is-running i,
+.chat-wf-agent.is-running .chat-wf-dot {
+  background: var(--ok-fill);
+}
+.chat-pill.is-failed i,
+.chat-wf-agent.is-failed .chat-wf-dot {
+  background: var(--danger);
+}
+.chat-wf-agent.is-queued .chat-wf-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--faint);
+}
+.chat-task-body {
+  display: grid;
+  /* One column that never grows past the block: a long nested row truncates instead of pushing the block wider. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s2);
+  min-width: 0;
+  padding: var(--s2) var(--s3) var(--s3) 31px;
+  border-top: 1px solid var(--hairline);
+}
+[data-size="phone"] .chat-task-body {
+  padding-left: var(--s3);
+}
+.chat-task-meta {
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+/* The subagent's stats sit in the opened block's foot (D51). */
+.chat-task-foot {
+  font-variant-numeric: tabular-nums;
+}
+.chat-task-now {
+  color: var(--dim);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+/* The agent type's own description, inside the block (touch has no tooltips). */
+.chat-task-type {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.chat-task-prompt {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+.chat-task-prompt-text {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-task-prompt.is-folded .chat-task-prompt-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+/* A run-in name before a value: Prompt, Task, Result, Error. */
+.chat-key {
+  margin-right: 2px;
+  color: var(--text);
+  font-weight: var(--weight-strong);
+}
+.chat-link-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ui);
+  font-size: var(--fs-meta);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.touch .chat-link-btn {
+  min-height: var(--touch);
+  font-size: var(--fs-small);
+}
+.chat-task-rows > * + * {
+  margin-top: 2px;
+}
+.chat-task-report {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--hairline);
+}
+.chat-task-report .chat-md {
+  font-size: var(--fs-ui);
+}
+.chat-wf-title {
+  margin-bottom: 2px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-weight: var(--weight-strong);
+}
+.chat-wf-agents {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-wf-agent {
+  min-width: 0;
+  font-size: var(--fs-small);
+}
+/* An agent row: a dot, the label, a retried attempt, the state, and a chevron when it opens to its task. */
+.chat-wf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: calc(100% + 12px);
+  min-height: 28px;
+  margin: 0 -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--r-row);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-small);
+  text-align: left;
+}
+button.chat-wf-row:hover {
+  background: var(--hover);
+}
+.touch button.chat-wf-row {
+  min-height: var(--touch);
+}
+.touch button.chat-wf-row:hover {
+  background: transparent;
+}
+.touch button.chat-wf-row:active {
+  background: var(--fill);
+}
+/* A row with nothing to open keeps the chevron's room, so the states line up. */
+.chat-wf-row.is-static::after {
+  content: "";
+  flex: none;
+  width: 14px;
+}
+.chat-wf-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-wf-attempt,
+.chat-wf-state {
+  flex: none;
+  margin-left: auto;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.chat-wf-attempt + .chat-wf-state,
+.chat-wf-state ~ .chat-chev {
+  margin-left: 0;
+}
+.chat-wf-agent.is-failed .chat-wf-state {
+  color: var(--danger);
+}
+.chat-wf-detail {
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 6px 3px;
+  padding-left: var(--s3);
+  color: var(--dim);
+}
+.chat-wf-detail p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-wf-detail .is-bad,
+.chat-wf-detail .is-bad .chat-key {
+  color: var(--danger);
+}
+
+/* ---- slash output, ! commands, the divider, records ---- */
+.chat-slash {
+  display: grid;
+  gap: var(--s2);
+}
+.chat-output,
+.chat-bash-out {
+  margin: 0;
+  overflow-y: auto;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-output {
+  max-height: 360px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+}
+/* A ! command: the --warn "!" (as the composer's ! mode) marks it; the block itself is plain --code-bg. */
+.chat-bash {
+  min-width: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+}
+.chat-bash-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding: 7px var(--s3) 5px;
+}
+/* A finished command's head folds its output, as a tool row opens its body. */
+button.chat-bash-head {
+  width: 100%;
+  border: 0;
+  border-radius: var(--r-card);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.chat-bash-head:hover {
+  background: var(--hover);
+}
+.touch button.chat-bash-head {
+  align-items: center;
+  min-height: var(--touch);
+}
+.touch button.chat-bash-head:hover {
+  background: transparent;
+}
+.touch button.chat-bash-head:active {
+  background: var(--fill);
+}
+.chat-bash-head > .chat-chev {
+  align-self: center;
+}
+.chat-bash-head > .chat-spin {
+  align-self: center;
+}
+.chat-bang {
+  flex: none;
+  color: var(--warn);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-strong);
+}
+.chat-bash-cmd {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.chat-bash-meta {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+/* "exit 2" and "Timed out" (D20): the only head words in --danger; a code of 0 shows nothing (D51). */
+.chat-bash-meta.is-bad {
+  color: var(--danger);
+}
+.chat-bash-out {
+  max-height: 320px;
+  padding: 0 var(--s3) var(--s2) 25px;
+}
+.chat-bash-out.is-err {
+  color: var(--danger);
+}
+.chat-bash-out.is-empty {
+  color: var(--dim);
+  font-family: var(--font-ui);
+}
+.chat-bash.is-queued .chat-bash-head,
+.chat-bash.is-folded .chat-bash-head {
+  padding-bottom: 7px;
+}
+/* The time a command took, in the opened block's foot (D51). */
+.chat-bash-foot {
+  padding: 0 var(--s3) var(--s2) 25px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+.chat-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.chat-divider::before,
+.chat-divider::after {
+  content: "";
+  flex: 1 0 var(--s4);
+  border-top: 1px solid var(--hairline);
+}
+/* A long divider (the reconnect rows) wraps and stays centred between its two rules. */
+.chat-divider > span {
+  flex: 0 1 auto;
+  max-width: min(40em, 75%);
+  text-align: center;
+}
+.chat-record-note {
+  margin: 0 0 4px 22px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s2);
+  padding: 4px 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.chat-answer .chat-row-icon {
+  align-self: center;
+}
+.chat-answer b {
+  color: var(--text);
+  font-weight: var(--weight-strong);
+}
+.chat-answer-none {
+  color: var(--dim);
+  font-style: italic;
+}
+.chat-record-plan {
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+}
+.chat-record-plan .chat-md {
+  font-size: var(--fs-ui);
+}
+
+/* ---- Claude Code's own lines (DESIGN.md 6.3): status, retry, refusal, info, plugin installs, the error row,
+   memory recall and hook rows. Quiet rows: the rows' icon column, then plain text in --dim that wraps. ---- */
+.chat-note,
+.chat-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  min-width: 0;
+  padding: 5px 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-ui);
+}
+/* The icon sits on the first line of the text. */
+.chat-note .chat-row-icon,
+.chat-error .chat-row-icon {
+  height: calc(var(--fs-small) * var(--lh-ui));
+}
+.chat-note-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-note.is-text {
+  color: var(--text);
+}
+.chat-note-lead {
+  font-weight: var(--weight-strong);
+}
+.chat-note.is-bad .chat-note-lead {
+  color: var(--danger);
+}
+.chat-note-tail {
+  margin-left: var(--s2);
+  color: var(--dim);
+}
+.chat-error .chat-row-icon,
+.chat-error-reason {
+  color: var(--danger);
+}
+.chat-error-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.chat-error-reason,
+.chat-error-next {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.chat-mem-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+}
+.chat-mem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s3);
+  font-size: var(--fs-small);
+}
+.chat-mem-scope {
+  flex: none;
+  min-width: 7.5em;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.chat-mem-text,
+.chat-mem-path {
+  flex: 1 1 16em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.chat-mem-text {
+  color: var(--text);
+}
+.chat-mem-path {
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+
+/* ---- Jump to latest, the view note: small --elevated capsules over the column ---- */
+.chat-jump,
+.chat-view-note {
+  position: absolute;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  animation: chat-fade var(--t-reveal) var(--ease);
+}
+.chat-jump {
+  bottom: var(--s3);
+  border: 0;
+}
+.touch .chat-jump {
+  min-height: var(--touch);
+  padding: 0 var(--s4);
+}
+.chat-view-note {
+  top: var(--s3);
+  pointer-events: none;
+}
+@keyframes chat-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- the waiting card: it takes the composer's place, in the composer's slab. --elevated with a hairline edge
+   over --shadow-1, the look's card radius; the answers are base.css buttons. ---- */
+.chat-dock {
+  padding: var(--s2) 0 var(--s4);
+  padding-bottom: max(var(--s4), env(safe-area-inset-bottom));
+}
+/* The on-screen keyboard (DESIGN.md 7.8): while a card's field has the focus, the dock rides the visual viewport as the
+   composer does (ChatView.tsx sets its left, width, max-height and move). The card shrinks to what shows and its body
+   scrolls, so the field and the buttons stay above the keyboard; over the keyboard the home indicator's inset is
+   hidden, so the dock keeps a small gap only. */
+.chat-dock.is-riding {
+  position: fixed;
+  z-index: 35;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--s2);
+}
+.chat-dock.is-riding > .chat-measure {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--chat-pad));
+  min-height: 0;
+}
+.chat-dock.is-riding .chat-card {
+  min-height: 0;
+  max-height: none;
+}
+/* A composer link opened while a card waits: one line above the card. */
+.chat-dock-line {
+  margin: 0 0 var(--s2);
+}
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  max-height: min(64dvh, 640px);
+  border-radius: var(--r-card);
+  background: var(--elevated);
+  box-shadow: 0 0 0 1px var(--hairline), var(--shadow-1);
+  font-size: var(--fs-ui);
+  animation: chat-rise var(--t-reveal) var(--ease);
+}
+[data-size="phone"] .chat-card {
+  max-height: 72dvh;
+}
+@keyframes chat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.chat-card:focus {
+  outline: none;
+}
+.chat-card:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.chat-card-head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: var(--s4) var(--s4) 6px;
+}
+/* A waiting card needs the user, so its icon wears --attn, the warm colour of the words Needs input in the chat lists
+   and the title bar (row 116); the waiting dot beside those words is --attn-dot, its own colour (DESIGN.md 6.13). */
+.chat-card-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  height: 20px;
+  color: var(--attn);
+}
+.chat-card-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-prose);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  line-height: 1.35;
+}
+.chat-card-count {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  line-height: 20px;
+}
+.chat-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 2px var(--s4) var(--s2) 42px;
+}
+[data-size="phone"] .chat-card-body {
+  padding-left: var(--s4);
+}
+.chat-card-reason,
+.chat-card-text,
+.chat-card-from {
+  margin: 0;
+  color: var(--dim);
+}
+.chat-card-text {
+  color: var(--text);
+}
+.chat-card-from {
+  font-size: var(--fs-small);
+}
+.chat-card-path,
+.chat-card-url {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+/* The Workflow launch card (CA-4): the name and description, the numbered phases, and the token caution. */
+.chat-wf-plan {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.chat-wf-plan-name {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.chat-wf-plan-name .chat-chip-type {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+.chat-wf-plan-phases {
+  margin: 0;
+  padding-left: 1.4em;
+  color: var(--text);
+  font-size: var(--fs-small);
+}
+.chat-wf-plan-phases li + li {
+  margin-top: 2px;
+}
+.chat-card-caution {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.chat-card-line {
+  flex: none;
+  margin: 0 var(--s4) var(--s2) 42px;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+[data-size="phone"] .chat-card-line {
+  margin-left: var(--s4);
+}
+.chat-card-field {
+  flex: none;
+  padding: 0 var(--s4) var(--s2) 42px;
+}
+[data-size="phone"] .chat-card-field {
+  padding-left: var(--s4);
+}
+/* The answers: one row, the primary last, while they fit (wrap is only the fallback until Frame.tsx has measured). */
+.chat-card-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+  padding: var(--s2) var(--s4) var(--s4);
+}
+/* When they do not fit (Frame.tsx sets data-fit), and always on the phone, they stack: the primary first, each as
+   wide as the card, never a ragged second row. Frame.tsx lists them primary first then (FIX-Q1), so they show in the
+   DOM's order, the one Tab and a screen reader follow. */
+.chat-card-actions[data-fit="stack"],
+[data-size="phone"] .chat-card-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.chat-card-actions[data-fit="stack"] .btn,
+[data-size="phone"] .chat-card-actions .btn {
+  white-space: normal;
+  text-align: center;
+}
+/* The plan card's options are a list: the first option first, each starting where the card's text starts. */
+.chat-card-actions.is-list {
+  flex-direction: column;
+  align-items: stretch;
+  padding-left: 42px;
+}
+.chat-card-actions.is-list .btn {
+  justify-content: flex-start;
+  white-space: normal;
+  text-align: left;
+}
+[data-size="phone"] .chat-card-actions.is-list {
+  flex-direction: column;
+  padding-left: var(--s4);
+}
+.chat-card-actions .btn.is-bypass {
+  color: var(--warn);
+}
+.chat-card-plan {
+  min-width: 0;
+}
+.chat-card-plan .chat-md {
+  font-size: var(--fs-ui);
+}
+
+/* the question card: the options are one grouped list on --fill with inset hairlines; the one picked takes the
+   accent's wash */
+/* "Question 1 of 2" when a request holds several: a quiet line just above its question, not part of the title */
+.chat-q-step {
+  margin: 0 0 -6px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.chat-q-text {
+  margin: 0;
+  font-size: var(--fs-prose);
+}
+.chat-q-text code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+.chat-opts {
+  display: grid;
+  overflow: hidden;
+  border-radius: var(--r-field);
+  background: var(--fill);
+}
+.chat-opt {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.chat-opt + .chat-opt::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 38px;
+  height: 1px;
+  background: var(--hairline);
+}
+.chat-opt:hover {
+  background: var(--hover);
+}
+.chat-opt:focus-visible {
+  outline-offset: -2px;
+}
+.chat-opt[aria-checked="true"] {
+  background: var(--accent-wash);
+}
+.touch .chat-opt {
+  min-height: var(--touch);
+}
+.touch .chat-opt:hover {
+  background: transparent;
+}
+.touch .chat-opt[aria-checked="true"] {
+  background: var(--accent-wash);
+}
+.chat-opt-mark {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border: 1.5px solid var(--faint);
+  border-radius: var(--r-pill);
+}
+.chat-opt[aria-checked="true"] .chat-opt-mark {
+  border-color: var(--accent);
+}
+.chat-opt[aria-checked="true"] .chat-opt-mark::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+.chat-opts.is-multi .chat-opt-mark {
+  border-radius: calc(var(--r-row) / 2);
+}
+.chat-opts.is-multi .chat-opt[aria-checked="true"] .chat-opt-mark {
+  background: var(--accent);
+}
+.chat-opts.is-multi .chat-opt[aria-checked="true"] .chat-opt-mark::after {
+  inset: auto;
+  left: 4.5px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-ink);
+  border-width: 0 2px 2px 0;
+  border-radius: 0;
+  background: none;
+  transform: rotate(45deg);
+}
+.chat-opt-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.chat-opt-desc {
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+/* A ticked choice lays the accent wash over the list's --fill, where --dim misses AA: its description is --text. */
+.chat-opt[aria-checked="true"] .chat-opt-desc {
+  color: var(--text);
+}
+.chat-opt-input {
+  width: 100%;
+  margin-top: 4px;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 1px solid var(--hairline-strong);
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+.chat-opt-input::placeholder {
+  color: var(--faint);
+}
+.chat-opt-input:focus {
+  border-bottom-color: var(--ring);
+}
+/* On touch the field is a 44 px target of its own (DESIGN.md 7.7), still an underline */
+.touch .chat-opt-input {
+  min-height: var(--touch);
+  margin-top: 0;
+  padding: 10px 0;
+  font-size: var(--fs-input);
+}
+
+/* the elicitation form */
+.chat-elicit-form {
+  display: grid;
+  gap: var(--s3);
+}
+.chat-field-row {
+  display: grid;
+  gap: 4px;
+}
+.chat-field-label {
+  font-size: var(--fs-small);
+  font-weight: var(--weight-strong);
+}
+.chat-field-req {
+  color: var(--dim);
+  font-weight: var(--fw-regular);
+}
+/* An on/off field: its label, then the shared switch (base.css .switch) at the right, as in Settings. */
+.chat-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 32px;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.chat-switch-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.touch .chat-switch-row {
+  min-height: var(--touch);
+}
+
+/* Row 79, smooth text. A word of a live reply (or of thinking that shows while it streams) fades in as it comes into
+   view: Markdown.tsx wraps it in .chat-word-in while it is new (reveal.ts paces it). A code box, a table row or a rule
+   that comes into view fades in its opacity. The user's own message fades and rises in when it is sent, on this page
+   and on another page that sees it live (arrivals.ts). What a page loads has neither class and shows at once. Colour,
+   opacity and a transform only, so the chat's layout and its scroll never move for them. A word's fade is its
+   colour's, from transparent to its own (a link's, a highlighted token's): an opacity fade would give every fading
+   span a layer of its own to composite, which doubled the main thread's time per frame in a measured run. */
+.chat-word-in {
+  animation: chat-ink var(--t-reveal) linear backwards;
+}
+@keyframes chat-ink {
+  from {
+    color: transparent;
+  }
+}
+.chat-block-in {
+  animation: chat-fade var(--t-reveal) linear backwards;
+}
+.chat-user.is-entering {
+  animation: chat-rise var(--t-reveal) var(--ease) backwards;
+}
+
+/* Reduced motion, from the system or from Settings > Appearance > Reduce motion (data-motion on the root): the
+   working mark stands still, and a spinner becomes a still mark next to the word "Running" (DESIGN.md 6.13). Text
+   shows at once (reveal.ts does not pace it), and nothing fades or rises in. */
+@media (prefers-reduced-motion: reduce) {
+  .chat-working svg,
+  .chat-spin {
+    animation: none;
+  }
+  .chat-word-in,
+  .chat-block-in,
+  .chat-user.is-entering {
+    animation: none;
+  }
+  .chat-spin {
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 0;
+  }
+  .chat-spin::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: var(--r-pill);
+    background: var(--ok);
+  }
+  .chat-spin-still {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    color: var(--dim);
+    font-size: var(--fs-meta);
+  }
+}
+:root[data-motion="reduce"] .chat-working svg,
+:root[data-motion="reduce"] .chat-spin,
+:root[data-motion="reduce"] .chat-word-in,
+:root[data-motion="reduce"] .chat-block-in,
+:root[data-motion="reduce"] .chat-user.is-entering {
+  animation: none;
+}
+:root[data-motion="reduce"] .chat-spin {
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+}
+:root[data-motion="reduce"] .chat-spin::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--ok);
+}
+:root[data-motion="reduce"] .chat-spin-still {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+
+/* ---- U3 (DESIGN-U3 4, 5, 13, 15.4): the turn rail beside the text on a laptop. One 2 px tick per turn at a 10 px
+   pitch, in a 20 px strip whose left edge is 12 px right of the text's edge (--rail-x, which the rail sets on itself
+   and its card, never on the wrap: there a change would restyle the transcript), centred in the band above the composer (below the glass look's title bar, layout.css --under-bar, where the
+   conversation scrolls under it), at most 400 px tall (40 marks); a taller ladder scrolls inside it
+   with no scrollbar and a fade at each end that can scroll (the fade's opaque stop is any colour: a mask). The ticks
+   say rest, look and here by length and ink: 8 px in --faint, 12 px in --dim, 14 px in --text; a running turn's in
+   --ok-fill and a waiting one's in --attn-dot, the chat list's dots for a chat that runs and one that needs you
+   (base.css .dot.running, .dot.waiting; review U3: --accent is the text's colour in Mono and Editor); the focus ring
+   is the system's. The card has the menus' surface, its prompt line in the UI face and its answer in the look's prose
+   face, three lines at most; a click on it only closes it, so it is no click target. No motion: everything changes
+   at once, so Reduce motion changes nothing here. ---- */
+.chat-rail {
+  position: absolute;
+  z-index: 4;
+  top: calc(50% + var(--under-bar, 0px) / 2);
+  left: var(--rail-x);
+  width: 20px;
+  max-height: min(calc(100% - 64px - var(--under-bar, 0px)), 400px);
+  transform: translateY(-50%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.chat-rail::-webkit-scrollbar {
+  display: none;
+}
+.chat-rail.fade-top {
+  mask-image: linear-gradient(to bottom, transparent 0, var(--text) 20px);
+}
+.chat-rail.fade-bottom {
+  mask-image: linear-gradient(to bottom, var(--text) calc(100% - 20px), transparent 100%);
+}
+.chat-rail.fade-top.fade-bottom {
+  mask-image: linear-gradient(to bottom, transparent 0, var(--text) 20px, var(--text) calc(100% - 20px), transparent 100%);
+}
+.chat-rail-list {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+.chat-rail-list > li {
+  margin: 0;
+}
+.chat-rail-mark {
+  position: relative;
+  display: block;
+  height: 10px;
+  border-radius: calc(var(--r-row) / 2);
+}
+.chat-rail-mark::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--faint);
+}
+.chat-rail-mark:hover::before,
+.chat-rail-mark.is-previewed::before {
+  width: 12px;
+  background: var(--dim);
+}
+.chat-rail-mark:focus-visible::before {
+  width: 12px;
+  background: var(--text);
+}
+.chat-rail-mark[aria-current="location"]::before {
+  width: 14px;
+  background: var(--text);
+}
+.chat-rail-mark.is-running::before {
+  background: var(--ok-fill);
+}
+.chat-rail-mark.is-waiting::before {
+  background: var(--attn-dot);
+}
+.chat-rail-mark:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+/* Three 2 px dots 3 px apart (12 px) and 4 px under them: 16 px with border-box (review U3: at 14 px the column
+   shrank the dots to 1.33 px). */
+.chat-rail-more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  height: 16px;
+  padding: 0 0 4px 7px;
+}
+.chat-rail-more i {
+  display: block;
+  flex: none;
+  width: 2px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--faint);
+}
+.chat-rail-card {
+  position: absolute;
+  z-index: 6;
+  right: calc(100% - var(--rail-x) + 8px);
+  width: min(300px, calc(100% - 96px));
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: var(--r-menu);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+}
+.chat-rail-prompt {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  line-height: 1.4;
+}
+.chat-rail-prompt-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.chat-rail-prompt .chat-tag {
+  flex: none;
+}
+.chat-rail-answer {
+  margin: 4px 0 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--dim);
+  font-family: var(--font-prose);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.chat-rail-answer.is-first {
+  margin-top: 0;
+  color: var(--text);
+}
+
+/* The waiting card's foot (DESIGN-T1 2.3, T-4; drawn by web/chat/cards/Frame.tsx): Stop, a quiet 44 px button in
+   --text with the Stop square, at the card's end under a hairline, apart from the answers, so it is never read as one
+   of them. It opens the Stop confirm; Deny still answers the card alone. */
+.chat-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--s1);
+  padding-top: var(--s1);
+  border-top: 1px solid var(--hairline);
+}
+.chat-card-foot > .btn.ghost.chat-card-stop {
+  gap: 6px;
+  min-height: var(--touch);
+  color: var(--text);
+  text-decoration: none;
+}

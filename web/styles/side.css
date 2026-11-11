@@ -1,0 +1,333 @@
+/* The side chat (R124, owner rows 124 and 125; web/side/SideChat.tsx; DESIGN-R124 sections 5 to 7 and 13): the side
+   panel's column on a laptop, the docked pane on a tablet (over the chat from 1,000 to 1,087 px), and a sheet over the
+   chat on the phone. Only the tokens of tokens.css and the shared classes (.icon-btn, .btn.chat-mini, .cmp-key,
+   .chat-md, .sheet), so each of the four looks restyles it in light and dark; layout sizes and 1 px hairlines are the
+   only numbers. Quiet: no card, bubble or shadow inside it. Earlier questions are one --dim line each with the fold
+   chevron; the newest exchange is open, its question a heading in --weight-strong, its answer the reply's prose. */
+
+.side-col.sc-col,
+.side-pane.sc-col {
+  overflow: hidden;
+}
+.sc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+.sc-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: none;
+  min-height: var(--header-h);
+  padding: 0 var(--s2) 0 var(--s4);
+  border-bottom: 1px solid var(--hairline);
+}
+.sc-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+/* The tablet's docked pane and a large iPad's column start below the top safe area, as the other panes' heads do. */
+.shell-medium .side-pane .sc-head,
+.touch .shell-laptop .side-pane .sc-head,
+.touch .shell-laptop .side-col .sc-head {
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+}
+
+/* The thread hangs from the list's foot, as the chat does; the list scrolls inside, over the box. */
+.sc-list {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s3) var(--s4) var(--s2);
+}
+.sc-list:empty {
+  padding: 0;
+}
+/* The Clear row: at the thread's top beside what it clears, and, when the thread is taller than the list, it stays whole
+   at the list's top on the list's own ground while the thread scrolls under it (a scroll to the end never cuts it). */
+.sc-thread-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  margin: auto 0 var(--s1);
+  background: var(--bg);
+}
+.sc-at-sheet .sc-thread-head {
+  background: var(--elevated);
+}
+.btn.sc-clear {
+  color: var(--dim);
+}
+.sc-thread {
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-thread-head + .sc-thread {
+  margin-top: 0;
+}
+.sc-x.is-open {
+  margin-top: var(--s3);
+}
+/* R130: the exchange a link names (/c/<chat>/btw/<exchange>) is marked as a Settings row is. */
+.sc-x.is-marked {
+  margin-inline: calc(-1 * var(--s2));
+  padding: 0 var(--s2) var(--s1);
+  border-radius: var(--r-row);
+  background: var(--accent-wash);
+}
+.notice.sc-gone {
+  margin: var(--s2) var(--s3) 0;
+}
+/* An earlier exchange opened in place at the top needs no gap; the newest keeps its own (at least the list's top
+   padding), so when its answer is taller than the list and its question sits at the list's top, nothing of the row
+   above it shows in that padding. */
+.sc-x.is-open:first-child:not(.is-newest) {
+  margin-top: 0;
+}
+/* A question: a folded line (a button with the chevron), or the newest exchange's heading. */
+.sc-q {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--row-h);
+  margin: 0;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  text-align: start;
+  cursor: pointer;
+}
+.sc-q:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--r-row);
+}
+.sc-q-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-q-chev {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  align-self: center;
+  color: var(--faint);
+  transition: transform var(--t-reveal) var(--ease);
+}
+.sc-x.is-open > .sc-q {
+  color: var(--text);
+  font-weight: var(--weight-strong);
+}
+.sc-x.is-open > .sc-q .sc-q-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.sc-x.is-open > .sc-q .sc-q-chev {
+  transform: rotate(180deg);
+}
+.sc-q.is-static {
+  cursor: auto;
+}
+.sc-body {
+  padding-top: var(--s1);
+}
+.sc-note {
+  margin: 0 0 var(--s2);
+}
+.sc-working {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--row-h);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.sc-fail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--danger);
+  font-size: var(--fs-ui);
+}
+.sc-fail-text {
+  flex: 1 1 auto;
+}
+.btn.sc-again {
+  color: var(--text);
+}
+
+/* The box: one field with the round key inside it, its foot level with the main composer's foot on a laptop. */
+.sc-box {
+  flex: none;
+  padding: var(--s2) var(--s3) max(var(--s4), env(safe-area-inset-bottom));
+}
+.sc-field {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+  padding: 3px 3px 3px var(--s3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-field);
+  background: var(--elevated);
+}
+.sc-field:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--ring-wash);
+}
+.sc-field.is-held {
+  background: var(--bg);
+}
+.sc-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow-y: hidden;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-ui);
+  line-height: 1.45;
+}
+.sc-input::placeholder {
+  color: var(--faint);
+  opacity: 1;
+}
+.cmp-key.sc-key {
+  width: 24px;
+  height: 24px;
+}
+/* A 44 px target on touch (DESIGN.md 7.4; G-29: one line at the 17 px input size was 43 px). */
+.touch .sc-input {
+  min-height: var(--touch);
+  font-size: var(--fs-input);
+  padding: 9px 0;
+}
+.touch .cmp-key.sc-key {
+  width: var(--touch);
+  height: var(--touch);
+}
+.touch .sc-field {
+  padding: 0 0 0 var(--s3);
+  border-radius: var(--r-composer-phone);
+}
+.sc-lines {
+  display: grid;
+  gap: var(--s1);
+  margin: var(--s1) var(--s1) 0;
+}
+.sc-lines:empty {
+  display: none;
+}
+.sc-lines .cmp-ext,
+.sc-lines .cmp-line {
+  margin: 0;
+}
+
+/* The phone's sheet: as tall as its content, at most half the layout height (riding the keyboard, at most half the
+   visual viewport: SideChat.tsx rideHeight); the thread scrolls inside it, the box at its foot. The grip and the title
+   row are its drag handle; a drag moves its translate, so a drag that does not close settles back by that property. */
+.sheet.sc-sheet {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 50dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+  touch-action: pan-y;
+}
+.sheet.sc-sheet.is-riding {
+  max-height: none;
+}
+.sheet.sc-sheet.is-dragging {
+  transition: none;
+}
+.sheet.sc-sheet.is-settling {
+  transition: translate var(--t-reveal) var(--ease);
+}
+.sc-sheet .sheet-head {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.sc-sheet .sheet-grip,
+.sc-sheet .sheet-head {
+  touch-action: none;
+}
+.sc-at-sheet {
+  flex: 0 1 auto;
+  min-height: 0;
+  background: var(--elevated);
+  margin: 0 calc(-1 * var(--sheet-pad-r)) 0 calc(-1 * var(--sheet-pad-l));
+}
+.sc-at-sheet .sc-list {
+  flex: 0 1 auto;
+  /* Full width in the sheet, so its sides clear a phone's side insets itself (on its side, the notch), with room for
+     the answers' Copy, whose hit area reaches 7 px past the text. */
+  padding-inline: max(var(--s4), calc(env(safe-area-inset-left) + var(--s2))) max(var(--s4), calc(env(safe-area-inset-right) + var(--s2)));
+}
+.sc-at-sheet .sc-list:empty {
+  padding: 0;
+}
+.sc-at-sheet .sc-box {
+  padding: var(--s2) max(var(--s3), env(safe-area-inset-right)) max(var(--s3), env(safe-area-inset-bottom)) max(var(--s3), env(safe-area-inset-left));
+}
+.touch .sc-q {
+  min-height: var(--touch);
+  padding: 11px 0;
+  font-size: var(--fs-touch);
+}
+.touch .sc-q.is-static {
+  min-height: 0;
+  padding: var(--s1) 0 0;
+}
+.touch .sc-fail {
+  font-size: var(--fs-touch);
+}
+
+/* Reduce motion: the chevron does not turn; the sheet fades (base.css) and does not follow the finger. */
+@media (prefers-reduced-motion: reduce) {
+  .sc-q-chev,
+  .sheet.sc-sheet.is-settling {
+    transition: none;
+  }
+}
+:root[data-motion="reduce"] .sc-q-chev,
+:root[data-motion="reduce"] .sheet.sc-sheet.is-settling {
+  transition: none;
+}
+
+/* The shell while it rides the on-screen keyboard with the side chat beside the chat on touch (Shell.tsx sets its height
+   to the visual viewport's and its move to its offsetTop, as the search pane's ride): the box ends above the keyboard. */
+.shell.sc-riding {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}

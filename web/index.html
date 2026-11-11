@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light dark" />
+    <title>kitespan</title>
+    <!-- The tab icon is kitespan's own mark, the same in every look: graphite with a white chevron, flipped on a dark
+         device, so a tab never wears another look's colour. -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Erect%7Bfill:%231d1d1f%7Dpath%7Bstroke:%23ffffff%7D@media (prefers-color-scheme:dark)%7Brect%7Bfill:%23f5f5f7%7Dpath%7Bstroke:%231d1d1f%7D%7D%3C/style%3E%3Crect width='16' height='16' rx='4'/%3E%3Cpath d='M4 10.5 8 4l4 6.5' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <!-- The status bar, and an installed app's window bar, wear the title bar's colour: the look's --bg
+         (shared/home-screen.ts THEME_COLORS). These are Glass's; the script below puts in the worn look's. The build
+         adds the links to the web app manifest and to the icon iOS uses (scripts/build-web.ts). -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)" />
+    <script>
+      // The page's keys moved from the product's old name to kitespan.* (the rename, for one release). Before anything
+      // reads one, each old key of local and session storage is copied to its new name unless that one is set, then
+      // removed. A copy that fails (a full storage) keeps the old key for the next load; a blocked storage is skipped.
+      for (var n = 0; n < 2; n++) {
+        try {
+          var kv = n ? sessionStorage : localStorage, from = "flydeck.", old = [];
+          for (var j = 0; j < kv.length; j++) if (String(kv.key(j)).indexOf(from) === 0) old.push(kv.key(j));
+          for (j = 0; j < old.length; j++) {
+            try {
+              var to = "kitespan." + old[j].slice(from.length);
+              if (kv.getItem(to) === null) kv.setItem(to, kv.getItem(old[j]));
+              kv.removeItem(old[j]);
+            } catch (e) {}
+          }
+        } catch (e) {}
+      }
+      // Apply the stored look and theme before the first paint, so a reload never flashes another look.
+      // No data-look means glass; no data-theme means follow the device. App.tsx keeps both in step afterwards.
+      // The theme-color metas get the look's light and dark --bg, or the chosen theme's in both (web/ui/look.ts does
+      // the same on every change); a page without them (the server's 404 page) has none to set.
+      try {
+        var s = JSON.parse(localStorage.getItem("kitespan.settings") || "{}");
+        var root = document.documentElement;
+        var look = s.look;
+        if (look === "paper" || look === "mono" || look === "editor") root.setAttribute("data-look", look);
+        else look = "glass";
+        if (s.theme === "dark" || s.theme === "light") root.setAttribute("data-theme", s.theme);
+        var bg = { glass: ["#ffffff", "#1c1c1e"], paper: ["#faf9f5", "#262624"], mono: ["#ffffff", "#212121"], editor: ["#ffffff", "#181818"] }[look];
+        var metas = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metas.length; i++) {
+          var dark = /dark/.test(metas[i].getAttribute("media") || "");
+          metas[i].setAttribute("content", bg[s.theme === "dark" ? 1 : s.theme === "light" ? 0 : dark ? 1 : 0]);
+        }
+      } catch (e) {}
+    </script>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="stylesheet" href="./styles/base.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,2030 @@
+/* The screens area: the sidebar and chat list, the top bar, Home and the new-chat form, the project page, the session
+   preview, the session menu and the chat dialogs (DESIGN.md 6.2, 6.9, 6.10, 7.2, 7.3; prototype design plan v3).
+   Only tokens of tokens.css and the shared classes of base.css (.btn, .icon-btn, .chip, .seg, .group, .menu, .sheet,
+   .dialog, .field, .notice, .attach-chip, .drop-target), so the look the user picks restyles this area too. Quiet on
+   purpose: fills, hairlines, state dots and plain rows; the new-chat card wears the composer's tokens, because it is
+   the composer of a chat that does not exist yet. */
+
+/* ---------- The chat list: the laptop sidebar, the phone screen and the medium drawer ---------- */
+/* The sidebar's material, edge and width are the shell's (layout.css .shell > .sidebar). */
+.scr-nav {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.scr-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+/* The head: "kitespan" (the link to Home, owner row 92), then the compose button at the right, on the title bar's
+   line. */
+.scr-list-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  min-height: var(--header-h);
+  padding: 0 var(--s2) 0 var(--s4);
+}
+.scr-brand {
+  min-width: 0;
+  margin-right: auto;
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  text-decoration: none;
+}
+.scr-compose[aria-current="page"] {
+  background: var(--selected);
+  color: var(--text);
+}
+.touch .scr-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+/* The head's tools: Search, the Browser (never dropped: T-11) and New, and on touch the docked sidebar's Hide sidebar.
+   A laptop's tools are icons on the brand's line; where they have no room there (a narrow sidebar, a large text size:
+   ui/barRoom.ts sets data-tight) they take a row under it, at its end. */
+.scr-head-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+}
+.scr-list-head[data-tight] {
+  flex-wrap: wrap;
+  padding-bottom: var(--s1);
+}
+.scr-list-head[data-tight] > .scr-head-tools {
+  flex: 1 0 100%;
+  justify-content: flex-end;
+}
+/* Touch (DESIGN-T1 2.4): "kitespan" has the head's line to itself, its focus ring inset as the rows' rings are, so the
+   sidebar's edge never cuts it (G-32); the tools take a 52 px row of their own under it, sharing its width evenly,
+   each named under its icon as the pane bar's buttons are. A name follows the user's text size and may take a second
+   line; where one is still wider than its tool the head is data-tight and every name goes, each tool staying a 44 px
+   icon whose name a screen reader still reads. */
+.touch .scr-list-head {
+  flex-wrap: wrap;
+  row-gap: 0;
+  padding-bottom: var(--s1);
+}
+.touch .scr-brand {
+  margin-left: calc(-1 * var(--s2));
+  padding: 0 var(--s2);
+  border-radius: var(--r-row);
+}
+.touch .scr-brand:focus-visible {
+  outline-offset: -2px;
+}
+.touch .scr-head-tools {
+  flex: 1 0 100%;
+  gap: 0;
+  min-width: 0;
+}
+.scr-head-tool {
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--s1) 0;
+  border: 0;
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.scr-head-tool:active {
+  background: var(--fill);
+}
+.scr-head-tool[aria-current="page"] {
+  background: var(--selected);
+  color: var(--accent-ui);
+}
+.scr-head-tool > svg {
+  flex: none;
+}
+.scr-head-name {
+  max-width: 100%;
+  font-size: var(--fs-meta);
+  line-height: 1.2;
+  text-align: center;
+}
+.scr-list-head[data-tight] .scr-head-tool {
+  min-height: var(--touch);
+}
+.scr-list-head[data-tight] .scr-head-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.scr-list-top {
+  flex: none;
+  padding: 0 var(--s2) var(--s2);
+}
+/* The phone's list screen: in landscape its sides keep clear of the notch (DESIGN.md 7.8: the inset replaces the base
+   padding and never adds to it). */
+.scr-list-screen .scr-list-top {
+  padding: var(--s3) max(var(--s3), env(safe-area-inset-right)) var(--s2) max(var(--s3), env(safe-area-inset-left));
+}
+/* The sidebar is 248 px: the three segments share it at the caption size (the small control of a Mac sidebar), and at
+   a large text size a label takes a second line rather than being cut. Touch has the room for the UI size. */
+.scr-filter .seg-item {
+  height: auto;
+  min-height: 22px;
+  padding: 1px var(--s1);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-ui);
+  white-space: normal;
+  text-align: center;
+}
+.touch .scr-filter .seg-item {
+  min-height: 32px;
+  font-size: var(--fs-ui);
+}
+/* The narrow touch lists: a third of 248 px holds "Needs input" on one line at the meta size, with slim sides. */
+.touch .scr-list-sidebar .scr-filter .seg-item,
+.touch .scr-list-drawer .scr-filter .seg-item {
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: var(--fs-meta);
+}
+.scr-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--s2) var(--s3);
+}
+.scr-list-screen .scr-list-scroll {
+  padding: 0 max(var(--s3), env(safe-area-inset-right)) var(--s3) max(var(--s3), env(safe-area-inset-left));
+}
+.scr-list-screen .scr-list-foot {
+  padding-left: max(var(--s2), env(safe-area-inset-left));
+  padding-right: max(var(--s2), env(safe-area-inset-right));
+}
+.scr-groups,
+.scr-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.scr-group {
+  margin-top: var(--s3);
+}
+.scr-group:first-child {
+  margin-top: var(--s1);
+}
+/* A project's heading (M6, M8): its name in the meta size, semibold and dim, as the link to the project page; the
+   count that needs input, only while the group is folded; the fold chevron (on hover, on focus and while folded); and
+   New chat on hover (always on touch, with its name under the icon, 7.7). A long press on it is its drag (row 102), so
+   it shows no callout and selects no text. */
+.scr-group-head {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* The raised surface under a heading that a finger lifts, a little wider than the heading, so its controls keep their
+   room and nothing in it moves. It fades and rises in (at once with Reduce motion: --t-toggle is 0 ms then). */
+.scr-group-head::before {
+  content: "";
+  position: absolute;
+  inset: 0 calc(var(--s1) * -1);
+  z-index: -1;
+  border-radius: var(--r-row);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity var(--t-toggle) var(--ease), transform var(--t-toggle) var(--ease);
+  pointer-events: none;
+}
+.scr-group-name {
+  flex: 1;
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 var(--s2);
+  border-radius: var(--r-row);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-weight: var(--weight-strong);
+  line-height: 24px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scr-group-name:hover {
+  color: var(--text);
+}
+.scr-group-name:focus-visible {
+  outline-offset: -2px;
+}
+.scr-fold {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--faint);
+}
+/* The chevron folds; its open state is the chevron's turn, not a pressed fill. */
+.icon-btn.scr-fold,
+.icon-btn.scr-fold[aria-expanded="true"],
+.touch .icon-btn.scr-fold[aria-expanded="true"] {
+  background: transparent;
+}
+.icon-btn.scr-fold:hover {
+  background: var(--hover);
+}
+.touch .icon-btn.scr-fold:active {
+  background: var(--fill);
+}
+.scr-fold-icon {
+  transition: transform var(--t-reveal) var(--ease), opacity var(--t-reveal) var(--ease);
+  opacity: 0;
+}
+.scr-group-head:hover .scr-fold-icon,
+.scr-fold:focus-visible .scr-fold-icon,
+.scr-fold[aria-expanded="false"] .scr-fold-icon,
+.touch .scr-fold-icon {
+  opacity: 1;
+}
+.scr-fold[aria-expanded="false"] .scr-fold-icon {
+  transform: rotate(-90deg);
+}
+/* The folded heading's count of its chats that need input (M6; row 116: Needs input only, not unread): the warm
+   needs-you number on a quiet --fill pill. */
+.scr-group-needs {
+  flex: none;
+  min-width: 16px;
+  padding: 1px 5px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  color: var(--attn);
+  font-size: var(--fs-caption);
+  font-weight: var(--weight-strong);
+  line-height: 1.25;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.scr-group-act {
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+}
+.scr-group-head:hover .scr-group-act,
+.scr-group-head:focus-within .scr-group-act,
+.touch .scr-group-act {
+  opacity: 1;
+}
+.touch .scr-group-head {
+  gap: var(--s1);
+}
+.touch .scr-group-name {
+  min-height: var(--touch);
+  font-size: var(--fs-ui);
+  line-height: var(--touch);
+}
+.touch .scr-fold {
+  width: var(--touch);
+  height: var(--touch);
+}
+.touch .scr-group-act {
+  width: auto;
+  min-width: var(--touch);
+  height: auto;
+  min-height: var(--touch);
+  padding: 2px 0;
+  align-content: center;
+  gap: 2px;
+}
+.scr-group-act-name {
+  font-size: min(var(--fs-meta), 12px);
+  font-weight: var(--fw-regular);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+/* Row 99: the environment's "..." on its heading, as New chat shows (on hover and focus; always on touch, 44 px). */
+.scr-group-more {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+}
+.scr-group-head:hover .scr-group-more,
+.scr-group-head:focus-within .scr-group-more,
+.scr-group-more[aria-expanded="true"],
+.touch .scr-group-more {
+  opacity: 1;
+}
+.touch .scr-group-more {
+  width: var(--touch);
+  height: var(--touch);
+}
+/* A heading that the mouse's plain drag moves dims; one that a long press lifts (a finger's, or the mouse's on a laptop,
+   row 107) rises on its raised surface, over the rows under it. A line in the gap between two groups marks where it
+   goes. */
+.scr-group {
+  position: relative;
+}
+.scr-group-head[data-dragging="mouse"] {
+  opacity: 0.5;
+}
+.scr-group-head[data-dragging="lift"],
+.scr-group-head[data-dragging="touch"] {
+  z-index: 1;
+}
+.scr-group-head[data-dragging="lift"]::before,
+.scr-group-head[data-dragging="touch"]::before {
+  opacity: 1;
+  transform: none;
+}
+:root[data-drag="env"],
+:root[data-drag="env"] * {
+  cursor: grabbing !important;
+}
+.scr-group[data-drop]::before {
+  content: "";
+  position: absolute;
+  left: var(--s1);
+  right: var(--s1);
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  pointer-events: none;
+}
+.scr-group[data-drop="before"]::before {
+  top: calc(var(--s3) / -2 - 1px);
+}
+.scr-group:first-child[data-drop="before"]::before {
+  top: calc(var(--s1) / -2 - 1px);
+}
+.scr-group[data-drop="after"]::before {
+  bottom: calc(var(--s3) / -2 - 1px);
+}
+
+/* A chat row: the look's row height and row radius, the dot, the title and the meta in --dim; the current chat on
+   --selected. */
+.scr-row-li {
+  position: relative;
+  -webkit-touch-callout: none;
+}
+.scr-row-slide {
+  position: relative;
+}
+.scr-row,
+.scr-foot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--row-h);
+  padding: 2px var(--s2);
+  border-radius: var(--r-row);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  text-decoration: none;
+  -webkit-touch-callout: none;
+}
+.scr-row:hover,
+.scr-foot-row:hover {
+  background: var(--hover);
+}
+.scr-row[aria-current="page"],
+.scr-foot-row[aria-current="page"] {
+  background: var(--selected);
+}
+.scr-row:focus-visible,
+.scr-foot-row:focus-visible,
+.scr-fold:focus-visible,
+.scr-item:focus-visible,
+.menu-row:focus-visible {
+  outline-offset: -2px;
+}
+.scr-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scr-meta {
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* A waiting row starts with "Needs input" in --attn, before the title, as agent view writes it (DESIGN.md 6.2), and
+   a failed row with "Failed" in --danger; the word and the title sit on one baseline, the pair centred in the row
+   like the other items. */
+.scr-titled {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  flex: 1;
+  min-width: 0;
+}
+.scr-lead {
+  flex: none;
+  color: var(--attn);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+.scr-lead.is-failed {
+  color: var(--danger);
+}
+.touch .scr-lead {
+  font-size: var(--fs-ui);
+}
+.scr-row-more {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.scr-row-li:hover .scr-row-more,
+.scr-row-li:focus-within .scr-row-more,
+.scr-row-more[aria-expanded="true"] {
+  opacity: 1;
+}
+.scr-row-li:hover .scr-row .scr-meta,
+.scr-row-li:focus-within .scr-row .scr-meta,
+.scr-row-li:has(.scr-row-more[aria-expanded="true"]) .scr-row .scr-meta {
+  visibility: hidden;
+}
+/* A waiting or failed row has no time for the "..." button to cover, so its title makes room for the button. */
+.scr-row-li:hover .scr-row > .scr-titled,
+.scr-row-li:focus-within .scr-row > .scr-titled,
+.scr-row-li:has(.scr-row-more[aria-expanded="true"]) .scr-row > .scr-titled {
+  margin-right: 22px;
+}
+/* Touch: no hover, so the row's menu button always shows, beside the row text (DESIGN.md 7.7). The row slides to the
+   left under a finger (a vertical move still scrolls the list) and shows its archive item and Delete at its end. */
+.touch .scr-row-li {
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
+}
+.touch .scr-row-slide {
+  display: flex;
+  align-items: center;
+  transition: transform var(--t-reveal) var(--ease);
+}
+.touch .scr-row-slide.is-dragging {
+  transition: none;
+}
+.scr-swipe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding-left: var(--s1);
+}
+.btn.scr-swipe-btn {
+  min-width: 80px;
+  min-height: var(--touch);
+  padding: 0 var(--s3);
+  border-radius: var(--r-row);
+  font-size: var(--fs-ui);
+  text-decoration: none;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .touch .scr-row-slide {
+    transition: none;
+  }
+}
+.touch .scr-row,
+.touch .scr-foot-row {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--s3);
+  font-size: var(--fs-touch);
+}
+.touch .scr-row-more {
+  position: static;
+  flex: none;
+  width: var(--touch);
+  height: var(--touch);
+  transform: none;
+  opacity: 1;
+}
+.touch .scr-row-li .scr-row .scr-meta,
+.touch .scr-row-li:has(.scr-row-more[aria-expanded="true"]) .scr-row .scr-meta {
+  visibility: visible;
+}
+.touch .scr-row-li .scr-row > .scr-titled {
+  margin-right: 0;
+}
+.touch .scr-meta {
+  font-size: var(--fs-ui);
+}
+/* The narrow touch lists (the large tablet's 248 px sidebar, the medium drawer): the touch text, the state word and the
+   44 px menu button leave a title a few letters, so the time or the state word (also "Needs input", which leads the
+   row everywhere else) goes under the title and the title takes the row's width. The phone's list screen is wide
+   enough for one line. */
+.touch .scr-list-sidebar .scr-row,
+.touch .scr-list-drawer .scr-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--s2);
+  row-gap: 0;
+  padding-top: var(--s1);
+  padding-bottom: var(--s1);
+}
+.touch .scr-list-sidebar .scr-row .scr-titled,
+.touch .scr-list-drawer .scr-row .scr-titled {
+  display: contents;
+}
+.touch .scr-list-sidebar .scr-row > .dot,
+.touch .scr-list-drawer .scr-row > .dot {
+  grid-row: 1;
+  grid-column: 1;
+}
+.touch .scr-list-sidebar .scr-row .scr-row-title,
+.touch .scr-list-drawer .scr-row .scr-row-title {
+  grid-row: 1;
+  grid-column: 2;
+}
+.touch .scr-list-sidebar .scr-row .scr-meta,
+.touch .scr-list-drawer .scr-row .scr-meta,
+.touch .scr-list-sidebar .scr-row .scr-lead,
+.touch .scr-list-drawer .scr-row .scr-lead {
+  grid-row: 2;
+  grid-column: 2;
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--fs-meta);
+}
+.scr-list-empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--s2);
+  padding: var(--s3) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-ui);
+}
+.scr-list-empty p {
+  margin: 0;
+}
+/* The Archived row (D48, D52): at the end of the list, only while an archived chat exists, with no count; quiet, as a
+   heading is. The archived view names itself at its top instead. */
+.scr-archived-row {
+  display: flex;
+  align-items: center;
+  min-height: var(--row-h);
+  margin-top: var(--s3);
+  padding: 2px var(--s2);
+  border-radius: var(--r-row);
+  color: var(--dim);
+  font-size: var(--fs-ui);
+  text-decoration: none;
+}
+.scr-archived-row:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.scr-archived-row:focus-visible {
+  outline-offset: -2px;
+}
+.touch .scr-archived-row {
+  min-height: var(--touch);
+  font-size: var(--fs-touch);
+}
+.scr-view-title {
+  margin: var(--s2) 0 0;
+  padding: 0 var(--s2);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+}
+.touch .scr-view-title {
+  padding: 0 var(--s3);
+  font-size: var(--fs-touch);
+}
+/* The foot: Settings, a plain row with its icon, then the connection line (DESIGN.md 6.2, M4): empty while the socket
+   is open, and a small dot in the icons' column with "Reconnecting..." in --dim while it reconnects. */
+.scr-list-foot {
+  display: grid;
+  flex: none;
+  padding: var(--s2);
+  padding-bottom: max(var(--s2), env(safe-area-inset-bottom));
+}
+.scr-foot-icon {
+  flex: none;
+  color: var(--dim);
+}
+.scr-foot-row[aria-current="page"] .scr-foot-icon {
+  color: var(--text);
+}
+.scr-conn {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--s1) var(--s2) 2px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-ui);
+}
+.scr-conn-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+}
+.scr-conn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--ok-fill);
+}
+.scr-conn[data-state="reconnecting"] .scr-conn-dot,
+.scr-conn[data-state="restarting"] .scr-conn-dot {
+  background: var(--warn-fill);
+}
+.touch .scr-conn {
+  padding: var(--s1) var(--s3) 0;
+  font-size: var(--fs-ui);
+}
+.scr-conn:empty {
+  padding: 0;
+}
+
+/* The phone's /chats screen and the medium drawer. */
+.scr-chats {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.scr-chats > .fallback-line {
+  margin: var(--s2) max(var(--s3), env(safe-area-inset-right)) 0 max(var(--s3), env(safe-area-inset-left));
+}
+/* A phone in landscape: a pinned foot would take a third of the height, so the foot follows the chats and the whole
+   list scrolls as one. */
+@media (max-height: 520px) {
+  .scr-list-screen {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .scr-list-screen > .scr-list-scroll {
+    flex: none;
+    overflow: visible;
+  }
+}
+/* The medium drawer is the tablet's sidebar: it takes the material too (layout.css), --panel where there is none. */
+.scr-drawer {
+  position: fixed;
+  z-index: 51;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 86vw);
+  padding-top: env(safe-area-inset-top);
+  background: var(--panel);
+  box-shadow: var(--shadow-3);
+  outline: none;
+  animation: scr-drawer-in var(--t-sheet) var(--ease-spring);
+}
+.scr-drawer > .fallback-line {
+  margin: var(--s3) var(--s3) 0;
+}
+@keyframes scr-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scr-drawer {
+    animation: fade-in 120ms linear;
+  }
+}
+
+/* ---------- The title bar: --header-h (the look's height on a laptop, 44 px on touch and the phone) ---------- */
+/* Its material, height and hairline are the shell's (layout.css .main-col > .topbar, .shell-phone > .topbar). */
+.scr-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  height: var(--header-h);
+  padding: 0 var(--s3) 0 var(--s4);
+}
+/* Touch: the safe areas replace the base padding (7.8), so in landscape Back and the menu button keep clear of the notch. */
+.scr-bar-touch {
+  height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(var(--s1), env(safe-area-inset-right)) 0 max(var(--s1), env(safe-area-inset-left));
+  gap: 0;
+}
+/* A laptop under 1,000 px: the sidebar is a drawer, and the bar starts with its chats button. */
+.scr-bar:not(.scr-bar-touch) > .scr-bar-chats {
+  flex: none;
+  margin-left: calc(-1 * var(--s2));
+}
+.scr-bar-chat {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: 1;
+  min-width: 0;
+}
+.scr-bar-titlewrap {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.scr-bar-title {
+  min-width: 0;
+  padding: 4px 6px;
+  margin-left: -6px;
+  border-radius: var(--r-row);
+  color: var(--text);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+.scr-bar-title:hover {
+  background: var(--hover);
+}
+/* A long press on the title opens the session menu (DESIGN-T1 2.1): on touch it shows no link callout, selects no
+   word and lifts no drag (G-2), and the hover a tap leaves behind shows nothing. */
+.touch .scr-bar-title {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.touch .scr-bar-title:hover {
+  background: transparent;
+}
+/* The touch title's press target (TopBar.tsx): the title's place in the bar, the title inside it. While a finger rests
+   on the title it wears the rows' pressed wash (the long press marks its target data-pressing after 150 ms). */
+.scr-bar-press {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+:is(.scr-bar-press, .scr-bar-titlewrap)[data-pressing] > .scr-bar-title {
+  background: var(--selected);
+}
+.touch .scr-bar-title:not(.scr-bar-title-touch) {
+  padding: 0 6px;
+  line-height: var(--touch); /* a large tablet: the title is a 44 px target */
+}
+.scr-bar-caret {
+  width: 24px;
+  height: 24px;
+}
+.scr-bar-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+/* An idle or sleeping chat has no dot (base.css, DESIGN.md 6.2); in the title bar it takes no room either. */
+.scr-bar-state > .dot:is(.idle, .sleeping),
+.scr-bar-title-touch > .dot:is(.idle, .sleeping) {
+  display: none;
+}
+.scr-state-waiting {
+  color: var(--attn);
+}
+/* The folder takes only the room the title leaves (G-42): from no width, it grows to its own width at most, so it is
+   cut to "~/..." before the title is cut at all. */
+.scr-bar-folder {
+  flex: 1 1 0;
+  max-width: -webkit-max-content;
+  max-width: max-content;
+  min-width: 0;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scr-bar-folder:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.touch .scr-bar-folder {
+  min-width: var(--touch); /* a crowded bar shrinks it to "~/...", still a 44 px target */
+  line-height: var(--touch);
+}
+/* On the right: Open in terminal and the session rail toggle; on touch each shows its name (6.2). */
+.scr-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-left: auto;
+}
+.touch .scr-bar-tool {
+  padding: 0 var(--s3);
+  color: var(--dim);
+  font-weight: var(--fw-regular);
+}
+.scr-bar-tool:hover {
+  color: var(--text);
+}
+/* A title bar's named tools on touch (T-5): the icon, then its name; the phone's /chats bar gives each a slimmer side. */
+.touch .scr-bar-tool > svg {
+  flex: none;
+}
+.touch .scr-bar-touch > .scr-bar-tool {
+  gap: 6px;
+  padding: 0 var(--s2);
+}
+/* The chats button's name shows while its band has room for it and the title: 400 px (at 626 and 768 px beside a
+   docked pane, the icon alone; its name stays for a screen reader). */
+.shell-medium > .main-col > .topbar.scr-bar-touch {
+  container: topbar / inline-size;
+}
+@container topbar (width < 400px) {
+  .scr-bar-chats.scr-bar-tool {
+    width: var(--touch);
+    padding: 0;
+  }
+  .scr-bar-chats.scr-bar-tool > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* A bar whose named tools would cut its heading or its title (ui/barRoom.ts sets data-tight: the /chats bar at a large
+   text size, the large tablet's column form): every tool drops its word and stays a 44 px icon, its name kept for a
+   screen reader. */
+.touch .scr-bar[data-tight] .scr-bar-tool {
+  justify-content: center;
+  width: var(--touch);
+  min-width: var(--touch);
+  padding: 0;
+}
+.touch .scr-bar[data-tight] .scr-bar-tool > span:not(.dot) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.scr-bar-heading {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scr-bar-touch .scr-bar-heading {
+  padding: 0 var(--s2);
+  font-size: var(--fs-touch);
+}
+.scr-bar-touch .scr-bar-heading:first-child {
+  padding-left: var(--s3);
+}
+.scr-bar-compose {
+  margin-left: auto;
+  color: var(--bar-tint, var(--text));
+}
+/* The phone's Back with its name (uploads, a file, a Settings section) and Settings' Done: bar buttons, so they wear the
+   bar's tint (resting chrome has no accent, 6.13); Done is the one strong word, as in iOS. */
+.scr-bar-back,
+.scr-bar-done {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: var(--touch);
+  border: 0;
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--bar-tint, var(--text));
+  font-size: var(--fs-touch);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.scr-bar-back {
+  flex: 0 1 auto;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 var(--s2) 0 var(--s1);
+}
+/* A Back named by a project (its environment, a session's preview) can be long: it gives way and ends in an ellipsis. */
+.scr-bar-back > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* In a laptop's bar it is one of the bar's buttons, the look's size and corner, with the hover and the press of the
+   bar's named buttons (.btn ghost): the press is written after the hover, so it shows while both match. */
+.scr-bar:not(.scr-bar-touch) > .scr-bar-back {
+  height: var(--btn-h);
+  border-radius: var(--r-btn);
+  font-size: var(--fs-ui);
+}
+.scr-bar:not(.scr-bar-touch) > .scr-bar-back:hover {
+  background: var(--hover);
+}
+.scr-bar:not(.scr-bar-touch) > .scr-bar-back:active {
+  background: var(--fill);
+}
+.scr-bar-done {
+  margin-left: auto;
+  padding: 0 var(--s3);
+  font-weight: var(--weight-strong);
+}
+.scr-bar-back:active,
+.scr-bar-done:active {
+  background: var(--fill);
+}
+.scr-bar-touch .scr-bar-back + .scr-bar-heading {
+  padding-left: var(--s1);
+}
+.scr-bar-title-touch {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 1;
+  min-width: 0;
+  height: var(--touch);
+  margin: 0;
+  padding: 0 var(--s2);
+  font-size: var(--fs-touch);
+  cursor: pointer;
+}
+.scr-bar-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scr-bar-title-touch .scr-bar-state {
+  font-weight: var(--fw-regular);
+}
+.scr-ring {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  height: var(--touch);
+  padding: 0 var(--s2);
+  border-radius: var(--r-field);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.scr-ring-track,
+.scr-ring-fill {
+  fill: none;
+  stroke-width: 2;
+}
+.scr-ring-track {
+  stroke: var(--fill-strong);
+}
+.scr-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
+/* Rename: the title becomes a field in the title bar (laptop, medium); a sheet with the field on the phone. */
+.scr-rename {
+  display: grid;
+  gap: var(--s3);
+}
+.scr-rename-inline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 1;
+  min-width: 0;
+}
+.scr-rename-inline .scr-rename-field {
+  flex: 1;
+  min-width: 0;
+  max-width: 560px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 var(--s2);
+  font-weight: var(--weight-strong);
+}
+.touch .scr-rename-inline .scr-rename-field {
+  height: var(--touch);
+  min-height: var(--touch);
+}
+.touch .scr-rename-inline .scr-rename-field:focus-visible {
+  outline-offset: -2px; /* the field fills the 44 px header: its ring stays inside it */
+}
+.scr-rename-field:focus-visible {
+  outline-offset: 0;
+}
+.scr-rename-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+  flex: none;
+}
+.scr-rename-inline .scr-rename-actions .btn {
+  min-height: 30px;
+}
+.touch .scr-rename-inline .scr-rename-actions .btn {
+  min-height: var(--touch); /* the 44 px of the bar's icon buttons */
+  padding: 0 var(--s3);
+}
+/* Under the field: where the title came from (M30), and the over-cap line when a link's title was too long. In the
+   title bar they hang under the field on the elevated surface, over the conversation. */
+.scr-rename-from {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.scr-rename-lines {
+  display: grid;
+  gap: var(--s2);
+}
+.scr-rename-lines .notice {
+  margin: 0;
+}
+.scr-rename-tip {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: var(--s1);
+  max-width: 420px;
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-menu);
+  background: var(--elevated);
+  box-shadow: var(--shadow-2);
+}
+.scr-rename-tip .notice {
+  margin: 0 calc(-1 * var(--s2));
+  background: transparent;
+}
+.touch .scr-rename-from {
+  font-size: var(--fs-ui);
+}
+[data-size="phone"] .scr-rename-actions .btn {
+  flex: 1;
+}
+
+/* ---------- Popups: the session menu, the row menu and the form's pickers ----------
+   A laptop menu (.menu): its rows, a quiet section label and a hairline (.menu-sep) between the parts. A touch sheet:
+   grouped lists (.group) on the grouped surface, each with its section title (.group-title) and foot line. */
+.scr-menu,
+.scr-pick {
+  display: grid;
+  min-width: 220px;
+}
+.scr-pick-list {
+  display: grid;
+}
+.scr-pick .menu-row,
+.scr-pick .group-row {
+  text-decoration: none;
+}
+.scr-pick .menu-check,
+.scr-pick .group-check {
+  margin-left: auto;
+}
+.scr-pick-icon {
+  flex: none;
+  color: var(--dim);
+}
+.menu-row:hover .scr-pick-icon,
+.menu-row[data-active="true"] .scr-pick-icon,
+.menu-row:focus-visible .scr-pick-icon {
+  color: inherit;
+}
+.scr-pick-text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.scr-pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scr-pick .group-row .row-hint {
+  display: block;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.touch .scr-pick .group-row .row-hint {
+  font-size: var(--fs-ui);
+}
+/* The laptop menu's section labels and lines (a sheet uses .group-title and .group-foot). */
+.menu .scr-pick-head,
+.menu .scr-pick-label {
+  margin: 0;
+  padding: var(--s1) var(--s2) 2px;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+}
+.menu .scr-pick-label {
+  font-weight: var(--weight-strong);
+}
+.menu .scr-pick-note {
+  margin: var(--s1) 0 0;
+  padding: var(--s1) var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.scr-pick-forget {
+  justify-self: start;
+  margin: var(--s1) 0 0;
+}
+.scr-menu .menu-row.scr-menu-delete:not(:hover):not(:focus-visible):not([data-active="true"]) {
+  color: var(--danger);
+}
+.scr-menu .scr-tag {
+  margin-left: auto;
+}
+.scr-pick .menu-row:disabled,
+.scr-pick .group-row:disabled {
+  cursor: default;
+}
+.scr-pick .menu-row:disabled:hover {
+  background: transparent;
+}
+/* The touch sheet: the grouped surface behind the lists, the sheet's title row on it too. */
+.sheet:has(> .scr-sheet),
+.sheet:has(> .scr-sheet) > .sheet-head {
+  background: var(--group-bg);
+}
+.scr-sheet {
+  min-width: 0;
+  padding-bottom: var(--s2);
+}
+.scr-sheet > .group-title:first-child {
+  margin-top: var(--s1);
+}
+.scr-sheet > .group + .group,
+.scr-sheet > .group + .btn {
+  margin-top: var(--s5);
+}
+.scr-sheet > .scr-sheet-btn {
+  justify-self: stretch;
+  background-color: var(--elevated);
+  box-shadow: var(--shadow-1);
+  color: var(--accent-ui);
+}
+.scr-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 20px;
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+}
+.menu-row:hover .scr-tag,
+.menu-row:focus-visible .scr-tag {
+  color: inherit;
+}
+
+/* ---------- Pages: Home, /new, the project page ---------- */
+.scr-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* One column on every page here, the chat's: its measure (72ch of the prose size, chat.css .chat-col) and its 24 px
+   sides, so the new-chat form is as wide as a chat's composer. The prose size is here only for that ch: the children
+   go back to the UI size (a class of their own wins), and the preview's messages keep the chat's prose size. */
+.scr-col {
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--s5));
+  margin: 0 auto;
+  padding: var(--s5) var(--s5) var(--s6);
+  font-size: var(--fs-prose);
+}
+:where(.scr-col > *) {
+  font-size: var(--fs-ui);
+}
+.scr-home {
+  padding-top: clamp(var(--s5), 9vh, 88px);
+}
+[data-size="phone"] .scr-col {
+  padding: var(--s4) max(var(--s3), env(safe-area-inset-right)) max(var(--s6), env(safe-area-inset-bottom)) max(var(--s3), env(safe-area-inset-left));
+}
+.scr-notice {
+  margin: 0 0 var(--s4);
+}
+.scr-col > .fallback-line {
+  margin: 0 0 var(--s4);
+}
+
+/* The new-chat form: the large title, then the card. */
+.scr-form {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+}
+/* The display face: the look's own (paper: its serif; the others their UI face). Until
+   tokens.css has --font-display, the prose face stands in: it is the serif in the paper look and the UI face in the
+   other three. --weight-display, where a look sets it, lets the paper serif stand at its regular weight. */
+.scr-greeting {
+  margin: 0 0 var(--s3);
+  color: var(--text);
+  font-family: var(--font-display, var(--font-prose));
+  font-size: var(--fs-large);
+  font-weight: var(--weight-display, var(--weight-strong));
+  line-height: 1.2;
+  letter-spacing: var(--tracking-large);
+  text-wrap: balance;
+}
+/* The card wears the composer's tokens (its fill, edge, shadow and corners); focus shows the look's ring. Files dragged
+   over the form show the drop overlay on the card (base.css .drop-target). */
+.scr-box {
+  position: relative;
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) var(--s3) var(--s2);
+  border: 1px solid var(--composer-border);
+  border-radius: var(--r-composer);
+  background: var(--composer-bg);
+  box-shadow: var(--composer-shadow);
+  transition: border-color var(--t-reveal) var(--ease), box-shadow var(--t-reveal) var(--ease);
+}
+.scr-box:focus-within {
+  border-color: var(--composer-focus-edge);
+  box-shadow: var(--composer-focus-shadow);
+}
+.scr-box .drop-target {
+  inset: 0;
+  border-radius: var(--r-composer);
+}
+/* The chips over the field, as a chat's (composer.css .cmp-attach): two rows and the top of a third, then they scroll
+   inside the box, so many @ picks never push the field and Start under the on-screen keyboard (W19d). */
+.scr-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--s2);
+  min-width: 0;
+  max-height: calc(2.3 * 40px + 2 * var(--s2) + 4px);
+  margin: -2px;
+  padding: 2px; /* room for a Remove button's focus ring inside the scroll box */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.touch .scr-attachments {
+  max-height: calc(2.3 * var(--touch) + 2 * var(--s2) + 4px);
+}
+/* The phone's picker chips take a second line (G-28), so its box has less room above the keyboard: the chips stop at
+   about 1.8 rows there, and Start and the field stay above it (W19d). */
+[data-size="phone"] .scr-attachments {
+  max-height: calc(1.8 * var(--touch) + var(--s2) + 4px);
+}
+.scr-prompt {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  max-height: 40vh;
+  padding: var(--s1);
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+.scr-prompt::placeholder {
+  color: var(--faint);
+}
+.touch .scr-prompt {
+  font-size: var(--fs-input);
+}
+/* D59 and row 76: the prompt's line is a chat composer's (composer.css .cmp-line): the command chip, then the field,
+   which keeps 8em beside it or takes a line of its own, flush left. The chip sits on the field's first line. */
+.cmp-line.scr-line {
+  align-items: flex-start;
+}
+.scr-line > .cmp-chip {
+  margin-top: calc(var(--s1) + (var(--lh-prose) * var(--fs-prose) - 24px) / 2);
+}
+.touch .scr-line > .cmp-chip {
+  margin-top: calc(var(--s1) + (var(--lh-prose) * var(--fs-input) - 28px) / 2);
+}
+/* The / mode's rim, as on a chat's slab (composer.css .cmp[data-mode="slash"] .cmp-slab). */
+.scr-box[data-mode="slash"] {
+  border-color: var(--accent);
+}
+.scr-box[data-mode="slash"]:focus-within {
+  box-shadow: 0 0 0 3px var(--accent-rim), var(--composer-shadow);
+}
+/* The phone's / menu shows no argument hints, as a chat's (composer.css .cmp.is-phone .cmp-slash-args). */
+[data-size="phone"] .scr-box .cmp-slash-args {
+  display: none;
+}
+/* A chip's Remove is a 44 px target on touch, as in a chat's box (composer.css .cmp-attach). */
+.touch .scr-attachments .attach-remove {
+  width: var(--touch);
+  height: var(--touch);
+  margin: -4px -4px -4px calc(-1 * var(--s1));
+  background: transparent;
+  isolation: isolate;
+}
+.touch .scr-attachments .attach-remove::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  z-index: -1;
+  border-radius: var(--r-pill);
+  background: var(--fill-strong);
+}
+/* The button is the 44 px target itself: base.css's wider hit area would stick out of the chip and scroll the row. */
+.touch .scr-attachments .attach-remove::after {
+  inset: 0;
+}
+.scr-box-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.scr-attach {
+  margin-left: calc(-1 * var(--s1));
+}
+.scr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  flex: 1;
+  min-width: 0;
+}
+/* Touch: a chip's target reaches 6 px above and below it (base.css), so rows sit 12 px apart and do not overlap. */
+.touch .scr-chips {
+  gap: var(--s3) var(--s2);
+}
+.scr-chip {
+  max-width: 100%;
+}
+.scr-chip svg {
+  flex: none;
+}
+.scr-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scr-chip-sub,
+.scr-chip-caret {
+  color: var(--dim);
+}
+.scr-chip-caret {
+  margin-left: -2px;
+}
+/* The model chip's effort: the composer's bars, then the level's name (6.4; composer.css .cmp-effort). */
+.scr-chip-effort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.scr-chip.scr-chip-warn {
+  color: var(--warn);
+}
+.scr-start {
+  flex: none;
+  align-self: flex-end;
+}
+/* The phone: the pills are above the card, as the phone composer's picker row (DESIGN.md 7.5), and wrap onto a second
+   line when the labels are long, so each shows whole (G-28: a sideways scroll cut the model's). Add files or photos and
+   Start share the card's bottom row. */
+[data-size="phone"] .scr-chip {
+  flex: none;
+}
+[data-size="phone"] .scr-start {
+  margin-left: auto;
+}
+
+/* Recent, From the terminal and the project page's lists: grouped lists (.group) whose rows hold a dot or an icon, the
+   title, the project and the time; the hairlines start after the dot. Where the docked sidebar lists the chats, Home
+   shows From the terminal only (M9), and nothing at all when no such session exists. */
+.scr-recent {
+  margin-top: var(--s6);
+}
+.scr-recent:empty {
+  display: none;
+}
+.scr-h2 {
+  margin-top: var(--s5);
+}
+.scr-section-recent + .scr-section-recent {
+  margin-top: var(--s5);
+}
+.scr-section-recent > .scr-h2:first-child,
+.scr-section > .scr-h2:first-child {
+  margin-top: 0;
+}
+/* The phone's Recent row (M10): the title takes the row, the project under it in --dim when Recent mixes projects. */
+.scr-item-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.scr-item-text > .scr-item-title,
+.scr-item-text > .scr-titled {
+  min-width: 0;
+}
+.scr-item-text > .scr-item-sub {
+  max-width: 100%;
+}
+.scr-items > li {
+  --group-inset: calc(var(--s3) + 8px + var(--s3));
+}
+.touch .scr-items > li {
+  --group-inset: calc(var(--s4) + 8px + var(--s3));
+}
+.scr-items > li:has(.scr-item-icon) {
+  --group-inset: calc(var(--s3) + 16px + var(--s3));
+}
+.touch .scr-items > li:has(.scr-item-icon) {
+  --group-inset: calc(var(--s4) + 16px + var(--s3));
+}
+.scr-item-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scr-item-sub {
+  flex: 0 1 auto;
+  max-width: 30%;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.touch .scr-item-sub {
+  font-size: var(--fs-ui);
+}
+.scr-item-icon {
+  flex: none;
+  color: var(--dim);
+}
+.scr-more {
+  margin-top: var(--s1);
+  padding: 0 var(--s3);
+}
+.scr-empty {
+  margin: var(--s1) 0;
+  padding: 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-ui);
+}
+
+/* The project page: its name as the page title beside New chat here, the folder and branch under it. */
+.scr-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+.scr-head-text {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.scr-head .btn {
+  text-decoration: none;
+}
+/* Row 99: New chat here and the environment's "..." beside it. */
+.scr-head-acts {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.scr-head-more {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+.touch .scr-head-more {
+  width: var(--touch);
+  height: var(--touch);
+}
+/* Rename in place of the title: the field at the title's size, then Cancel and Save (under it when it is narrow). */
+.scr-head-text:has(.scr-env-rename) {
+  flex: 1 1 320px;
+}
+.scr-env-rename {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+.scr-env-rename .scr-env-name {
+  flex: 1 1 240px;
+  min-width: 0;
+  font-size: var(--fs-large);
+  font-weight: var(--weight-strong);
+}
+.scr-env-rename .notice {
+  flex-basis: 100%;
+  margin: 0;
+}
+.scr-h1 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display, var(--font-prose));
+  font-size: var(--fs-large);
+  font-weight: var(--weight-display, var(--weight-strong));
+  line-height: 1.2;
+  letter-spacing: var(--tracking-large);
+  overflow-wrap: anywhere;
+}
+.scr-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.scr-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.scr-fact svg {
+  flex: none;
+}
+.scr-section {
+  margin-top: var(--s6);
+}
+.scr-dim {
+  margin: 0 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-small);
+}
+.scr-picks dt,
+.scr-picks dd {
+  margin: 0;
+}
+.scr-picks .group-label {
+  flex: 1;
+}
+.scr-picks .group-value {
+  max-width: 65%;
+}
+.scr-forget {
+  margin-top: var(--s3);
+}
+/* Forget asks in place (M31): the line that explains remembered choices, then Cancel and Forget. */
+.scr-forget-ask {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: 0 var(--s3);
+}
+.scr-forget-ask .scr-dim {
+  margin: 0;
+}
+.scr-forget-actions {
+  display: flex;
+  gap: var(--s2);
+}
+[data-size="phone"] .scr-forget-actions .btn {
+  flex: 1;
+}
+
+/* ---------- The session preview ---------- */
+.scr-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.scr-preview-head {
+  margin: 0 0 var(--s5);
+}
+.scr-preview-head .scr-h1 {
+  margin-bottom: var(--s2);
+  font-size: var(--fs-title);
+  letter-spacing: var(--tracking-title);
+}
+.scr-preview-head .scr-dim {
+  margin: 0;
+}
+.scr-preview-items {
+  display: grid;
+  gap: var(--s4);
+  font-size: var(--fs-prose);
+}
+/* The dock: one line of Desktop's advice and Continue here, on the page's ground under a hairline. */
+.scr-preview-dock {
+  flex: none;
+  padding: var(--s3) 0 max(var(--s3), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.scr-col.scr-preview-dock-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.scr-preview-dock-in .scr-dim {
+  margin: 0;
+}
+.scr-preview-dock-in .btn {
+  flex: none;
+  text-decoration: none;
+}
+[data-size="phone"] .scr-col.scr-preview-dock-in {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ---------- Dialogs: a centred dialog, or a bottom sheet on the phone (whose Done closes it) ---------- */
+.scr-dlg code,
+.scr-cmd {
+  font-family: var(--font-mono);
+}
+.scr-dlg :not(pre) > code {
+  font-size: 0.9em;
+}
+.scr-cmd {
+  margin: 0 0 var(--s3);
+  padding: var(--s3);
+  border-radius: var(--r-field);
+  background: var(--code-bg);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  color: var(--text);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.touch .scr-dlg > p {
+  font-size: var(--fs-touch);
+}
+.scr-dlg-sheet {
+  padding-bottom: var(--s2);
+}
+.scr-dlg-sheet p {
+  margin: 0 0 var(--s3);
+  color: var(--dim);
+  font-size: var(--fs-touch);
+}
+.scr-dlg-tag {
+  display: flex;
+}
+.scr-dlg .scr-dlg-error {
+  color: var(--danger);
+}
+.scr-dlg-sheet .dialog-actions {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: var(--s4);
+}
+/* The archive dialog: the title says which chat, and its buttons follow it closely. */
+.scr-dlg > .scr-dlg-one {
+  margin-top: var(--s4);
+}
+.scr-dlg-sheet > .scr-dlg-one:first-child {
+  margin-top: var(--s2);
+}
+/* A confirm sheet's Cancel at the top right (7.6, E5): the regular weight, as Cancel is in iOS, so it never reads as
+   the action. */
+.btn.sheet-done.scr-sheet-cancel {
+  font-weight: var(--fw-regular);
+}
+/* R127 (DESIGN-R127 6): Trust this folder's confirm. The real path is its strong element: its own line, mono, in
+   --text, at the body's size, broken only after a "/" (PathText); a repository root that Claude Code's line names gets
+   the same face and colour. Claude Code's question in the dialog's --dim, what trusting allows in --text. */
+.trust-dlg .trust-path {
+  margin: 0 0 var(--s3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  line-height: 1.45;
+}
+.trust-dlg .trust-allows,
+.trust-dlg .trust-state {
+  color: var(--text);
+}
+/* The repository root in Claude Code's repository line: the folder that the trust is recorded on, so it reads as
+   strongly as the path above it. */
+.trust-dlg .trust-root {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* R131 (DESIGN-R131 6, 8): a background session's read-only view, the preview's page and head with the dock in the
+   message box's place, and its Stop confirm. The head's one warm mark is the composer's own Bypass pill (--warn on
+   --warn-wash), only for a session in Bypass permissions; the folder in --text, the rest of the line the head's --dim.
+   The dock's state is the line's (the dot, the word in its colour, the reason in --dim), with Stop and Open in
+   terminal at its right; on the phone the state goes on top and the two buttons share the width (the dock's own phone
+   rule). The confirm names the session in the strong weight, then Claude Code's words. Tokens only, no motion. */
+.bg-head .scr-h1 {
+  overflow-wrap: anywhere;
+}
+.bg-meta {
+  line-height: 1.9;
+}
+.bg-folder {
+  color: var(--text);
+}
+.bg-mode.is-warn {
+  color: var(--warn);
+}
+.chip.bg-mode.is-warn {
+  background-color: var(--warn-wash);
+  vertical-align: 0.05em;
+}
+.bg-state {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  margin: 0 auto 0 0;
+  color: var(--text);
+}
+.bg-state-why {
+  color: var(--dim);
+}
+.bg-state-word.is-attn {
+  color: var(--attn);
+}
+.bg-state-word.is-bad {
+  color: var(--danger);
+}
+.scr-col.bg-dock {
+  justify-content: flex-end;
+}
+.bg-dock-actions {
+  display: flex;
+  gap: var(--s2);
+}
+[data-size="phone"] .bg-dock-actions > .btn {
+  flex: 1;
+}
+.touch .bg-state {
+  font-size: var(--fs-ui);
+}
+.bg-stop-dlg .bg-stop-name {
+  margin: 0 0 var(--s2);
+  color: var(--text);
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+.bg-stop-dlg .bg-stop-state {
+  color: var(--text);
+}
+/* The chat bar's mark of a background session that needs you or ended unseen: the list's dot, as a link to it. */
+.scr-bar-bg {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+/* end R131 */
+
+/* New environment (the new-chat form's folder picker, D54; dialogs/NewEnvironment.tsx): the machine's line, the
+   filter field, then the rows, which scroll on their own under the field while the field and Use this folder stay in
+   view. A laptop: a dialog of a fixed height, so the box does not jump as the rows change, with menu rows. Touch (the
+   phone, and a tablet at base.css's 600 px sheet width): a full-height sheet on the grouped surface with grouped lists
+   of 44 px rows; it rides the on-screen keyboard at the visual viewport's full height (Modal.tsx CancelSheet). */
+.dialog:has(> .scr-dlg > .scr-env) {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100vw - 32px));
+  height: min(600px, calc(100dvh - 64px));
+  overflow: hidden;
+}
+.dialog > .scr-dlg:has(> .scr-env),
+.sheet-full > .scr-dlg {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.sheet.sheet-full {
+  top: max(var(--s6), env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  max-height: none;
+  overflow: hidden;
+}
+.sheet.sheet-full.is-riding {
+  top: 0;
+}
+.sheet:has(.scr-env),
+.sheet:has(.scr-env) > .sheet-head {
+  background: var(--group-bg);
+}
+.scr-env {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 0;
+}
+.scr-env > .scr-env-host {
+  margin: 0;
+  color: var(--dim);
+}
+.scr-env-filter {
+  flex: none;
+}
+.scr-env-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.scr-env-part + .scr-env-part {
+  margin-top: var(--s3);
+}
+.scr-env-title {
+  margin: var(--s2) 0 var(--s1);
+  padding: 0 var(--s2);
+  color: var(--dim);
+  font-size: var(--fs-meta);
+  font-weight: var(--weight-strong);
+}
+.scr-env-title.group-title {
+  margin: var(--s3) 0 6px;
+  font-size: var(--fs-ui);
+}
+.scr-env-rows:not(.group) {
+  display: grid;
+}
+.scr-env-row {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* A Suggested row's second line: the folder that holds it, on one line. */
+.scr-env-row .row-hint {
+  display: block;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--fs-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-row.scr-env-row:hover {
+  background: var(--hover);
+}
+.group-row.scr-env-row:active,
+.group-row.scr-env-row[data-active="true"] {
+  background: var(--fill);
+}
+.scr-env-git {
+  display: inline-flex;
+  flex: none;
+  color: var(--dim);
+}
+.scr-env-more {
+  flex: none;
+  color: var(--faint);
+}
+.menu-row:hover :is(.scr-env-git, .scr-env-more),
+.menu-row[data-active="true"] :is(.scr-env-git, .scr-env-more) {
+  color: inherit;
+}
+.touch .menu-row[data-active="true"] .scr-env-git {
+  color: var(--dim);
+}
+/* The breadcrumb: one line that scrolls sideways when it is long, its end (the folder Browse is in) in view. */
+.scr-env-crumbs ol {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 var(--s1);
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.scr-env-crumbs li {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.btn.scr-env-crumb {
+  min-height: 28px;
+  padding: 0 var(--s1);
+  font-weight: var(--fw-regular);
+}
+.touch .btn.scr-env-crumb {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+.scr-env-here {
+  padding: 0 var(--s1);
+  font-weight: var(--weight-strong);
+}
+.scr-env-sep {
+  flex: none;
+  color: var(--faint);
+}
+.scr-env .scr-env-line {
+  margin: var(--s2) var(--s2) 0;
+  color: var(--dim);
+}
+.scr-env .scr-env-error {
+  margin: 0;
+  font-size: var(--fs-small);
+}
+.scr-env .dialog-actions {
+  flex: none;
+  margin-top: var(--s2);
+}
+
+/* A first start, before any project: the form is one button that opens New environment (D54). */
+.scr-first-env {
+  display: flex;
+  margin-top: var(--s3);
+}
+
+/* The drain notice (settings/DrainLine.tsx): the server's line, then Cancel restart and Restart now, which wrap under
+   it when the column is narrow. */
+.drain-line {
+  flex-wrap: wrap;
+}
+.drain-text {
+  flex: 1 1 14em;
+}
+
+/* Settings > About: the notes for a phone's browser (DESIGN 4.8's adapter; the public default has one), one line each
+   at the rows' size, under "On a phone". */
+.set-note-line {
+  color: var(--text);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+}
+.touch .set-note-line {
+  font-size: var(--fs-touch);
+}

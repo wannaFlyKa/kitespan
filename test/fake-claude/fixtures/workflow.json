@@ -1,0 +1,39 @@
+{
+  "_about": "A workflow turn: the Workflow launch card (a can_use_tool for the Workflow tool), then a background workflow task with phases and agents that settles after the turn ends.",
+  "turns": [
+    {
+      "steps": [
+        { "say": { "id": "msg_wf_1", "text": "I will run a small workflow.", "tools": [{ "id": "toolu_fake_workflow_1", "name": "Workflow", "input": { "script": "export const meta = { name: 'greet-demo', description: 'Two agents reply with alpha and beta' };" } }] } },
+        {
+          "ask": {
+            "subtype": "can_use_tool",
+            "tool_name": "Workflow",
+            "input": { "script": "export const meta = { name: 'greet-demo', description: 'Two agents reply with alpha and beta' };" },
+            "tool_use_id": "toolu_fake_workflow_1",
+            "title": "Claude wants to run the workflow greet-demo",
+            "display_name": "Run a workflow",
+            "permission_suggestions": [{ "type": "addRules", "rules": [{ "toolName": "Workflow" }], "behavior": "allow", "destination": "localSettings" }]
+          },
+          "then": {
+            "allow": [
+              { "emit": { "type": "system", "subtype": "background_tasks_changed", "tasks": [{ "task_id": "wfake0wf1", "run_id": "run-fake-wf", "task_type": "local_workflow", "description": "Two agents reply with alpha and beta" }] } },
+              { "emit": { "type": "system", "subtype": "task_started", "task_id": "wfake0wf1", "run_id": "run-fake-wf", "tool_use_id": "toolu_fake_workflow_1", "description": "Two agents reply with alpha and beta", "task_type": "local_workflow", "workflow_name": "greet-demo", "prompt": "export const meta = { name: 'greet-demo' };" } },
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_workflow_1", "content": "Workflow launched in background. Task ID: wfake0wf1", "is_error": false }] }, "parent_tool_use_id": null, "tool_use_result": { "status": "async_launched", "taskId": "wfake0wf1", "workflowName": "greet-demo" } } },
+              { "emit": { "type": "system", "subtype": "task_progress", "task_id": "wfake0wf1", "run_id": "run-fake-wf", "tool_use_id": "toolu_fake_workflow_1", "description": "greet: agent-one", "usage": { "total_tokens": 0, "tool_uses": 0, "duration_ms": 37 }, "last_tool_name": "agent-one", "summary": "Two agents reply with alpha and beta", "workflow_progress": [{ "type": "workflow_phase", "index": 1, "title": "greet" }, { "type": "workflow_agent", "index": 1, "label": "agent-one", "phaseIndex": 1, "phaseTitle": "greet", "agentId": "afake0wfagent1", "model": "provider/inference-profile/claude-fake-1", "state": "start", "attempt": 1, "promptPreview": "Reply with the word alpha." }, { "type": "workflow_agent", "index": 2, "label": "agent-two", "phaseIndex": 1, "phaseTitle": "greet", "agentId": "afake0wfagent2", "model": "claude-fake-1", "state": "queued", "attempt": 1, "promptPreview": "Reply with the word beta." }] } },
+              { "say": { "id": "msg_wf_2", "text": "Workflow launched; waiting for the completion notice." } },
+              { "emit": { "type": "result", "subtype": "success", "result": "Workflow launched; waiting for the completion notice.", "num_turns": 2 } },
+              { "sleep": 30 },
+              { "emit": { "type": "system", "subtype": "task_progress", "task_id": "wfake0wf1", "run_id": "run-fake-wf", "tool_use_id": "toolu_fake_workflow_1", "description": "greet: done", "usage": { "total_tokens": 2800, "tool_uses": 0, "duration_ms": 2600 }, "last_tool_name": "agent-two", "workflow_progress": [{ "type": "workflow_phase", "index": 1, "title": "greet" }, { "type": "workflow_agent", "index": 1, "label": "agent-one", "phaseIndex": 1, "phaseTitle": "greet", "state": "done", "attempt": 1, "resultPreview": "alpha" }, { "type": "workflow_agent", "index": 2, "label": "agent-two", "phaseIndex": 1, "phaseTitle": "greet", "state": "done", "attempt": 1, "resultPreview": "beta" }] } },
+              { "emit": { "type": "system", "subtype": "task_notification", "task_id": "wfake0wf1", "run_id": "run-fake-wf", "tool_use_id": "toolu_fake_workflow_1", "status": "completed", "output_file": "wfake0wf1.output", "summary": "alpha, beta", "usage": { "total_tokens": 2800, "tool_uses": 0, "duration_ms": 2600 } } },
+              { "emit": { "type": "system", "subtype": "background_tasks_changed", "tasks": [] } }
+            ],
+            "deny": [
+              { "emit": { "type": "user", "message": { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_fake_workflow_1", "content": "The user denied this tool use.", "is_error": true }] }, "parent_tool_use_id": null } },
+              { "emit": { "type": "result", "subtype": "success", "result": "", "num_turns": 2 } }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

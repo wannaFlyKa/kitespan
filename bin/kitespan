@@ -1,0 +1,250 @@
+#!/bin/sh
+# kitespan's start script (DESIGN.md 4.7 and 4.8). It cleans the environment and then runs the server with Bun, so
+# neither the server nor any of its children (Claude Code, a ! command, the Terminal pane's shell) inherits the
+# variables of a Claude Code session that started it, a Claude Desktop host's credentials, a package runner's
+# additions or a .env file. kitespan adds no variable of its own.
+#
+# Usage:
+#   bin/kitespan [options]      start the server (options go to the server, for example --port 7941, or
+#                               --origin https://box.example.com to also allow a forward's exact origin until
+#                               kitespan stops, a restart too; bin/kitespan --help lists them)
+#   bin/kitespan dev [options]  the same with Bun's hot reload, for work on kitespan itself
+#   bin/kitespan restart [--now] [--port <port>]
+#                               ask the kitespan on that port (7940 by default) to restart, as Settings > About >
+#                               Restart does: when the running turns end, or with --now at once
+#
+# Your own start-env file, $XDG_CONFIG_HOME/kitespan/start-env (by default ~/.config/kitespan/start-env), may add lines:
+#   # a comment, or a blank line
+#   unset NAME
+#   unset-prefix PREFIX
+#   set NAME=value
+# It must be a regular file of yours that no one else can write. Every line is checked before any is applied; on a
+# bad line the script prints the file's name and the line number, never a value, and does not start. A set line may
+# not name a variable that the list below removes. Values are passed to env as arguments, never run as shell code.
+
+set -eu
+
+die() {
+  printf 'kitespan: %s\n' "$1" >&2
+  exit 1
+}
+
+# This script's own file, through any link to it (~/.local/bin/kitespan, Homebrew's bin, a package runner's .bin): the
+# folder above it is kitespan's root.
+self=$0
+hops=0
+while [ -L "$self" ]; do
+  hops=$((hops + 1))
+  [ "$hops" -le 32 ] || die "too many links lead to $0"
+  link=$(readlink -- "$self") || die "the link $self cannot be read"
+  case $link in
+    /*) self=$link ;;
+    *) self=$(CDPATH='' cd -P -- "$(dirname -- "$self")" && pwd -P)/$link || die "the folder of $self cannot be read" ;;
+  esac
+done
+root=$(CDPATH='' cd -P -- "$(dirname -- "$self")/.." && pwd -P)
+
+# Always removed: the variables of a Claude Code session that started this script (D21, D31).
+always="CLAUDECODE CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLAUDE_PID CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ATTENDED CLAUDE_EFFORT CLAUDE_CODE_ENTRYPOINT AI_AGENT"
+always_prefixes="CLAUDE_CODE_MESSAGING_"
+# A Claude Desktop host's variables, removed only when one of its markers is set (D31).
+desktop_markers="CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST CLAUDE_CODE_HOST_AUTH_ENV_VAR CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH"
+desktop="CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST CLAUDE_CODE_HOST_AUTH_ENV_VAR CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH ANTHROPIC_BASE_URL AWS_BEARER_TOKEN_BEDROCK AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
+# The trace context, removed only after a Claude Code session (that session set it).
+session_markers="CLAUDECODE CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION"
+trace="TRACEPARENT TRACESTATE"
+# What a package runner adds when this script runs as `bun run start`: its own variables, and entries at the front of
+# PATH, in any order: node_modules/.bin folders, and Bun's own bun-node folder (/tmp/bun-node-<build in hex>, which
+# holds a `node` and a `bun` that are Bun; Bun adds it when there is no node on PATH, or with --bun). Removing that
+# leading run leaves PATH as it was before the runner.
+runner="NODE npm_command npm_config_local_prefix npm_config_user_agent npm_execpath npm_lifecycle_event npm_lifecycle_script npm_node_execpath npm_package_json"
+runner_prefixes="npm_package_"
+
+is_set() {
+  awk -v n="$1" 'BEGIN { exit !(n in ENVIRON) }'
+}
+
+names_with_prefix() {
+  awk -v p="$1" 'BEGIN { for (k in ENVIRON) if (index(k, p) == 1 && k ~ /^[A-Za-z_][A-Za-z0-9_]*$/) print k }'
+}
+
+in_list() {
+  for item in $2; do
+    [ "$item" = "$1" ] && return 0
+  done
+  return 1
+}
+
+# A name that a set line may not use: one the built-in list removes (the server's boot check would refuse it).
+reserved() {
+  in_list "$1" "$always" && return 0
+  in_list "$1" "$desktop_markers" && return 0
+  for p in $always_prefixes; do
+    case $1 in "$p"*) return 0 ;; esac
+  done
+  return 1
+}
+
+unsets=""
+add_unset() {
+  in_list "$1" "$unsets" || unsets="$unsets $1"
+}
+
+for name in $always; do is_set "$name" && add_unset "$name"; done
+for p in $always_prefixes; do
+  for name in $(names_with_prefix "$p"); do add_unset "$name"; done
+done
+for marker in $desktop_markers; do
+  if is_set "$marker"; then
+    for name in $desktop; do is_set "$name" && add_unset "$name"; done
+    break
+  fi
+done
+for marker in $session_markers; do
+  if is_set "$marker"; then
+    for name in $trace; do is_set "$name" && add_unset "$name"; done
+    break
+  fi
+done
+
+path_arg=""
+bun_bin=""
+if is_set npm_lifecycle_event; then
+  for name in $runner; do is_set "$name" && add_unset "$name"; done
+  for p in $runner_prefixes; do
+    for name in $(names_with_prefix "$p"); do add_unset "$name"; done
+  done
+  rest=${PATH-}
+  while [ -n "$rest" ]; do
+    first=${rest%%:*}
+    case $first in
+      */node_modules/.bin) ;;
+      */bun-node | */bun-node-*)
+        case ${first##*/} in
+          bun-node) ;;
+          bun-node-*[!0-9a-f]*) break ;;
+          bun-node-?*) ;;
+          *) break ;;
+        esac
+        ;;
+      *) break ;;
+    esac
+    if [ "$first" = "$rest" ]; then rest=""; else rest=${rest#*:}; fi
+  done
+  path_arg=$rest
+  # The user's own bun, not the runner's link to it; the runner's when the user's PATH has none.
+  if [ -n "$path_arg" ]; then bun_bin=$(PATH=$path_arg; command -v bun) || bun_bin=""; fi
+fi
+[ -n "$bun_bin" ] || bun_bin=$(command -v bun) || die "bun is not on PATH"
+
+# The restart command starts nothing itself: it sends POST /api/restart with the sender gate's headers and prints
+# the answer, so it reads no start-env file. Bun runs in the repository root, so it reads no bunfig.toml of the folder
+# that the command was typed in.
+if [ "${1-}" = restart ]; then
+  shift
+  exec "$bun_bin" "--cwd=$root" --no-env-file "$root/server/update/ask-restart.ts" "$@"
+fi
+
+# The user's start-env file: check every line first.
+case ${XDG_CONFIG_HOME-} in
+  /*) config_home=$XDG_CONFIG_HOME ;;
+  *) [ -n "${HOME-}" ] || die "HOME is not set"; config_home=$HOME/.config ;;
+esac
+# The config folder by the server's rule (server/store/places.ts): anything at the new name is it; else the old name's
+# folder (a real folder of yours, or a link to a folder) while the server's first start has not moved it yet.
+config=$config_home/kitespan
+old=$config_home/flydeck
+if [ ! -e "$config" ] && [ ! -L "$config" ] && { { [ -L "$old" ] && [ -d "$old" ]; } || { [ -d "$old" ] && [ -O "$old" ]; }; }; then
+  config=$old
+fi
+start_env=$config/start-env
+use_start_env=no
+if [ -e "$start_env" ] || [ -L "$start_env" ]; then
+  if [ -L "$start_env" ] || [ ! -f "$start_env" ]; then die "$start_env must be a regular file, not a link"; fi
+  [ -O "$start_env" ] || die "$start_env must belong to you"
+  perm=$(ls -ld -- "$start_env" | cut -c1-10)
+  case $perm in
+    ?????w???? | ????????w?) die "$start_env must not be writable by others (chmod 600 it)" ;;
+  esac
+  lineno=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
+    case $line in
+      *[![:space:]]*) ;;
+      *) continue ;;
+    esac
+    case $line in
+      '#'*) continue ;;
+    esac
+    if printf '%s\n' "$line" | grep -Eq '^unset(-prefix)? [A-Za-z_][A-Za-z0-9_]*$'; then
+      :
+    elif printf '%s\n' "$line" | grep -Eq '^set [A-Za-z_][A-Za-z0-9_]*='; then
+      name=${line#set }
+      name=${name%%=*}
+      reserved "$name" && die "$start_env line $lineno: set may not name a variable that kitespan removes"
+    else
+      die "$start_env line $lineno: expected a comment, unset NAME, unset-prefix PREFIX or set NAME=value"
+    fi
+  done <"$start_env"
+  use_start_env=yes
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      'unset-prefix '*)
+        for name in $(names_with_prefix "${line#unset-prefix }"); do add_unset "$name"; done
+        ;;
+      'unset '*)
+        name=${line#unset }
+        is_set "$name" && add_unset "$name"
+        ;;
+    esac
+  done <"$start_env"
+fi
+
+# The command line: env, the names to remove, the values to set, then Bun. The server's own options are the
+# positional parameters now; they move to the end.
+hot=""
+if [ "${1-}" = dev ]; then
+  hot=yes
+  shift
+fi
+case ${1-} in
+  "" | -*) ;;
+  *) die "unknown command (usage: bin/kitespan [dev] [options], or bin/kitespan restart [--now] [--port <port>])" ;;
+esac
+
+n=$#
+for name in $unsets; do set -- "$@" -u "$name"; done
+if is_set npm_lifecycle_event; then set -- "$@" "PATH=$path_arg"; fi
+if [ "$use_start_env" = yes ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      'set '*) set -- "$@" "${line#set }" ;;
+    esac
+  done <"$start_env"
+fi
+# Bun runs in the repository root, never in the folder the command was typed in: Bun reads that folder's bunfig.toml
+# (a preload there would run inside the server). Dev mode's HTML import resolves from the root too (4.6).
+set -- "$@" "$bun_bin" "--cwd=$root"
+if [ -n "$hot" ]; then set -- "$@" --hot; fi
+set -- "$@" --no-env-file "$root/server/main.ts"
+if [ -n "$hot" ]; then set -- "$@" --dev; fi
+# A relative build folder is the caller's, so it is made absolute here.
+i=0
+dist_next=no
+while [ "$i" -lt "$n" ]; do
+  arg=$1
+  if [ "$dist_next" = yes ]; then
+    case $arg in
+      /*) ;;
+      *) arg=$(pwd -P)/$arg || die "the current folder cannot be read" ;;
+    esac
+    dist_next=no
+  elif [ "$arg" = --dist ]; then
+    dist_next=yes
+  fi
+  set -- "$@" "$arg"
+  shift
+  i=$((i + 1))
+done
+
+exec env "$@"
