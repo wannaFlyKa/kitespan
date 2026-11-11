@@ -5,7 +5,7 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { networkInterfaces, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { claudeLines } from "../../server/update/drift";
 import { freePort } from "./free-port";
@@ -46,6 +46,48 @@ function cleanEnv(name: string, extra: Record<string, string> = {}): Record<stri
 
 function run(args: string[], env: Record<string, string>, bunArgs = ["--no-env-file"]) {
   return Bun.spawnSync([process.execPath, ...bunArgs, MAIN, ...args], { env, cwd: dir, stdout: "pipe", stderr: "pipe", timeout: 20_000 });
+}
+
+/** True when this machine has the address: a listener can bind it. */
+function localAddress(host: string): boolean {
+  try {
+    Bun.listen({ hostname: host, port: 0, socket: { data() {} } }).stop(true);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The machine's addresses other than 127.0.0.1: another loopback one and ::1 when it has them, and its interfaces'. */
+function otherLocalAddresses(): string[] {
+  const all = new Set(["127.0.0.2", "::1"]);
+  for (const list of Object.values(networkInterfaces())) for (const a of list ?? []) if (!a.address.startsWith("fe80:")) all.add(a.address);
+  all.delete("127.0.0.1");
+  return [...all].filter(localAddress);
+}
+
+/** A TCP connect to host:port: "refused", "open", or "no answer" after 3 s (never a hang). */
+function connectTo(host: string, port: number): Promise<string> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve("no answer"), 3_000);
+    const done = (what: string) => {
+      clearTimeout(timer);
+      resolve(what);
+    };
+    Bun.connect({
+      hostname: host,
+      port,
+      socket: {
+        open(s) {
+          s.end();
+          done("open");
+        },
+        data() {},
+        connectError: () => done("refused"),
+        error: () => done("refused"),
+      },
+    }).catch(() => done("refused"));
+  });
 }
 
 describe("the boot refuses", () => {
@@ -128,8 +170,11 @@ describe("a clean boot", () => {
 
   test("it listens on 127.0.0.1 only", async () => {
     expect((await fetch(`${OWN}/`)).status).toBe(200);
-    await expect(fetch(`http://127.0.0.2:${PORT}/`)).rejects.toThrow();
-    await expect(fetch(`http://[::1]:${PORT}/`)).rejects.toThrow();
+    // Every other address of this machine refuses the port. Only the addresses that the system has are tried (Linux
+    // has all of 127/8 and ::1; macOS has 127.0.0.1 alone on lo0, so a connect to 127.0.0.2 there gets no answer).
+    const others = otherLocalAddresses();
+    expect(others.length).toBeGreaterThan(0);
+    for (const host of others) expect(`${host}: ${await connectTo(host, PORT)}`).toBe(`${host}: refused`);
   });
 
   test("the page, the 404 page and a settings read", async () => {

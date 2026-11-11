@@ -24,7 +24,7 @@
 // a failed add left, and the rest of Archive's own removal of a clean worktree that stopped part way).
 
 import type { Subprocess } from "bun";
-import { absolutePath, findGit, gitEnv } from "../search/git";
+import { failingProgram, findGit, gitEnv } from "../search/git";
 import { START_ENV } from "../start-env-copy";
 
 /** Before every subcommand: the corpus code's flags and Claude Code's own, no git transport, no credential helper. */
@@ -71,8 +71,7 @@ export function worktreeGit(
   ms: { call?: number; add?: number } = {},
 ): WorktreeGit {
   // A password prompt fails at once (`false` on the absolute PATH entries), and ssh never asks, as the update reads do.
-  const PATH = absolutePath(base.PATH ?? "");
-  const failing = (PATH && Bun.which("false", { PATH })) || "/bin/false";
+  const failing = failingProgram(base.PATH ?? "");
   const fixed = { GIT_ASKPASS: failing, SSH_ASKPASS: failing, GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GCM_INTERACTIVE: "never", GIT_NO_REPLACE_OBJECTS: "1", GIT_LFS_SKIP_SMUDGE: "1" };
   return {
     git: findGit(base.PATH ?? ""),

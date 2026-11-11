@@ -26,6 +26,7 @@ import { SectionBody } from "../../web/screens/Settings";
 import { needsYou, NEEDS_WORDS } from "../../web/browser/dot";
 import { browserRowValue, BROWSER_SETTING_WORDS } from "../../web/settings/Browser";
 import { frameDescription, pasteText } from "../../web/browser/Stage";
+import { IS_MAC } from "../../web/ui/shortcuts";
 import { pickerName, pickerShows } from "../../web/browser/Pickers";
 import { CHATS, PROJECTS } from "./fixtures";
 
@@ -176,7 +177,8 @@ describe("its parts' names and roles (DESIGN-B1 4.18)", () => {
     expect(h).toMatch(/role="application" aria-roledescription="page view" aria-label="Ridgeway Trails: book a walk" aria-describedby="bp-frame-column-d" tabindex="0"/);
     expect(frameDescription(true)).toBe("Clicks and keys go to the page in the shared browser. Press Cmd+L to leave the page.");
     expect(frameDescription(false)).toBe("Clicks and keys go to the page in the shared browser. Press Ctrl+L to leave the page.");
-    expect(h).toContain(frameDescription(false));
+    // The page's own words for this platform's key (IS_MAC: Cmd on macOS, Ctrl elsewhere).
+    expect(h).toContain(frameDescription(IS_MAC));
   });
   test("a tab that a link names and that is gone: 5.4's line, and the pane shows another", () => {
     const h = shell(`/c/${CHAT}/browser/zzzzzzzzzz`);
@@ -448,7 +450,9 @@ describe("the needs-you dot (DESIGN-B1 4.4, F20)", () => {
     expect(h).toContain('class="dot waiting bp-tool-dot"');
     open();
     const h2 = renderToStaticMarkup(createElement(TopBar, { route: at(`/c/${CHAT}`), chat }));
-    expect(h2).toMatch(/aria-label="Browser"[^>]*aria-keyshortcuts="Control\+Shift\+B"[^>]*title="Browser \(Ctrl\+Shift\+B\)"/);
+    // The platform's key: Cmd+Shift+B (Meta) on macOS, Ctrl+Shift+B elsewhere.
+    const [aria, words] = IS_MAC ? ["Meta", "Cmd"] : ["Control", "Ctrl"];
+    expect(h2).toMatch(new RegExp(`aria-label="Browser"[^>]*aria-keyshortcuts="${aria}\\+Shift\\+B"[^>]*title="Browser \\(${words}\\+Shift\\+B\\)"`));
   });
 });
 

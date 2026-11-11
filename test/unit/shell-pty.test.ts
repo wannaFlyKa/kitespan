@@ -235,7 +235,8 @@ describe("a chat's shell over /ws/shell", () => {
     expect(opened).toEqual({ t: "opened", chat: id, cols: 200, rows: 40, fresh: true });
     await c.prompt();
     c.keys(`${say("PWDIS")}; pwd; printf 'T%sM=' ER; printenv TERM; printf 'EN%s:%s:%s:%s\\n' V "\${CLAUDECODE+set}" "\${CLAUDE_CODE_SESSION_ID+set}" "\${KITESPANTEST_OTHERAPP_ID+set}"; tty\r`);
-    const out = await c.see(/\/dev\/pts\/\d+/);
+    // tty names the pane's terminal: /dev/pts/<n> on Linux, /dev/ttys<nnn> on macOS.
+    const out = await c.see(/\r\n\/dev\/(?:pts\/\d+|ttys\d+)\r\n/);
     expect(out).toContain(`PWDIS\r\n${cwdOf(id)}\r\n`);
     expect(out).toContain("TERM=xterm-256color\r\n");
     expect(out).toContain("ENV:::\r\n");
