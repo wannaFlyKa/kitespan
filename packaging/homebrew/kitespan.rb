@@ -22,7 +22,7 @@ class Kitespan < Formula
   end
 
   test do
-    ENV.prepend_path "PATH", Formula["bun"].opt_bin
+    ENV.prepend_path "PATH", formula_opt_bin("bun")
     assert_match "kitespan #{version}", shell_output("#{bin}/kitespan --version")
     assert_match "Usage:", shell_output("#{bin}/kitespan --help")
   end
