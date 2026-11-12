@@ -131,7 +131,7 @@ export function chromeArgs(port: number, profile: string, extraArgs: readonly st
 
 /** Start a headless Chrome on 127.0.0.1:<port> with a new profile; resolves once its DevTools endpoint answers. */
 export async function launchChrome(binary: string, port: number, opts: { timeoutMs?: number; extraArgs?: string[] } = {}): Promise<OwnChrome> {
-  const timeoutMs = opts.timeoutMs ?? 20000;
+  const timeoutMs = opts.timeoutMs ?? 60_000; // a first start on a fresh CI runner may take over 20 s (its caches)
   const profile = mkdtempSync(join(tmpdir(), "ui-check-chrome-"));
   const args = chromeArgs(port, profile, opts.extraArgs ?? []);
   const proc = Bun.spawn([binary, ...args], { stdin: "ignore", stdout: "ignore", stderr: "pipe", env: chromeEnv() });
