@@ -503,6 +503,8 @@ export class ChangesBook {
     const probe = await probeRepo(this.git, cwd, deadline);
     if (!probe.ok) return done({ state: probe.why === "failed" ? "failed" : "gone" });
     const r = await readPatch(this.git, probe.repo, this.place(chat), { from: rec.from, to: rec.to }, { path, ...(f.from ? { from: f.from } : {}) }, deadline);
+    // A read that ends past its deadline fails, also when its last git call won the race with that call's kill timer.
+    if (performance.now() >= deadline) return done({ state: "failed" });
     if (r.ok) {
       const { patch } = r;
       return done({ state: "diff", diff: { ...base, ...(patch.binary ? { binary: true as const } : {}), hunks: patch.hunks, ...(patch.cut ? { cut: patch.cut } : {}) } });
