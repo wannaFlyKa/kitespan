@@ -44,7 +44,7 @@ import { MinimumWords, useClaudeFacts } from "../panels/parts";
 import { LookRow } from "./LookPicker";
 import { IS_MAC } from "../ui/shortcuts";
 import { askModelRows } from "./common";
-import { aboutFacts, aboutLines, RestartRow, UpdateLink } from "../settings/about";
+import { aboutFacts, aboutLines, developerLine, RestartRow, UpdateLink } from "../settings/about";
 import { RestartDialog } from "../settings/RestartDialog";
 import { RESTART_WORDS } from "../settings/restart";
 import { checkedLine, UPDATE_CHECK_LABELS, UPDATE_CHECKS, UPDATE_REFUSAL_LINES, UPDATE_WORDS, type UpdateCheck } from "../../shared/update";
@@ -1505,7 +1505,7 @@ function AboutSection({ ctx }: { ctx: Ctx }) {
         </Group>
       ) : null}
       <Group>
-        <Row testId="setting-version" label="Version" value={version ?? <Dim>{UNKNOWN}</Dim>} />
+        <Row testId="setting-version" label="Version" line={developerLine(u.facts)} value={version ?? <Dim>{UNKNOWN}</Dim>} />
         <Row testId="setting-licence" label="Licence" value="Apache-2.0" />
       </Group>
       <Group testId="settings-updates">

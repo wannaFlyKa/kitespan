@@ -416,6 +416,8 @@ export interface UpdateReply {
   latest: string | null;
   /** A release or brew install: the version that the next start runs, when it is not the running one; else null. */
   next: string | null;
+  /** A checkout: the commit that the running server started from (About's developer-build line); else null. */
+  head: string | null;
 }
 
 /** POST /api/update's 202 answer: the job that runs now (this press's, or the one it joined). */

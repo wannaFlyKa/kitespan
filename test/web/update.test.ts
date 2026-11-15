@@ -14,6 +14,7 @@ import { act, resetState } from "../../web/state/store";
 import { SectionBody, SettingsLine } from "../../web/screens/Settings";
 import { parse } from "../../web/router";
 import { checkNow, checkSettingOf, checkValueOf, getUpdateState, originNotice, resetUpdateState, saveCheckSetting, setUpdateState, startUpdate } from "../../web/update/state";
+import { developerLine } from "../../web/settings/about";
 import { UpdateBody, UpdateDialog } from "../../web/update/UpdateDialog";
 import { acted, doublePress, inRender } from "./presses";
 import { UpdateLine } from "../../web/update/UpdateLine";
@@ -27,7 +28,7 @@ const row = (html: string, id: string) => {
   const at = html.indexOf(`data-testid="${id}"`);
   return at < 0 ? "" : html.slice(at, html.indexOf("</li>", at));
 };
-const facts = (p: Partial<UpdateReply> = {}): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, ...p });
+const facts = (p: Partial<UpdateReply> = {}): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, head: null, ...p });
 
 function hostWith(settings: Record<string, unknown>): SettingsReply {
   return {
@@ -149,6 +150,22 @@ describe("Check now (row 108)", () => {
     expect(getUpdateState().facts?.update).toBe("available");
     expect(text(row(about(), "setting-check-now"))).toContain("Checked just now.");
     expect(ids(about())).toContain("update-open");
+  });
+});
+
+describe("The developer-build line under Version", () => {
+  test("a checkout names its commit and gives no guarantee; an installed kitespan, and About before its read, show no line", () => {
+    expect(developerLine(null)).toBeNull();
+    expect(developerLine({ kind: "release", head: null })).toBeNull();
+    expect(developerLine({ kind: "brew", head: null })).toBeNull();
+    expect(developerLine({ kind: "checkout", head: "0cffb0fe07cd4ac606283ebb9b16e18fe09b5775" })).toBe("A developer build, from a git checkout at commit 0cffb0f. It is not a release, and it comes with no guarantee.");
+    expect(developerLine({ kind: "checkout", head: null })).toBe("A developer build, from a git checkout. It is not a release, and it comes with no guarantee.");
+    // Before the read answers, the row is the version alone.
+    expect(text(row(about(), "setting-version"))).not.toContain("developer build");
+    setUpdateState({ facts: facts({ head: "0cffb0fe07cd4ac606283ebb9b16e18fe09b5775" }) });
+    expect(text(row(about(), "setting-version"))).toContain("Version A developer build, from a git checkout at commit 0cffb0f.");
+    setUpdateState({ facts: facts({ kind: "release" }) });
+    expect(text(row(about(), "setting-version"))).not.toContain("developer build");
   });
 });
 
