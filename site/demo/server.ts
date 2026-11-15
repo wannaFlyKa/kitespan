@@ -1085,6 +1085,7 @@ export class DemoServer {
       kind: "release",
       latest: null,
       next: null,
+      head: null,
     };
   }
 

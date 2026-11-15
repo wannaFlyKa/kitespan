@@ -27,7 +27,7 @@ const driver: Pick<AgentDriver, "probe" | "settings" | "listSessions" | "history
   history: async () => ({ events: [], more: null }),
 };
 
-const FACTS: UpdateReply = { update: "available", build: "none", check: { at: "2026-11-04T07:00:00.000Z", ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null };
+const FACTS: UpdateReply = { update: "available", build: "none", check: { at: "2026-11-04T07:00:00.000Z", ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, head: null };
 
 function makeApp(over: Partial<UpdateDeps> = {}) {
   const calls = { facts: 0, checks: 0, starts: 0, writes: [] as Partial<Settings>[] };

@@ -402,7 +402,7 @@ const updateJobs = createUpdateJobs({
 async function updateFacts(): Promise<UpdateReply> {
   const f = await updates.facts();
   const last = updates.last;
-  return { ...f, check: { at: last?.at ?? null, ok: last?.ok ?? true, why: last?.why ?? null, running: updates.checking }, job: updateJobs.view(), can: !dev && install.kind !== "brew" };
+  return { ...f, check: { at: last?.at ?? null, ok: last?.ok ?? true, why: last?.why ?? null, running: updates.checking }, job: updateJobs.view(), can: !dev && install.kind !== "brew", head: install.kind === "checkout" ? updates.runningHead : null };
 }
 /** The root that the restart's successor runs: the one that its preflight checked (an install's next start). */
 let successorRoot = ROOT;

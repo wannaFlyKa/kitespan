@@ -52,6 +52,13 @@ export function aboutFacts(facts: UpdateReply | null, welcome: UpdateKind): Pick
 
 const IDLE: UpdateJob = { state: "idle" };
 
+/** The line under Version for a checkout; null until About's own read answers, since the kind is not known before it. */
+export function developerLine(facts: Pick<UpdateReply, "kind" | "head"> | null): string | null {
+  if (facts?.kind !== "checkout") return null;
+  const from = facts.head ? `a git checkout at commit ${facts.head.slice(0, 7)}` : "a git checkout";
+  return `A developer build, from ${from}. It is not a release, and it comes with no guarantee.`;
+}
+
 /** The brew row's line: "Update it with " + the command, which one tap selects whole, + ", then restart kitespan." */
 export function BrewLine() {
   const [before, after] = UPDATE_WORDS.brewLine.split(UPDATE_WORDS.brewCommand);

@@ -24,7 +24,7 @@ const row = (html: string, id: string) => {
   const at = html.indexOf(`data-testid="${id}"`);
   return at < 0 ? "" : html.slice(at, html.indexOf("</li>", at));
 };
-const facts = (p: Partial<UpdateReply> = {}): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, ...p });
+const facts = (p: Partial<UpdateReply> = {}): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, head: null, ...p });
 const release = (p: Partial<UpdateReply> = {}) => facts({ kind: "release", ...p });
 const brew = (p: Partial<UpdateReply> = {}) => facts({ kind: "brew", can: false, ...p });
 

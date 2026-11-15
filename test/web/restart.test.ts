@@ -79,7 +79,7 @@ beforeEach(() => {
 });
 
 describe("About's rows (S3, S4, S14, L17, L18; row 108)", () => {
-  const facts = (p: Partial<UpdateReply>): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, ...p });
+  const facts = (p: Partial<UpdateReply>): UpdateReply => ({ update: "none", build: "none", check: { at: null, ok: true, why: null, running: false }, job: { state: "idle" }, can: true, kind: "checkout", latest: null, next: null, head: null, ...p });
   const setFacts = (p: Partial<UpdateReply>) => setUpdateState({ facts: facts(p) });
 
   test("with nothing new: Version, Licence and Restart, a row that opens the dialog; no Update", () => {

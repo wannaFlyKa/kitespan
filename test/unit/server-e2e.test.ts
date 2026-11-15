@@ -415,6 +415,18 @@ describe.skipIf(!PROCFS)(`the real server with the fake claude ${LINUX_ONLY}`, (
   );
 
   test(
+    "About's update facts: a server that runs from a git checkout says so, with the commit it started from",
+    async () => {
+      const git = Bun.spawnSync(["git", "-C", ROOT, "rev-parse", "--verify", "HEAD"], { stdout: "pipe", stderr: "ignore" });
+      const head = git.exitCode === 0 ? git.stdout.toString().trim() : null;
+      const res = await fetch(`${OWN}/api/update`);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ kind: "checkout", head });
+    },
+    T,
+  );
+
+  test(
     "a chat in a project: its first message runs a text turn with thinking, and the events arrive with seq",
     async () => {
       const added = await fetch(`${OWN}/api/projects`, {
