@@ -101,6 +101,8 @@ export function chatFolder(worktree: ChatWorktree | null | undefined, projectFol
 export interface WorktreeStatus {
   /** How many files have changes (tracked and untracked), or null when the worktree is not there. */
   changes: number | null;
+  /** How many commits its HEAD reaches that no branch holds (a detached HEAD's own): Archive keeps it. Absent: none. */
+  commits?: number;
   /** W7 (L25): the worktree holds files that git ignores (other than copies of the project's own), so Archive keeps it. */
   ignored?: boolean;
   /** The branch holds a commit that no other branch has, so Delete keeps it (L26). */
@@ -113,11 +115,17 @@ export interface WorktreeStatus {
 }
 
 const files = (n: number) => (n === 1 ? "1 file" : `${n} files`);
+const unheld = (n: number) => (n === 1 ? "1 commit that no branch holds" : `${n} commits that no branch holds`);
 
-/** Delete's line for a worktree chat (L26): the worktree it removes, how many files have changes. */
+/**
+ * Delete's line for a worktree chat (L26): the worktree it removes, how many commits that no branch holds go with it,
+ * and how many files have changes.
+ */
 export function deleteWorktreeLine(path: string, status: WorktreeStatus | null): string {
   const n = status?.changes ?? 0;
-  return n > 0 ? `This also removes its worktree, ${path}, with changes in ${files(n)}.` : `This also removes its worktree, ${path}.`;
+  const c = status?.commits ?? 0;
+  const work = [...(c > 0 ? [unheld(c)] : []), ...(n > 0 ? [`changes in ${files(n)}`] : [])];
+  return work.length ? `This also removes its worktree, ${path}, with ${work.join(" and ")}.` : `This also removes its worktree, ${path}.`;
 }
 
 /** Delete's line when the read of the worktree's changes failed: never the clean form. */
@@ -152,10 +160,14 @@ export function branchStaysLine(branch: string | null): string {
   return branch ? `Its branch ${branch} stays: it holds commits that no other branch has.` : "Its branch stays: it holds commits that no other branch has.";
 }
 
-/** Archive's one line for a worktree that stays on disk (L25): it has changes, or files that git ignores. */
+/**
+ * Archive's one line for a worktree that stays on disk (L25): it has changes, commits that no branch holds, or files
+ * that git ignores.
+ */
 export function archiveKeepsLine(status: WorktreeStatus | null): string | null {
   const n = status?.changes ?? 0;
   if (n > 0) return `Its worktree has changes in ${files(n)}, so it stays on disk.`;
+  if (status?.changes === 0 && (status.commits ?? 0) > 0) return `Its worktree has ${unheld(status.commits!)}, so it stays on disk.`;
   return status?.changes === 0 && status.ignored === true ? "Its worktree has files that git ignores, so it stays on disk." : null;
 }
 
@@ -167,13 +179,13 @@ export function inFolder(path: string, folder: string | null | undefined): boole
 
 /**
  * Row 99: an environment's Remove confirm, one line per worktree of kitespan's own in it. Remove follows Archive's rule
- * (L25): one with changes or with files that git ignores stays, a clean one goes (its branch stays), and one that a
- * copy shares (`shared`, L27) always stays. Each one that stays gets a line. A clean one gets Delete's line only when
- * it is `inside` the project's folder (row 100: `.claude/worktrees`), since Remove then changes that folder; one in
- * kitespan's data folder gets none. While the read of its changes runs, the line makes no claim about them ("..."
- * after it, and Remove waits); a read that failed says so. Null: no line (it goes from the data folder, it is not
- * there, or it is not the chat's own). `touchesFolder`: Remove may remove it from the project's folder (so the first
- * line does not say that the folder is not changed).
+ * (L25): one with changes, with commits that no branch holds or with files that git ignores stays, a clean one goes
+ * (its branch stays), and one that a copy shares (`shared`, L27) always stays. Each one that stays gets a line. A clean
+ * one gets Delete's line only when it is `inside` the project's folder (row 100: `.claude/worktrees`), since Remove
+ * then changes that folder; one in kitespan's data folder gets none. While the read of its changes runs, the line makes
+ * no claim about them ("..." after it, and Remove waits); a read that failed says so. Null: no line (it goes from the
+ * data folder, it is not there, or it is not the chat's own). `touchesFolder`: Remove may remove it from the project's
+ * folder (so the first line does not say that the folder is not changed).
  */
 export function removeTreeLine(
   path: string,
@@ -185,6 +197,7 @@ export function removeTreeLine(
   const stays = (line: string | null) => ({ line, reading: false, touchesFolder: false });
   if (status && (status.removes === false || status.changes === null)) return stays(null);
   if (status && status.changes! > 0) return stays(`${at} has changes in ${files(status.changes!)}, so it stays on disk.`);
+  if (status && (status.commits ?? 0) > 0) return stays(`${at} has ${unheld(status.commits!)}, so it stays on disk.`);
   if (status?.ignored === true) return stays(`${at} has files that git ignores, so it stays on disk.`);
   if (shared) return stays(`${at} stays on disk.`);
   if (status === undefined) return { line: `${at} stays on disk if it has changes.`, reading: true, touchesFolder: inside };

@@ -12,6 +12,7 @@
 //   chat's own path (either place, place.ts), with its record in the making written first; addFinished tells the
 //   boot's sweep whether a remake's add got to its end.
 // - worktreeChanges (W7, L26): how many files `status --porcelain=v1 -z --untracked-files=all` names, never which.
+// - unheldCommits: how many commits the worktree's HEAD reaches that no branch, tag or remote ref holds.
 // - ignoredWork (W7, L25): files that git ignores in the worktree, other than unchanged copies of the project's own.
 // - branchStays (L26): the branch holds a commit that no other branch has.
 // - removeWorktree (W7, W9): `worktree remove` (`--force` only after the user's confirm), then `worktree prune`.
@@ -220,30 +221,57 @@ async function configIn(g: WorktreeGit, w: LedgerWorktree): Promise<string[] | n
   return config && !config.refused ? filterArgs(config.filters) : null;
 }
 
-/** W7: the worktree's status, as a count of files with changes and whether each one is only a deletion of a file. */
-async function worktreeStatus(g: WorktreeGit, w: LedgerWorktree): Promise<{ changes: number; deletions: number } | null> {
+/** The bytes of a status entry's two letters that the count reads: a space, C, D and R. */
+const [SPACE, C, D, R] = [0x20, 0x43, 0x44, 0x52];
+
+/**
+ * W7: the worktree's status, as a count of files with changes and whether each one is only a deletion of a file. The
+ * entries are counted as git writes them and none is kept, so a status of any length is read. Null: the worktree is
+ * not there. `unread`: it is there and its status could not be read (the deadline, a config that cannot be read), which
+ * is never "no changes".
+ */
+async function worktreeStatus(g: WorktreeGit, w: LedgerWorktree): Promise<{ changes: number; deletions: number } | "unread" | null> {
   if (!worktreeHere(w.path, w.root)) return null;
   const config = await configIn(g, w);
-  if (!config) return null;
-  // -z: each entry ends with a NUL, and a rename or a copy names its old path after it, in a NUL-ended field of its own.
-  const r = await runWorktreeGit(g, w.path, ["status", "--porcelain=v1", "-z", "--untracked-files=all"], { config, ms: g.addMs });
-  if (r.code !== 0) return null;
+  if (!config) return "unread";
   let changes = 0;
   let deletions = 0;
-  const fields = r.out.split("\0");
-  for (let i = 0; i < fields.length; i++) {
-    const f = fields[i]!;
-    if (f.length < 4) continue;
+  let old = false;
+  // -z: each entry ends with a NUL, and a rename or a copy names its old path after it, in a NUL-ended field of its own.
+  const each = (x: number, y: number, bytes: number) => {
+    if (old) {
+      old = false;
+      return;
+    }
+    if (bytes < 4) return;
     changes++;
-    if (f[0] === " " && f[1] === "D") deletions++;
-    if (f[0] === "R" || f[0] === "C" || f[1] === "R" || f[1] === "C") i++;
-  }
-  return { changes, deletions };
+    if (x === SPACE && y === D) deletions++;
+    old = x === R || x === C || y === R || y === C;
+  };
+  const r = await runWorktreeGit(g, w.path, ["status", "--porcelain=v1", "-z", "--untracked-files=all"], { config, ms: g.addMs, count: true, each });
+  return r.code === 0 ? { changes, deletions } : "unread";
 }
 
-/** W7, L26: how many files have changes in the worktree (tracked and untracked); null: it is not there or unread. */
-export async function worktreeChanges(g: WorktreeGit, w: LedgerWorktree): Promise<number | null> {
-  return (await worktreeStatus(g, w))?.changes ?? null;
+/**
+ * W7, L26: how many files have changes in the worktree (tracked and untracked). Null: it is not there; `unread`: it is
+ * there and its status could not be read.
+ */
+export async function worktreeChanges(g: WorktreeGit, w: LedgerWorktree): Promise<number | "unread" | null> {
+  const s = await worktreeStatus(g, w);
+  return s === null || s === "unread" ? s : s.changes;
+}
+
+/**
+ * How many commits the worktree's HEAD reaches that no branch, tag or remote ref holds: the commits of a detached HEAD
+ * (a checkout of a commit, a rebase or a bisect that stopped). Nothing holds them once the worktree is gone, so Archive
+ * keeps such a worktree and Delete's confirm counts them. `--all` cannot be the "not" set: it names HEAD itself. Null:
+ * the worktree is not there; `unread`: the count could not be read.
+ */
+export async function unheldCommits(g: WorktreeGit, w: LedgerWorktree): Promise<number | "unread" | null> {
+  if (!worktreeHere(w.path, w.root)) return null;
+  const r = await runWorktreeGit(g, w.path, ["rev-list", "--count", "HEAD", "--not", "--branches", "--tags", "--remotes"]);
+  const n = r.out.trim();
+  return r.code === 0 && /^\d{1,15}$/.test(n) ? Number(n) : "unread";
 }
 
 /** How many ignored files ignoredWork compares with the project's own before it counts the rest as work. */
@@ -348,7 +376,7 @@ export async function removeWorktree(g: WorktreeGit, w: LedgerWorktree, force: b
 export async function archiveRemove(g: WorktreeGit, w: LedgerWorktree): Promise<"removed" | "kept" | null> {
   if (await removeWorktree(g, w, false)) return "removed";
   const now = await worktreeStatus(g, w);
-  if (!now || now.changes === 0) return null;
+  if (!now || now === "unread" || now.changes === 0) return null;
   if (now.deletions < now.changes) return "kept";
   return (await removeWorktree(g, w, true)) ? "removed" : null;
 }

@@ -262,3 +262,87 @@ describe("Archive keeps files that git ignores (L25)", () => {
       expect(linkedRootOf(r.worktree.path)).toBe(s.repo);
     });
 });
+
+describe("Archive and Delete count every kind of work, and an unread worktree is never a clean one (W7, W9)", () => {
+  const host = (s: Scratch, wg: WorktreeGit = s.wg) => new WorktreeHost({ worktreeGit: wg, worktreeData: s.data });
+
+  test("a status longer than one call keeps is counted to its end: 6,000 new files and a rename are 6,001 changes", async () => {
+    const s = repo();
+    const r = await make(s);
+    if (!r.ok) throw new Error("no worktree");
+    const dir = join(r.worktree.path, "a-folder-with-a-long-name-for-the-output-of-a-build-that-git-does-not-ignore");
+    mkdirSync(dir);
+    for (let i = 0; i < 6000; i++) writeFileSync(join(dir, `file-${i}.txt`), "");
+    git(r.worktree.path, "mv", "README.md", "READ.md");
+    // The status is over the 256 KiB that a call keeps (git.ts), so a read that kept it would fail.
+    expect(git(r.worktree.path, "status", "--porcelain=v1", "-z", "--untracked-files=all").length).toBeGreaterThan(256 * 1024);
+    expect(await worktreeChanges(s.wg, r.worktree)).toBe(6001);
+    const h = host(s);
+    expect(await h.facts(r.worktree)).toEqual({ changes: 6001, ignored: false, branchStays: false });
+    expect(await h.archive(r.worktree)).toBe("kept");
+    expect(existsSync(join(dir, "file-5999.txt"))).toBe(true);
+  }, 30_000);
+
+  test("a status that cannot be read is `unread`, not a worktree that is gone: Archive keeps it, with its files", async () => {
+    const s = repo();
+    const r = await make(s);
+    if (!r.ok) throw new Error("no worktree");
+    writeFileSync(join(r.worktree.path, "work.txt"), "mine\n");
+    const noConfig = { ...s.wg, git: standIn(s, `case " $* " in *" config "*) exit 1;; esac`) };
+    expect(await worktreeChanges(noConfig, r.worktree)).toBe("unread");
+    const noStatus = { ...s.wg, git: standIn(s, `case " $* " in *" status "*) exit 1;; esac`) };
+    expect(await worktreeChanges(noStatus, r.worktree)).toBe("unread");
+    const h = host(s, noStatus);
+    expect(await h.facts(r.worktree)).toEqual({ changes: null, unread: true, ignored: false, branchStays: false });
+    expect(await h.archive(r.worktree)).toBe("kept");
+    expect(readFileSync(join(r.worktree.path, "work.txt"), "utf8")).toBe("mine\n");
+    // One that is not there has no `unread`.
+    expect(await removeWorktree(s.wg, r.worktree, true)).toBe(true);
+    expect(await worktreeChanges(noStatus, r.worktree)).toBeNull();
+    expect(await h.facts(r.worktree)).toEqual({ changes: null, ignored: null, branchStays: false });
+    expect(await h.archive(r.worktree)).toBeNull();
+  });
+
+  test("a count of commits that cannot be read is `unread` too: Archive keeps the worktree", async () => {
+    const s = repo();
+    const r = await make(s);
+    if (!r.ok) throw new Error("no worktree");
+    const h = host(s, { ...s.wg, git: standIn(s, `case " $* " in *" rev-list "*) exit 1;; esac`) });
+    expect(await h.facts(r.worktree)).toMatchObject({ changes: null, unread: true });
+    expect(await h.archive(r.worktree)).toBe("kept");
+    expect(worktreeHere(r.worktree.path, s.repo)).toBe(true);
+  });
+
+  test("commits of a detached HEAD that no ref holds are work: the facts count them and Archive keeps the worktree", async () => {
+    const s = repo();
+    const r = await make(s);
+    if (!r.ok) throw new Error("no worktree");
+    const w = r.worktree;
+    const h = host(s);
+    // A commit on the chat's own branch is held: the branch stays (L26).
+    writeFileSync(join(w.path, "zero.txt"), "0\n");
+    commitAll(w.path, "on the branch");
+    git(w.path, "checkout", "-q", "--detach");
+    expect(await h.facts(w)).toEqual({ changes: 0, ignored: false, branchStays: true });
+    writeFileSync(join(w.path, "one.txt"), "1\n");
+    commitAll(w.path, "one");
+    writeFileSync(join(w.path, "two.txt"), "2\n");
+    const tip = commitAll(w.path, "two");
+    expect(git(s.repo, "for-each-ref", "--contains", tip)).toBe("");
+    expect(await h.facts(w)).toEqual({ changes: 0, commits: 2, ignored: false, branchStays: true });
+    expect(await h.archive(w)).toBe("kept");
+    expect(worktreeHere(w.path, s.repo)).toBe(true);
+    expect(git(w.path, "rev-parse", "HEAD").trim()).toBe(tip);
+    // A remote ref holds them as a branch does.
+    git(s.repo, "update-ref", "refs/remotes/origin/held", tip);
+    expect(await h.facts(w)).toEqual({ changes: 0, ignored: false, branchStays: true });
+    git(s.repo, "update-ref", "-d", "refs/remotes/origin/held");
+    expect(await h.facts(w)).toEqual({ changes: 0, commits: 2, ignored: false, branchStays: true });
+    // A tag holds them now, so nothing goes with the worktree.
+    git(w.path, "tag", "held");
+    expect(await h.facts(w)).toEqual({ changes: 0, ignored: false, branchStays: true });
+    expect(await h.archive(w)).toBe("removed");
+    expect(existsSync(w.path)).toBe(false);
+    expect(git(s.repo, "rev-parse", "held").trim()).toBe(tip);
+  });
+});
