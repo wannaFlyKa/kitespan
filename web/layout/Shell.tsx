@@ -111,6 +111,10 @@ function keepWidth(layout: PaneInput, pane: "sidebar" | RightPane, width: number
 /** True inside a Shell that was given a side panel (a chat screen); a page such as the file download page has none. */
 const ShellHasSide = createContext(false);
 
+/** True where the side panel's cards are on screen: the chat's Running strip gives way to their Running card. */
+export const CardsShown = createContext(false);
+export const useCardsShown = () => useContext(CardsShown);
+
 /**
  * The title bar's session rail toggle (DESIGN.md 6.2, Desktop's words "Hide session rail" and "Show session rail").
  * Null where the side panel is not a column (no chat, a narrow laptop, medium, phone) and on a page whose Shell has
@@ -447,6 +451,10 @@ export function Shell(props: { route: Route; chat?: Chat; side?: (mode: SideMode
   const overBottom = overPaneBottom({ size: layout.size, touch: vp.touch, rest, riding: !!ride });
   const overFoot = overBottom > 0 ? " side-over-above" : "";
   const keepTop = (top: number | null) => act.setView({ split: top === null ? undefined : shareOf(top, colHeight) });
+  // The cards show in a docked Details view that is no detail (the column at rest too) and is not folded, in the pane
+  // over the chat, and in the phone's sheet.
+  const cardsShown = !!panel && (phone || over ? route.name === "details" : views.some((v) => v.kind === "details" && (v.route.name === "details" || !SIDE_ROUTES.has(v.route.name)) && !(fold && fold === v.slot)));
+  const page = <CardsShown.Provider value={cardsShown}>{children}</CardsShown.Provider>;
 
   if (phone) {
     // The terminal's page: the chat stays mounted under it (hidden), so Back finds it as it was; while the keyboard
@@ -467,7 +475,7 @@ export function Shell(props: { route: Route; chat?: Chat; side?: (mode: SideMode
             {termPage ? <TerminalPane chat={chat!} route={route} mode="page" /> : null}
             {search && panel ? <SearchPane route={route} chat={chat!} place="page" /> : null}
             {browserPage ? <BrowserPane route={route} chat={chat!} mode="page" /> : null}
-            {children}
+            {page}
           </main>
           {side && sideRoute && !search && !changesRoute && !browserRoute ? sideChat && chat ? <SideChat chat={chat} route={route} place="sheet" /> : side("sheet") : null}
         </div>
@@ -547,7 +555,7 @@ export function Shell(props: { route: Route; chat?: Chat; side?: (mode: SideMode
         ) : null}
         <div ref={mainBox} className={`main-col${props.bare ? " main-col-bare" : ""}`}>
           {props.bare ? null : <TopBar route={route} chat={chat} />}
-          <main className="main">{children}</main>
+          <main className="main">{page}</main>
         </div>
         {right && resizable(widthOf.right) ? (
           <PaneHandle

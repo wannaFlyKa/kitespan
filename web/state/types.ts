@@ -69,6 +69,8 @@ export interface ToolItem {
   elapsedSeconds?: number;
   /** The call runs in the background (Run in background, or Claude started it there); the turn goes on. */
   background?: boolean;
+  /** The call's task in Claude Code, once a task event named this row: the command runs on while `tasks` lists it. */
+  taskId?: string;
   /** Added in iteration 2: the call's input as the server sent it (capped, 4.3), for the opened row. */
   raw?: unknown;
   /**

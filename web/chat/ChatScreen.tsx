@@ -14,7 +14,8 @@
 // waits for the running turns, the line is the drain's, with Cancel restart and Restart now (settings/DrainLine.tsx),
 // where the list's foot is not on screen either. Else, where no docked sidebar shows the list's foot, the update's
 // line (row 108: the step line while an update runs, Restart to apply, or Update available with Update), which no timer
-// takes away; a refused request's line goes first while it shows.
+// takes away; a refused request's line goes first while it shows. The chat's running work has its own line at the
+// conversation's foot, where the side panel's Running card is not on screen (RunningStrip.tsx).
 import { useEffect } from "react";
 import type { Route } from "../router";
 import { EMPTY_DRAFT, NO_UPLOADS, act, draftOf, isCommandDraft, restartingNow, takeBackWaitLine, uploadRoot, uploadRootLabel, useStore } from "../state/store";
@@ -22,6 +23,7 @@ import { steadyChat } from "../state/steady";
 import { DropOverlay, useFileDrop } from "../ui/files";
 import { Shell } from "../layout/Shell";
 import { ChatView } from "./ChatView";
+import { RunningStrip } from "./RunningStrip";
 import { Composer } from "../composer/Composer";
 import { SidePanel } from "../panels/SidePanel";
 import { ChatDialogs } from "../dialogs/ChatDialogs";
@@ -104,7 +106,7 @@ export function ChatScreen({ route, gone = null }: { route: Route; gone?: string
         onDragLeaveCapture={drop.handlers.onDragLeave}
         onDropCapture={drop.handlers.onDrop}
       >
-        <ChatView chat={chat} route={route} gone={gone} />
+        <ChatView chat={chat} route={route} gone={gone} foot={<RunningStrip chat={chat} route={route} />} />
         {/* Iteration 7 (DESIGN-B1 4.15, PA-14): where the links in Claude's text open, and the first-click question. */}
         <ChatLinks chat={chat.id} route={route} />
         {held ? (
