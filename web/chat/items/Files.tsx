@@ -20,6 +20,7 @@ import { NO_UPLOADS, act, chatFolderIn, uploadRefForms, useStore } from "../../s
 import type { ToolItem, Upload } from "../../state/types";
 import { formatSize } from "../../ui/files";
 import { IconDownload, IconFile, IconImage } from "../../ui/icons";
+import { Preview, previewTypeOfName, uploadPreview } from "../../ui/preview";
 import { baseName, fileMenu, relInFolder, uploadMenu } from "../../ui/fileMenu";
 import { useRowMenu } from "../../ui/RowMenu";
 
@@ -207,7 +208,8 @@ export function DownloadButton({ chatId, path, folder, testId }: { chatId: strin
 
 /**
  * The files a message refers to, above its bubble: each a tile (its icon, its name, and its size or, for a file of the
- * chat's folder, its folder part) that downloads it. Each tile's `onClick` is its download.
+ * chat's folder, its folder part) that downloads it. Each tile's `onClick` is its download. A picture that draws
+ * (ui/preview.tsx) has its thumbnail over its tile.
  */
 export function MessageFiles({ uploads }: { uploads: readonly MessageFile[] }) {
   if (!uploads.length) return null;
@@ -256,7 +258,15 @@ function UploadTile({ u, onClick }: { u: Upload; onClick: () => void }) {
       <IconDownload size={15} className="chat-file-dl" />
     </button>
   );
-  return <WithOpener tile={tile} opener={menu.opener} menu={menu.menu} />;
+  const item = <WithOpener tile={tile} opener={menu.opener} menu={menu.menu} />;
+  const source = uploadPreview(u);
+  return source ? (
+    <Preview testId={`preview-${u.id}`} name={u.name} source={source} onDownload={onClick}>
+      {item}
+    </Preview>
+  ) : (
+    item
+  );
 }
 
 /** A file of the chat's folder that a mention sent (9.3): the folder part stands where an upload's size does. */
@@ -291,5 +301,14 @@ function FolderTile({ f, onClick }: { f: FolderFile; onClick: () => void }) {
       <IconDownload size={15} className="chat-file-dl" />
     </button>
   );
-  return <WithOpener tile={tile} opener={menu.opener} menu={menu.menu} />;
+  const item = <WithOpener tile={tile} opener={menu.opener} menu={menu.menu} />;
+  // A file of the folder has no type and no size here: its name says the type, and the probe says the size.
+  const type = previewTypeOfName(name);
+  return type ? (
+    <Preview testId="preview-mention" name={name} source={{ url: filesUrl(f.chatId, f.rel), what: "file", type }} onDownload={onClick}>
+      {item}
+    </Preview>
+  ) : (
+    item
+  );
 }

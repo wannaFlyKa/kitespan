@@ -4,9 +4,10 @@
 // A file of the chat's folder picked with `@` (9.3, the owner's answer of 2026-11-01) is a chip too: its folder part
 // stands where an upload's size is, a tap shows its absolute path, and its Remove takes it out of the message box
 // only (act.removeMention): unlike an upload's, it deletes nothing. While the chat is held (row 80) Remove is off, shown
-// as off (`off`); a tap still shows the path.
+// as off (`off`); a tap still shows the path. An upload that is a picture shows it where its icon is.
 import { IconClose, IconFile, IconImage, IconInfo } from "../ui/icons";
 import { ProgressRing, formatSize } from "../ui/files";
+import { uploadPreview, usePreview } from "../ui/preview";
 import type { ChipUpload, MentionChipFacts } from "./attach";
 
 export function DraftChip(props: { upload: ChipUpload; open: boolean; pathId: string; onToggle: () => void; onRemove: () => void; off?: boolean }) {
@@ -14,11 +15,13 @@ export function DraftChip(props: { upload: ChipUpload; open: boolean; pathId: st
   const failed = u.state === "failed";
   const icon = failed ? <IconInfo size={16} /> : u.type.startsWith("image/") ? <IconImage size={16} /> : <IconFile size={16} />;
   const name = u.name || "File";
+  // A picture that draws shows in the icon's place, at the icon's size (ui/preview.tsx).
+  const pic = usePreview(uploadPreview(u));
   const line = failed ? u.error ?? "That file could not be uploaded." : u.unknown ? null : formatSize(u.size);
   const body = (
     <>
-      <span className="attach-icon" aria-hidden="true">
-        {icon}
+      <span className="attach-icon" aria-hidden="true" ref={pic.box}>
+        {pic.shot.url ? <img className="attach-shot" src={pic.shot.url} alt={name} width={32} height={32} draggable={false} onError={pic.onError} /> : icon}
       </span>
       <span className="attach-text">
         <span className="attach-name">{name}</span>

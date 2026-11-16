@@ -305,6 +305,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: flex-end; /* a tile beside a picture keeps its own height */
   gap: var(--s2);
   max-width: min(85%, 560px);
   margin-bottom: 6px;
@@ -345,6 +346,35 @@
   align-items: center;
   gap: var(--s1);
   min-width: 0;
+}
+/* A picture's thumbnail over its tile (ui/preview.tsx). The box has its full size before the picture comes, so the
+   transcript does not move when it does. */
+.chat-shot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+  min-width: 0;
+}
+.chat-shot-thumb {
+  display: block;
+  flex: none;
+  width: 160px;
+  height: 120px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-field);
+  background: var(--fill);
+  overflow: hidden;
+}
+button.chat-shot-thumb {
+  cursor: zoom-in;
+}
+.chat-shot-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ---- Claude's reply ---- */
