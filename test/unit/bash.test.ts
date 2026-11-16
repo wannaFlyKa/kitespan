@@ -71,6 +71,19 @@ describe("running a command", () => {
     expect(Date.now() - t0).toBeLessThan(10_000);
   });
 
+  test("a large output just before the exit arrives whole on both streams", async () => {
+    const r = await runBash("head -c 3000000 /dev/zero | tr '\\0' x; head -c 100000 /dev/zero | tr '\\0' y >&2", { cwd: DIR, shell: SH, streamChars: 5_000_000, pipeGraceMs: 50 });
+    expect(r).toMatchObject({ code: 0, timedOut: false, capped: false });
+    expect(r.stdout.length).toBe(3_000_000);
+    expect(r.stdout.endsWith("xxxx")).toBe(true);
+    expect(r.stderr).toBe("y".repeat(100_000));
+  });
+
+  test("a job in the group that outlives the shell still holds the output, past the pipes' grace", async () => {
+    const r = await runBash("(sleep 1; echo late) & echo started", { cwd: DIR, shell: SH, pipeGraceMs: 100 });
+    expect(r).toMatchObject({ stdout: "started\nlate", code: 0, timedOut: false });
+  });
+
   test("the timeout ends the shell and a child that keeps the pipes open; the note goes to stderr", async () => {
     const pidFile = join(DIR, "child.pid");
     // The background child holds stdout and stderr open long after the shell is gone.
