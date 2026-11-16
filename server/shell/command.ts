@@ -49,7 +49,7 @@ const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
 /** A word that every POSIX shell, zsh and fish read as itself. */
 const PLAIN_WORD = /^[A-Za-z0-9_./+-]+$/;
 
-/** The folder as one shell word: as it is when that is safe, else single-quoted. */
+/** The folder as one shell word: as it is when that is safe, else quoted for the same shells (shellQuote). */
 export function shellWord(s: string): string {
   return PLAIN_WORD.test(s) ? s : shellQuote(s);
 }

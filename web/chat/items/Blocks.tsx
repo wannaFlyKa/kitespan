@@ -10,6 +10,7 @@ import { useState } from "react";
 import { act, useStore } from "../../state/store";
 import type { AgentItem, WorkflowAgent, WorkflowItem } from "../../state/types";
 import { IconAgent, IconFlow, IconStop } from "../../ui/icons";
+import { useCardsShown } from "../../layout/Shell";
 import { WORKFLOW_TOOL } from "../../state/reduce";
 import { foldItems } from "../fold";
 import { Markdown } from "../Markdown";
@@ -22,13 +23,13 @@ import { TrustLines } from "./TrustLine";
 import { BackgroundLines } from "./BackgroundLine";
 
 type State = BlockState | WorkflowAgent["status"];
-const WORD: Record<State, string> = { running: "Running", queued: "Queued", done: "Done", failed: "Failed", stopped: "Stopped", ended: "Ended" };
+export const STATE_WORD: Record<State, string> = { running: "Running", queued: "Queued", done: "Done", failed: "Failed", stopped: "Stopped", ended: "Ended" };
 
 export function StatePill({ state, extra }: { state: State; extra?: string }) {
   return (
     <span className={`chat-pill is-${state}`}>
       <i aria-hidden="true" />
-      {WORD[state]}
+      {STATE_WORD[state]}
       {extra ? ` ${extra}` : ""}
     </span>
   );
@@ -161,7 +162,7 @@ function WorkflowAgentRow({ id, agent, state }: { id: string; agent: WorkflowAge
       <i className="chat-wf-dot" aria-hidden="true" />
       <span className="chat-wf-label">{agent.label}</span>{" "}
       {agent.attempt && agent.attempt > 1 ? <span className="chat-wf-attempt">Attempt {agent.attempt}</span> : null}{" "}
-      <span className="chat-wf-state">{WORD[state]}</span>
+      <span className="chat-wf-state">{STATE_WORD[state]}</span>
       {details ? <Chevron /> : null}
     </>
   );
@@ -205,9 +206,11 @@ export function phaseTitle(i: number, title: string): string {
 export function WorkflowBlock({ item }: { item: WorkflowItem }) {
   const ctx = useTranscript();
   const live = useLiveChat(ctx?.chatId);
-  const [open, toggle] = useOpen(item.id, "workflow", true);
   const v = blockView(item, live, ctx?.readOnly ?? true);
   const running = v.state === "running";
+  // While it runs and the side panel's Running card is on screen, the card holds its phases: the block is one line.
+  const inCard = useCardsShown() && running;
+  const [open, toggle] = useOpen(item.id, "workflow", !inCard);
   // A workflow that ended leaves no state for agents that never finished; its own end state stands for them.
   const word = (a: WorkflowAgent): State => (!running && (a.status === "running" || a.status === "queued") ? v.state : a.status);
   const agents = item.phases.flatMap((p) => p.agents);

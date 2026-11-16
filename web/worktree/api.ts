@@ -20,16 +20,19 @@ export async function readWorktreeCan(folder: string, fetcher?: typeof fetch): P
 }
 
 /**
- * GET /api/chats/:chat/worktree: a read of the worktree's changes, whether it holds files that git ignores (true only
- * when the server says so), and the server's `removes` when it sends one. A 404 is the route's answer for a chat with
- * no worktree of its own (a terminal session's linked worktree, W12): Delete removes none. Null when it could not be
- * read.
+ * GET /api/chats/:chat/worktree: a read of the worktree's changes, how many commits no branch holds (only when the
+ * server counts some), whether it holds files that git ignores (true only when the server says so), and the server's
+ * `removes` when it sends one. A 404 is the route's answer for a chat with no worktree of its own (a terminal
+ * session's linked worktree, W12): Delete removes none. Null when it could not be read: no answer, or the server's
+ * `unread` for a worktree that is there (a null `changes` without it is a worktree that is not there).
  */
 export async function readWorktreeStatus(chatId: string, fetcher?: typeof fetch): Promise<WorktreeStatus | null> {
   try {
-    const r = await apiGet<{ changes?: unknown; ignored?: unknown; branchStays?: unknown; removes?: unknown }>(`/api/chats/${encodeURIComponent(chatId)}/worktree`, fetcher);
+    const r = await apiGet<{ changes?: unknown; unread?: unknown; commits?: unknown; ignored?: unknown; branchStays?: unknown; removes?: unknown }>(`/api/chats/${encodeURIComponent(chatId)}/worktree`, fetcher);
+    if (r.unread === true) return null;
     const changes = typeof r.changes === "number" && Number.isInteger(r.changes) && r.changes >= 0 ? r.changes : null;
-    return { changes, ignored: r.ignored === true, branchStays: r.branchStays === true, ...(typeof r.removes === "boolean" ? { removes: r.removes } : {}) };
+    const commits = typeof r.commits === "number" && Number.isInteger(r.commits) && r.commits > 0 ? { commits: r.commits } : {};
+    return { changes, ...commits, ignored: r.ignored === true, branchStays: r.branchStays === true, ...(typeof r.removes === "boolean" ? { removes: r.removes } : {}) };
   } catch (e) {
     return e instanceof ApiError && e.status === 404 ? { changes: null, branchStays: false, removes: false } : null;
   }

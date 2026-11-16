@@ -386,6 +386,7 @@ function toolItem(e: ChatEventOf<"tool_call">, was: Item | undefined, cwd: strin
     diff: input === null ? prev?.diff : diffOf(e.name, input, cwd),
     elapsedSeconds: prev?.elapsedSeconds,
     background: prev?.background,
+    ...(prev?.taskId ? { taskId: prev.taskId } : {}),
     raw: input === null ? prev?.raw : input,
   };
 }
@@ -1026,6 +1027,12 @@ export function applyEvent<C extends ChatPart>(chat: C, e: ChatEvent, ctx: Reduc
     }
     case "task": {
       const block = taskBlock(items, e.toolUseId, e.taskId);
+      // A command's task (a Bash call that went on in the background): its row keeps the task's id, so the chat's
+      // running work lists the call while `tasks` lists the task (chat/running.ts).
+      if (block?.kind === "tool") {
+        const stamped = block.taskId === e.taskId ? null : updateDeep(items, block.id, (it): Item => (it.kind === "tool" ? { ...it, taskId: e.taskId } : it));
+        return stamped ? set({ items: stamped }) : chat;
+      }
       if (!block || (block.kind !== "agent" && block.kind !== "workflow")) return chat;
       const out = updateDeep(items, block.id, (it): Item => {
         if (it.kind === "agent") {

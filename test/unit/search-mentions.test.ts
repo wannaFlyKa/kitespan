@@ -25,7 +25,7 @@ const ROOT = realpathSync(mkdtempSync(join(tmpdir(), "kitespan-mentions-")));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 const FOLDER = join(ROOT, "app");
 const OUTSIDE = join(ROOT, "outside");
-for (const f of ["src/upload.ts", "docs/my notes.md", "it's.txt", "web/composer/Composer.tsx"]) {
+for (const f of ["src/upload.ts", "docs/my notes.md", "it's.txt", "web/composer/Composer.tsx", "a\\';id;echo \\'b"]) {
   mkdirSync(join(FOLDER, f, ".."), { recursive: true });
   writeFileSync(join(FOLDER, f), "x\n");
 }
@@ -108,10 +108,11 @@ describe("send with mention chips", () => {
   test("a `!` command gets each mention as a single-quoted path", async () => {
     const { reg, driver, bash } = await setup();
     const { chat } = await idleChat(reg, driver);
-    expect(await apply(reg, bashFrame(chat, "wc -l", { mentions: ["it's.txt", "src/upload.ts", "docs/my notes.md"] }))).toEqual({ ok: true, result: null });
+    expect(await apply(reg, bashFrame(chat, "wc -l", { mentions: ["it's.txt", "src/upload.ts", "docs/my notes.md", "a\\';id;echo \\'b"] }))).toEqual({ ok: true, result: null });
     await settle(20);
-    // The shell word is right for a space too: no @ and no double quotes.
-    expect(bash.runs.map((r) => r.command)).toEqual([`wc -l '${FOLDER}/it'\\''s.txt' '${FOLDER}/src/upload.ts' '${FOLDER}/docs/my notes.md'`]);
+    // The shell word is right for a space too: no @ and no double quotes. A backslash and a quote stand outside the
+    // quotes, so the last name is one word in fish too.
+    expect(bash.runs.map((r) => r.command)).toEqual([`wc -l '${FOLDER}/it'\\''s.txt' '${FOLDER}/src/upload.ts' '${FOLDER}/docs/my notes.md' '${FOLDER}/a'\\\\''\\'';id;echo '\\\\''\\''b'`]);
     expect(await apply(reg, bashFrame(chat, "cat", { mentions: ["leak.txt"] }))).toEqual({ ok: false, code: "mention_gone" });
     await settle(20);
     expect(bash.runs.length).toBe(1);

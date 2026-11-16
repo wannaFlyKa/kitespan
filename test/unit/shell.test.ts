@@ -149,6 +149,8 @@ describe("the resume command (D 6.10, D14)", () => {
     expect(shellWord("/a/$(touch x);y")).toBe("'/a/$(touch x);y'");
     expect(shellWord("/a/it's")).toBe("'/a/it'\\''s'");
     expect(shellWord("/a/~b*")).toBe("'/a/~b*'");
+    expect(shellWord("/a/b\\c")).toBe("'/a/b'\\\\'c'");
+    expect(shellWord("/a/b\\';id;echo \\'c")).toBe("'/a/b'\\\\''\\'';id;echo '\\\\''\\''c'");
     const r = resumeCommand({ cwd: "/a/my notes", sessionId: SESSION, processOpen: false });
     expect(r.command).toBe(`cd '/a/my notes' && claude --resume ${SESSION}`);
   });

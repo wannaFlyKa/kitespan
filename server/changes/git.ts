@@ -218,6 +218,8 @@ export async function takeMark(g: WorktreeGit, repo: RepoAt, place: MarkPlace, d
     const tree = await run(["write-tree"]);
     const id = tree.out.trim();
     if (tree.code !== 0 || !TREE_ID.test(id)) return null;
+    // A mark that ends past its deadline fails, also when each git call won the race with that call's kill timer.
+    if (performance.now() >= deadline) return null;
     delete why.why;
     return { tree: id, large };
   } catch {

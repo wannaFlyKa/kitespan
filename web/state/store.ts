@@ -436,6 +436,7 @@ export function resetState(p: Partial<State> = {}) {
   screen.reset();
   uploadsRead = null;
   uploadReads.clear();
+  localFiles.clear();
   sought.clear();
   reading.clear();
   commandReads.clear();
@@ -2437,6 +2438,23 @@ function setUploads(key: string, f: (list: Upload[]) => Upload[]) {
 
 let tempN = 0;
 
+/** The image files this page sent, by upload id: the newest LOCAL_FILES, so a long session does not hold them all. */
+const LOCAL_FILES = 20;
+const localFiles = new Map<string, Blob>();
+
+function keepLocal(id: string, file: Blob) {
+  localFiles.set(id, file);
+  for (const old of localFiles.keys()) {
+    if (localFiles.size <= LOCAL_FILES) break;
+    localFiles.delete(old);
+  }
+}
+
+/** The image file that this page sent as upload `id`, while it holds it: its picture draws with no read (ui/preview.tsx). */
+export function localFile(id: string): Blob | undefined {
+  return localFiles.get(id);
+}
+
 /** Upload each file (POST /api/uploads with its progress); a done upload's chip joins the draft (D50). */
 function addUploads(key: string, target: { chat?: string; project?: string }, files: readonly FileFacts[], onDone: (u: Upload) => void): Upload[] {
   const { settings } = state;
@@ -2452,14 +2470,21 @@ function addUploads(key: string, target: { chat?: string; project?: string }, fi
     const f = files[i]!;
     if (u.state !== "uploading" || !f.file) return;
     const move = (p: Partial<Upload>) => setUploads(key, (list) => list.map((x) => (x.id === u.id ? { ...x, ...p } : x)));
-    const job = uploadBytes<UploadReply>(target, f.file, f.name, f.type, (progress) => move({ progress }));
+    const file = f.file;
+    if (f.type.startsWith("image/")) keepLocal(u.id, file);
+    const job = uploadBytes<UploadReply>(target, file, f.name, f.type, (progress) => move({ progress }));
     job.done.then(
       (r) => {
         const done = uploadOf(r.upload);
+        // The file goes under the upload's own id before the list changes, so its chip keeps the picture.
+        if (localFiles.delete(u.id)) keepLocal(done.id, file);
         setUploads(key, (list) => list.map((x) => (x.id === u.id ? done : x)));
         onDone(done);
       },
-      (e) => move({ state: "failed", error: uploadFailedLine(e, state.restarting) }),
+      (e) => {
+        localFiles.delete(u.id);
+        move({ state: "failed", error: uploadFailedLine(e, state.restarting) });
+      },
     );
   });
   return made;
@@ -3235,6 +3260,7 @@ export const act = {
   /** Remove (DELETE /api/uploads/:upload): the upload leaves the list and its chip leaves the draft. */
   removeUpload(key: string, id: string) {
     const up = state.uploads[key]?.find((u) => u.id === id);
+    localFiles.delete(id);
     setUploads(key, (list) => list.filter((u) => u.id !== id));
     const d = fieldsOf(key);
     if (d.uploads.includes(id)) {

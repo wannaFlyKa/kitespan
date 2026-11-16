@@ -25246,7 +25246,7 @@ async function main() {
   for (const p of problems) console.log(`ui-check: ${p}`);
   if (lostBrowser) console.log("ui-check: the browser connection closed before every check ran");
   await cleanup();
-  process.exit(failed.length || lostBrowser ? 1 : 0);
+  process.exit(failed.length || problems.length || lostBrowser ? 1 : 0);
 }
 
 main().catch(async (e) => {

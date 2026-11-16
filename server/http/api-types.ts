@@ -148,13 +148,20 @@ export type WorktreeCanReply = { ok: true } | { ok: false; why: WorktreeOff; lin
 
 /**
  * GET /api/chats/:chat/worktree (W7, W9, L26): the chat's own worktree as Archive and Delete name it: how many files
- * have changes (tracked and untracked; null when it is not there), and whether its branch holds a commit that no
- * other branch has, so Delete keeps it. Never a file's name. 404 for a chat with no worktree of its own.
+ * have changes (tracked and untracked; null when it is not there, or with `unread`), and whether its branch holds a
+ * commit that no other branch has, so Delete keeps it. Never a file's name. 404 for a chat with no worktree of its own.
  */
 export interface ChatWorktreeReply {
   path: string;
   branch: string;
   changes: number | null;
+  /** The worktree is there and its changes or its commits could not be read, which is never "no changes". */
+  unread?: true;
+  /**
+   * How many commits its HEAD reaches that no branch, tag or remote ref holds (a detached HEAD's own): Archive keeps
+   * the worktree as it keeps one with changes, and Delete removes them with it. Absent: none.
+   */
+  commits?: number;
   /**
    * W7 (L25): the worktree holds files that git ignores, other than unchanged copies of the project's own, which
    * Archive keeps as it keeps changes (null when it is not there or cannot be read).

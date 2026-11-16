@@ -1,7 +1,8 @@
 // `!` commands (DESIGN.md 4.1, 6.4, D10, D20). The user's own command runs as a child of the server, with the user's
 // shell (`$SHELL -c`), in the chat's folder, in its own process group: the 120 s timeout and the output cap end the
-// shell and every child it started (O-L5), so a child that keeps the pipes open cannot outlive the limit. The result
-// goes into the conversation as Claude Code records it (the spike's record string), with `shouldQuery` from the
+// shell and every child it started (O-L5), so a child that keeps the pipes open cannot outlive the limit. A child that
+// left the group (setsid) gets no signal, so it may keep the pipes: the result does not wait for it (pipeGraceMs). The
+// result goes into the conversation as Claude Code records it (the spike's record string), with `shouldQuery` from the
 // user's own `respondToBashCommands` (D10). Once Bun has reaped the shell, its group's id is held only while a member
 // is left in the group, so a signal to the group then needs one that was in it at the reap (groupSignal).
 
@@ -20,6 +21,8 @@ export const BASH_LIMITS = {
   inputChars: 10_000,
   /** After SIGTERM to the group, SIGKILL follows this much later if anything is left. */
   killGraceMs: 2_000,
+  /** How long the pipes may stay open once nothing of the command's group is left: the last output is read in it. */
+  pipeGraceMs: 1_000,
 } as const;
 
 export interface BashRun {
@@ -42,6 +45,7 @@ export interface BashOptions {
   timeoutMs?: number;
   streamChars?: number;
   killGraceMs?: number;
+  pipeGraceMs?: number;
   /** Ends the command's whole group early, the way the timeout does (the registry aborts it on Delete, Archive, a shutdown). */
   signal?: AbortSignal;
   /** D60 (L38): the live chat's environment's variables, over the start environment. */
@@ -121,28 +125,21 @@ async function groupMembers(pgid: number): Promise<Map<number, string>> {
 /**
  * Signals to the group that `proc` leads: while it is not reaped, at once; after its reap, only while a process that
  * was in the group at the reap is still in it with its start, so the group has had a member ever since and its id was
- * never free for another process's group. With no /proc, as before the reap.
+ * never free for another process's group. With no /proc, as before the reap. The answer is whether the signal went
+ * out; signal 0 only asks.
  */
-function groupSignal(proc: Bun.Subprocess): (signal: NodeJS.Signals) => Promise<void> {
+function groupSignal(proc: Bun.Subprocess): (signal: NodeJS.Signals | 0) => Promise<boolean> {
   const pid = proc.pid;
   const atReap: Promise<Map<number, string> | null> = proc.exited.then(() => (!PROCFS ? null : signalGroup(pid, 0) ? groupMembers(pid) : new Map()));
   return async (signal) => {
-    if (proc.exitCode === null && proc.signalCode === null) {
-      signalGroup(pid, signal);
-      return;
-    }
+    if (proc.exitCode === null && proc.signalCode === null) return signalGroup(pid, signal);
     const kept = await atReap;
-    if (kept === null) {
-      signalGroup(pid, signal);
-      return;
-    }
+    if (kept === null) return signalGroup(pid, signal);
     for (const [member, start] of kept) {
       const now = await groupAndStart(member);
-      if (now?.pgrp === pid && now.start === start) {
-        signalGroup(pid, signal);
-        return;
-      }
+      if (now?.pgrp === pid && now.start === start) return signalGroup(pid, signal);
     }
+    return false;
   };
 }
 
@@ -154,6 +151,7 @@ export async function runBash(input: string, opts: BashOptions): Promise<BashRun
   const timeoutMs = opts.timeoutMs ?? BASH_LIMITS.timeoutMs;
   const cap = opts.streamChars ?? BASH_LIMITS.streamChars;
   const grace = opts.killGraceMs ?? BASH_LIMITS.killGraceMs;
+  const pipeGrace = opts.pipeGraceMs ?? BASH_LIMITS.pipeGraceMs;
   const shell = opts.shell || process.env.SHELL || "/bin/sh";
   const t0 = performance.now();
   let proc: Bun.Subprocess<"ignore", "pipe", "pipe">;
@@ -177,10 +175,20 @@ export async function runBash(input: string, opts: BashOptions): Promise<BashRun
   let timedOut = false;
   let capped = false;
   let killTimer: ReturnType<typeof setTimeout> | null = null;
+  let pipeTimer: ReturnType<typeof setTimeout> | null = null;
+  // What still holds a pipe when nothing of the group is left is not in the group (a child that called setsid), and
+  // no signal goes to it: the result is what was read so far.
+  const readers: { cancel(): Promise<void> }[] = [];
+  const letGo = () => {
+    for (const r of readers) void r.cancel().catch(() => {});
+  };
   const endGroup = () => {
     if (killTimer) return;
     void toGroup("SIGTERM");
-    killTimer = setTimeout(() => void toGroup("SIGKILL"), grace);
+    killTimer = setTimeout(() => {
+      void toGroup("SIGKILL");
+      killTimer = setTimeout(letGo, pipeGrace);
+    }, grace);
   };
   const timer = setTimeout(() => {
     timedOut = true;
@@ -191,13 +199,17 @@ export async function runBash(input: string, opts: BashOptions): Promise<BashRun
   else opts.signal?.addEventListener("abort", onAbort, { once: true });
 
   const read = async (stream: ReadableStream<Uint8Array>): Promise<string> => {
+    const reader = stream.getReader();
+    readers.push(reader);
     const dec = new TextDecoder();
     let text = "";
     let full = false;
     try {
-      for await (const chunk of stream) {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
         if (full) continue; // keep draining, so a writer is never blocked while its group is ended
-        text += dec.decode(chunk, { stream: true });
+        text += dec.decode(value, { stream: true });
         if (text.length > cap) {
           text = text.slice(0, cap);
           full = true;
@@ -210,8 +222,18 @@ export async function runBash(input: string, opts: BashOptions): Promise<BashRun
     return text.length > cap ? text.slice(0, cap) : text;
   };
 
+  // The shell is gone: a job that is still in its group holds the output, as before (it ends, or the timeout ends
+  // it). The question comes again until the group is empty, and then the pipes have their grace.
+  let settled = false;
+  const afterExit = async () => {
+    const held = await toGroup(0);
+    if (!settled) pipeTimer = setTimeout(held ? afterExit : letGo, pipeGrace);
+  };
+  void proc.exited.then(afterExit);
   const [out, err] = await Promise.all([read(proc.stdout), read(proc.stderr), proc.exited]);
+  settled = true;
   clearTimeout(timer);
+  if (pipeTimer) clearTimeout(pipeTimer);
   opts.signal?.removeEventListener("abort", onAbort);
   if (killTimer) {
     // The group was ended: make sure nothing of it is left once the pipes have closed.

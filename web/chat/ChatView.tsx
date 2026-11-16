@@ -130,14 +130,14 @@ function drawUnits(blocks: readonly Block[], view: View, reveal: ReadonlySet<str
   return out;
 }
 
-export function ChatView({ chat, route, gone = null }: { chat: Chat; route: Route; gone?: string | null }) {
+export function ChatView({ chat, route, gone = null, foot = null }: { chat: Chat; route: Route; gone?: string | null; foot?: ReactNode }) {
   // S1: the store's chat, whose reply grows piece by piece; the screen around it keeps the one it drew (state/steady.ts).
   const live = useStore((s) => s.chats.find((c) => c.id === chat.id)) ?? chat;
   // Each chat starts with its own scroll, open rows and notes.
-  return <Conversation key={chat.id} chat={live} route={route} gone={gone} />;
+  return <Conversation key={chat.id} chat={live} route={route} gone={gone} foot={foot} />;
 }
 
-function Conversation({ chat, route, gone }: { chat: Chat; route: Route; gone: string | null }) {
+function Conversation({ chat, route, gone, foot }: { chat: Chat; route: Route; gone: string | null; foot: ReactNode }) {
   const project = useStore((s) => s.projects.find((p) => p.id === chat.projectId)?.name ?? "this project");
   const rawView = typeof route.query.view === "string" ? route.query.view : undefined;
   const view = viewOf(route);
@@ -1178,6 +1178,8 @@ function Conversation({ chat, route, gone }: { chat: Chat; route: Route; gone: s
               </div>
             ) : null}
           </div>
+          {/* ChatScreen's line at the conversation's foot: it keeps its place above the card as above the message box. */}
+          {foot}
           {card ? (
             <div className={`chat-dock${cardRide ? " is-riding" : ""}`} ref={dock} style={cardRideStyle}>
               <div className="chat-measure">

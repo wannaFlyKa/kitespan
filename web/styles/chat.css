@@ -49,6 +49,50 @@
 .chat-gone .notice {
   margin: 0;
 }
+/* The Running strip (chat/RunningStrip.tsx): one quiet line at the conversation's foot, the whole of it a link, as
+   high as the look's rows (44 px on touch). Its dot is the chat list's running dot, or the needs-you dot while a
+   session needs input (base.css; Reduce motion stops its pulse). A line wider than the column ends with an ellipsis. */
+.chat-running-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--row-h);
+  margin: 0 calc(-1 * var(--s2));
+  padding: 0 var(--s2);
+  border-radius: var(--r-row);
+  color: var(--text);
+  font-size: var(--fs-small);
+  text-decoration: none;
+}
+.chat-running-link:hover {
+  background: var(--hover);
+}
+/* The line's box clips what is outside it (.chat-gone), so the ring is drawn inside the link, as a group row's is. */
+.chat-running-link:focus-visible {
+  outline-offset: -2px;
+}
+.chat-running-words {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A lone workflow's count follows the name with no gap and stays whole: the ellipsis cuts a long name, not the count. */
+.chat-running-count {
+  flex: none;
+  margin-left: calc(-1 * var(--s2));
+}
+.chat-running-link > svg {
+  flex: none;
+  color: var(--faint);
+}
+.touch .chat-running-link {
+  font-size: var(--fs-ui);
+}
+/* The phone's picker row sits under it, and a tap on its pills lands up to 12 px above them: the strip keeps clear. */
+[data-size="phone"] .chat-running {
+  padding-bottom: var(--s3);
+}
 
 /* ---- the column ---- */
 .chat-scroll-wrap {
@@ -261,6 +305,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: flex-end; /* a tile beside a picture keeps its own height */
   gap: var(--s2);
   max-width: min(85%, 560px);
   margin-bottom: 6px;
@@ -301,6 +346,35 @@
   align-items: center;
   gap: var(--s1);
   min-width: 0;
+}
+/* A picture's thumbnail over its tile (ui/preview.tsx). The box has its full size before the picture comes, so the
+   transcript does not move when it does. */
+.chat-shot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+  min-width: 0;
+}
+.chat-shot-thumb {
+  display: block;
+  flex: none;
+  width: 160px;
+  height: 120px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-field);
+  background: var(--fill);
+  overflow: hidden;
+}
+button.chat-shot-thumb {
+  cursor: zoom-in;
+}
+.chat-shot-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ---- Claude's reply ---- */

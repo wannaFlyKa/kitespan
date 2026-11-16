@@ -33,8 +33,10 @@ import {
   archiveKeepsLine,
   branchStaysLine,
   chatFolder,
+  deleteFacts,
   deleteWorktreeLine,
   keptLine,
+  removeTreeLine,
   startActions,
   startLine,
   worktreeOf,
@@ -321,6 +323,28 @@ describe("Archive and Delete of a worktree chat (W7, W9; L25, L26)", () => {
     expect(await readWorktreeStatus(CHAT, answer({}, 404))).toEqual({ changes: null, branchStays: false, removes: false });
     expect(await readWorktreeStatus(CHAT, answer({}, 500))).toBeNull();
     expect(urls[0]).toBe(`GET /api/chats/${CHAT}/worktree`);
+  });
+
+  test("commits that no branch holds: Delete's line counts them, and Archive's and Remove's say the worktree stays", async () => {
+    const answer = (body: unknown) => (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
+    const status = await readWorktreeStatus(CHAT, answer({ changes: 0, commits: 2, ignored: false, branchStays: false }));
+    expect(status).toEqual({ changes: 0, commits: 2, ignored: false, branchStays: false });
+    expect(await readWorktreeStatus(CHAT, answer({ changes: 0, commits: 0, branchStays: false }))).toEqual({ changes: 0, ignored: false, branchStays: false });
+    expect(deleteFacts(WORKTREE, status, false)).toEqual({ line: `This also removes its worktree, ${WT}, with 2 commits that no branch holds.`, reading: false, branch: null });
+    expect(deleteWorktreeLine(WT, { changes: 3, commits: 1, branchStays: false })).toBe(`This also removes its worktree, ${WT}, with 1 commit that no branch holds and changes in 3 files.`);
+    expect(archiveKeepsLine({ changes: 0, commits: 2, ignored: true, branchStays: false })).toBe("Its worktree has 2 commits that no branch holds, so it stays on disk.");
+    expect(archiveKeepsLine({ changes: 3, commits: 2, branchStays: false })).toBe("Its worktree has changes in 3 files, so it stays on disk.");
+    expect(removeTreeLine(WT, { changes: 0, commits: 1, branchStays: false }, false, true)).toEqual({ line: `Its worktree at ${WT} has 1 commit that no branch holds, so it stays on disk.`, reading: false, touchesFolder: false });
+  });
+
+  test("the server's `unread` is a read that failed, not a worktree that is gone: Delete's line never takes the clean form", async () => {
+    const answer = (body: unknown) => (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
+    const unread = await readWorktreeStatus(CHAT, answer({ changes: null, unread: true, ignored: false, branchStays: false }));
+    expect(unread).toBeNull();
+    expect(deleteFacts(WORKTREE, unread, false)).toEqual({ line: `This also removes its worktree, ${WT}, whose changes could not be read.`, reading: false, branch: null });
+    expect(removeTreeLine(WT, unread, false, true).line).toBe(`Its worktree at ${WT} stays on disk if it has changes, which could not be read.`);
+    // One that is not there: a null count with no `unread`.
+    expect(await readWorktreeStatus(CHAT, answer({ changes: null, ignored: null, branchStays: false }))).toEqual({ changes: null, ignored: false, branchStays: false });
   });
 
   test("the dialogs read it once when they open and say it in their own lines; an archived chat says its worktree stayed", () => {

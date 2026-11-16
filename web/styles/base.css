@@ -592,6 +592,38 @@ body[data-size="phone"] .dialog-actions {
   flex-direction: column;
   align-items: stretch;
 }
+/* The picture viewer (ui/preview.tsx): a dialog as wide as its picture, which is scaled down to fit the window. The
+   name takes the room that is left in the head and never widens the dialog. */
+.dialog.shot-view,
+body[data-size="phone"] .dialog.shot-view {
+  width: fit-content;
+  min-width: min(280px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: var(--s3);
+  overscroll-behavior: contain;
+}
+.shot-view-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.shot-view-head h2 {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shot-view-img {
+  display: block;
+  margin: 0 auto;
+  max-width: calc(100vw - 32px - 2 * var(--s3));
+  max-height: calc(100dvh - 64px - 3 * var(--s3) - var(--touch));
+  border-radius: var(--r-row);
+}
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -1231,6 +1263,14 @@ button.group-row:active {
   border-radius: var(--r-row);
   background: var(--elevated);
   color: var(--accent-ui);
+}
+/* A picture in the icon's place (ui/preview.tsx): the same box, so the chip keeps its size. */
+.attach-shot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 .attach-text {
   display: flex;

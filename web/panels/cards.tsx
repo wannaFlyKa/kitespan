@@ -8,21 +8,26 @@
 // except beside the pane bar, whose Files button opens the same list (7.3: the bar and the pane never disagree on
 // which pane is open). A download is a
 // read and records nothing. A file outside the chat's folder (Plan mode's plan file) has no download page and no
-// Download: its path is plain text with Copy path, since no URL may hold it (5.1 rule 2).
-import type { ReactNode } from "react";
+// Download: its path is plain text with Copy path, since no URL may hold it (5.1 rule 2). The first card, Running, is
+// there only while the chat has work that runs (chat/running.ts): one row for each, its name over its state and a
+// workflow's progress. A subagent's, a call's and a session's row is a link to its own view. A workflow's row opens in
+// place (a details element, open at first) to its phases and agents, a link to its block in the chat, and Stop: the
+// block in the chat is then one line (chat/items/Blocks.tsx). The card has no detail view, so its title is plain text.
+import { useId, useMemo, useState, type ReactNode } from "react";
 import type { Route } from "../router";
-import { NO_UPLOADS, chatFolderIn, useStore } from "../state/store";
+import { NO_UPLOADS, act, chatFolderIn, useStore } from "../state/store";
 import type { Chat, Output } from "../state/types";
 import { Link } from "../ui/primitives";
-import { IconBranch, IconChevron, IconDoc, IconDownload, IconFile, IconFolder, IconRight, IconTerminal } from "../ui/icons";
+import { IconAgent, IconBranch, IconChevron, IconDoc, IconDownload, IconFile, IconFlow, IconFolder, IconRight, IconStop, IconTerminal } from "../ui/icons";
 import { CopyButton } from "../ui/Copy";
 import { UNKNOWN, connectorsOf, openedFromCard } from "./details";
 import { filesUrl } from "./download";
-import { baseName, connectorProblems, folderParts, inChatFolder, isNote, setSidePrefs, useSidePrefs, viewUrl } from "./format";
+import { baseName, connectorProblems, folderParts, inChatFolder, isNote, setSidePrefs, useSidePrefs, viewOf, viewUrl } from "./format";
 import { PathLine, useDownload } from "./parts";
 import { ConnectorProblems } from "./problems";
 import { fileMenu } from "../ui/fileMenu";
 import { useRowMenu, type RowMenuParts } from "../ui/RowMenu";
+import { RUNNING, RUN_KIND, runningOf, type RunRow } from "../chat/running";
 
 const OUTPUT_ROWS = 5;
 
@@ -33,6 +38,7 @@ export function Cards({ chat, route, paneBar = false }: { chat: Chat; route: Rou
   const connectors = !!connectorsOf(chat)?.length;
   return (
     <div className="side-cards">
+      <RunningCard chat={chat} route={route} />
       <EnvironmentCard chat={chat} route={route} />
       {context || connectors || uploads ? (
         <ul className="group side-group side-links" aria-label="Session">
@@ -63,6 +69,97 @@ function CardHead({ to, title, fold }: { to: string; title: string; fold: { open
       </Link>
       <Fold open={fold.open} label={title} controls={fold.controls} onToggle={fold.onToggle} />
     </div>
+  );
+}
+
+function RunningCard({ chat, route }: { chat: Chat; route: Route }) {
+  const view = viewOf(route);
+  const rows = useMemo(() => runningOf(chat, view), [chat, view]);
+  const titleId = useId();
+  if (!rows.length) return null;
+  return (
+    <section className="side-card" data-testid="side-running" aria-labelledby={titleId}>
+      <div className="side-card-head">
+        <span className="side-card-title" id={titleId}>
+          {RUNNING}
+        </span>
+      </div>
+      <ul className="group side-group">
+        {rows.map((r) => (
+          <RunningRow key={`${r.kind} ${r.id}`} row={r} chatId={chat.id} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** One thing that runs: its kind's icon, its name over its state and progress. A workflow's row opens in place. */
+function RunningRow({ row, chatId }: { row: RunRow; chatId: string }) {
+  const [open, setOpen] = useState(true);
+  const Glyph = row.kind === "workflow" ? IconFlow : row.kind === "agent" ? IconAgent : IconTerminal;
+  const words = (
+    <>
+      <Glyph size={16} className="side-glyph" />
+      <span className="group-text">
+        <span className="group-label side-run-name" title={row.name}>
+          <span className="visually-hidden">{`${RUN_KIND[row.kind]} `}</span>
+          {row.name}
+        </span>
+        <span className="group-sub">
+          <span className={row.tone ? "side-attn" : undefined}>{row.state}</span>
+          {[row.agents, row.phase].map((p) => (p ? `, ${p}` : "")).join("")}
+        </span>
+      </span>
+    </>
+  );
+  if (!row.phases)
+    return (
+      <li data-testid={`side-running-${row.id}`}>
+        <Link to={row.to} className="group-row">
+          {words}
+          <IconRight size={14} className="group-chevron" />
+        </Link>
+      </li>
+    );
+  return (
+    <li data-testid={`side-running-${row.id}`}>
+      <details className="side-run" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+        <summary className="group-row side-run-sum">
+          {words}
+          <IconChevron size={15} className="side-run-chevron" />
+        </summary>
+        <div className="side-run-body">
+          {row.phases.length ? null : <p className="side-run-none">Starting...</p>}
+          {row.phases.map((ph, i) => (
+            <div key={i}>
+              <div className="side-run-phase">{ph.title}</div>
+              <ul className="side-run-agents">
+                {ph.agents.map((a, j) => (
+                  <li key={j} className={`side-run-agent is-${a.status}`}>
+                    <i className="side-run-dot" aria-hidden="true" />
+                    <span className="side-run-label" title={a.label}>
+                      {a.label}
+                    </span>
+                    <span className="side-run-state">{a.word}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div className="side-run-foot">
+            <Link to={row.to} className="side-run-open" data-testid={`side-running-open-${row.id}`}>
+              Show in chat
+            </Link>
+            {row.canStop ? (
+              <button type="button" className="btn chat-mini is-stop" data-testid={`side-running-stop-${row.id}`} onClick={() => act.stopTask(chatId, row.id)}>
+                <IconStop size={12} />
+                Stop
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </details>
+    </li>
   );
 }
 

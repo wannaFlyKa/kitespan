@@ -497,6 +497,10 @@ describe("file references (D50, D45; the reference probe of 2026-11-01 on Claude
     expect(uploadRef('/tmp/u-1/say "hi" it\'s.md', "bash")).toBe(`'/tmp/u-1/say "hi" it'\\''s.md'`);
     expect(shellQuote("$(touch x);y.txt")).toBe("'$(touch x);y.txt'");
     expect(shellQuote("it's")).toBe("'it'\\''s'");
+    // A backslash stands outside the quotes too: fish reads one inside single quotes as an escape.
+    expect(shellQuote("a\\b")).toBe("'a'\\\\'b'");
+    expect(shellQuote("a\\';id;echo \\'b")).toBe("'a'\\\\''\\'';id;echo '\\\\''\\''b'");
+    expect(uploadRef("/tmp/u-1/a\\b.txt", "bash")).toBe("'/tmp/u-1/a'\\\\'b.txt'");
   });
   test("the server adds the references at the end of the text, separated by spaces", () => {
     expect(withUploadRefs("Read these", ["/tmp/u-1/a.txt", "/tmp/u-2/b c.png"], "message")).toBe('Read these @/tmp/u-1/a.txt @"/tmp/u-2/b c.png"');

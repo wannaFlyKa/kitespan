@@ -22,6 +22,7 @@ import {
   removeWorktree,
   sayOnStderr,
   undoAdd,
+  unheldCommits,
   worktreeChanges,
   worktreeOff,
   type MakeResult,
@@ -196,9 +197,10 @@ export class WorktreeHost {
   }
 
   /**
-   * W7 (L25): a clean worktree goes and its branch stays; one with changes, or with files that git ignores other than
-   * unchanged copies of the project's own (ignoredWork), stays on disk (`kept`). Null when there was nothing to do (no
-   * worktree there, one there that Archive's earlier removal says is not the chat's, its state could not be read, which
+   * W7 (L25): a clean worktree goes and its branch stays; one with changes, with commits that no ref holds
+   * (unheldCommits), with files that git ignores other than unchanged copies of the project's own (ignoredWork), or
+   * whose changes or commits could not be read, stays on disk (`kept`). Null when there was nothing to do (no worktree
+   * there, one there that Archive's earlier removal says is not the chat's, its ignored files could not be read, which
    * keeps it, a removal that git refused, or `still` says the archive was undone before its turn came).
    */
   archive(w: LedgerWorktree, still: () => boolean = () => true): Promise<"removed" | "kept" | null> {
@@ -206,7 +208,10 @@ export class WorktreeHost {
       if (!still() || w.removed) return null;
       const n = await worktreeChanges(this.git, w);
       if (n === null) return null;
-      if (n > 0) return "kept";
+      if (n === "unread" || n > 0) return "kept";
+      const commits = await unheldCommits(this.git, w);
+      if (commits === null) return null;
+      if (commits === "unread" || commits > 0) return "kept";
       const ignored = await ignoredWork(this.git, w);
       if (ignored === null) return null;
       if (ignored) return "kept";
@@ -226,14 +231,19 @@ export class WorktreeHost {
   }
 
   /**
-   * Archive's and Delete's facts (W7, W9): how many files have changes (null: not there), whether it holds files that
-   * git ignores, which Archive keeps as it keeps changes (null: not there or not read), and whether the branch stays.
-   * After Archive's removal the chat's worktree is not there, whatever is at its path.
+   * Archive's and Delete's facts (W7, W9): how many files have changes (null: not there, or `unread`), `unread` when it
+   * is there and its changes or its commits could not be read, `commits` when its HEAD reaches commits that no ref
+   * holds (how many), whether it holds files that git ignores, which Archive keeps as it keeps changes (null: not there
+   * or not read), and whether the branch stays. After Archive's removal the chat's worktree is not there, whatever is
+   * at its path.
    */
-  async facts(w: LedgerWorktree): Promise<{ changes: number | null; ignored: boolean | null; branchStays: boolean }> {
+  async facts(w: LedgerWorktree): Promise<{ changes: number | null; unread?: true; commits?: number; ignored: boolean | null; branchStays: boolean }> {
     const gone = w.left || w.removed;
     const changes = gone ? null : await worktreeChanges(this.git, w);
+    const commits = gone ? null : await unheldCommits(this.git, w);
     const ignored = gone ? null : await ignoredWork(this.git, w);
-    return { changes, ignored, branchStays: await branchStays(this.git, w) };
+    const stays = await branchStays(this.git, w);
+    if (changes === "unread" || commits === "unread") return { changes: null, unread: true, ignored, branchStays: stays };
+    return { changes, ...(commits ? { commits } : {}), ignored, branchStays: stays };
   }
 }

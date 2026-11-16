@@ -124,6 +124,8 @@ export interface CallOptions {
   ms?: number;
   /** Count the NUL-ended records of stdout instead of keeping it (a status of many files). */
   count?: boolean;
+  /** With `count`: called at each record's end with its first two bytes (0 for one it lacks) and its length. */
+  each?: (a: number, b: number, bytes: number) => void;
   /** U1: the longest stdout kept (256 KiB by default); past it git is killed and the result says `capped`. */
   maxOut?: number;
   /** U1: git is killed when this aborts (a deleted chat's marks), and the call fails. */
@@ -160,13 +162,26 @@ export async function runWorktreeGit(g: WorktreeGit, cwd: string, args: readonly
   const parts: Uint8Array[] = [];
   let size = 0;
   let records = 0;
+  let a = 0;
+  let b = 0;
+  let bytes = 0;
   const reader = proc.stdout.getReader();
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       if (o.count) {
-        for (const b of value) if (b === 0) records++;
+        for (const c of value) {
+          if (c !== 0) {
+            if (bytes === 0) a = c;
+            else if (bytes === 1) b = c;
+            bytes++;
+            continue;
+          }
+          records++;
+          o.each?.(a, b, bytes);
+          a = b = bytes = 0;
+        }
         continue;
       }
       size += value.byteLength;

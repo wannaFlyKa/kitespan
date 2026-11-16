@@ -3,7 +3,7 @@
 // is a project; Archive's and Delete's facts about a chat's worktree, as counts only; and the branch of a session row
 // from another worktree. No server is started: the handler is called, with kitespan's git on scratch repositories.
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PUBLIC_ADAPTERS } from "../../server/adapters/adapters";
 import type { AgentDriver, AgentSettings, BinaryProbe, SessionInfo } from "../../server/agents/types";
@@ -49,7 +49,7 @@ const chat = (id: string, cwd: string, worktree?: ChatLedger["worktree"]): ChatL
   ...(worktree ? { worktree } : {}),
 });
 
-function makeApp(opts: { hook?: boolean; sessions?: SessionInfo[]; chats?: ChatLedger[] } = {}) {
+function makeApp(opts: { hook?: boolean; sessions?: SessionInfo[]; chats?: ChatLedger[]; git?: string } = {}) {
   let projects = [project(REPO_P, s.repo), project(PLAIN_P, plain)];
   const settings = async (): Promise<AgentSettings> => ({ respondToBash: true, cleanupPeriodDays: null, promptSuggestions: false, defaultMode: null, ...(opts.hook ? { worktreeHook: true } : {}) });
   const driver: Pick<AgentDriver, "probe" | "settings" | "listSessions" | "history" | "sessionInfo"> = {
@@ -80,7 +80,7 @@ function makeApp(opts: { hook?: boolean; sessions?: SessionInfo[]; chats?: ChatL
     chatForSession: () => null,
     heldSessions: () => new Set(),
     info: { port: PORT, version: "0.4.0", adapters: { ...PUBLIC_ADAPTERS, origins: [] } },
-    worktrees: new WorktreeHost({ worktreeGit: s.wg, worktreeData: s.data }),
+    worktrees: new WorktreeHost({ worktreeGit: opts.git ? { ...s.wg, git: opts.git } : s.wg, worktreeData: s.data }),
   });
   const app = createApp({ gate, site, api, sockets: {} });
   return { app, projects: () => projects };
@@ -175,6 +175,24 @@ describe("Archive's and Delete's facts (W7, W9, L26)", () => {
     writeFileSync(join(w.path, "theirs.txt"), "x");
     const { app } = makeApp({ chats: [chat("bcdefghijklmnopqrstu", w.path, w)] });
     expect((await call(app, `/api/chats/bcdefghijklmnopqrstu/worktree`)).body).toEqual({ path: w.path, branch: w.branch, changes: null, ignored: null, branchStays: false });
+  });
+
+  test("a worktree whose status cannot be read answers `unread`, and commits that no ref holds are counted", async () => {
+    const id = "cdefghijklmnopqrstuv";
+    const made = await makeWorktree(s.wg, { root: s.repo, data: s.data, projectId: REPO_P, chatId: id });
+    if (!made.ok) throw new Error("no worktree");
+    const w = made.worktree;
+    // A stand-in for git whose status fails; every other call is the real git's.
+    const noStatus = join(s.root, "git-no-status");
+    writeFileSync(noStatus, `#!/bin/sh\ncase " $* " in *" status "*) exit 1;; esac\nexec '${s.wg.git}' "$@"\n`);
+    chmodSync(noStatus, 0o755);
+    const unread = makeApp({ chats: [chat(id, w.path, w)], git: noStatus });
+    expect((await call(unread.app, `/api/chats/${id}/worktree`)).body).toEqual({ path: w.path, branch: w.branch, changes: null, unread: true, ignored: false, branchStays: false });
+    const { app } = makeApp({ chats: [chat(id, w.path, w)] });
+    git(w.path, "checkout", "-q", "--detach");
+    writeFileSync(join(w.path, "detached.txt"), "x\n");
+    commitAll(w.path, "on no branch");
+    expect((await call(app, `/api/chats/${id}/worktree`)).body).toEqual({ path: w.path, branch: w.branch, changes: 0, commits: 1, ignored: false, branchStays: false });
   });
 });
 

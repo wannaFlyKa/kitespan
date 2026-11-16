@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import type { Upload } from "../state/types";
 import { IconClose, IconFile, IconImage, IconInfo, IconUpload } from "./icons";
+import { uploadPreview, usePreview } from "./preview";
 
 import { uploadRoot, useStore, type FileFacts } from "../state/store";
 /** What act.upload needs of a file: its name, size in bytes and MIME type (state/store.ts). */
@@ -140,10 +141,12 @@ export function AttachChip({ upload, onRemove }: { upload: Upload; onRemove?: ()
   const failed = upload.state === "failed";
   const icon = failed ? <IconInfo size={16} /> : upload.type.startsWith("image/") ? <IconImage size={16} /> : <IconFile size={16} />;
   const line = failed ? upload.error ?? "That file could not be uploaded." : formatSize(upload.size);
+  // A picture that draws shows in the icon's place, as in the composer's chip (ui/preview.tsx).
+  const pic = usePreview(uploadPreview(upload));
   return (
     <span className={`attach-chip${failed ? " is-failed" : ""}`} data-testid={`attach-${upload.id}`} data-state={upload.state} title={failed ? `${upload.name}: ${line}` : upload.path || upload.name}>
-      <span className="attach-icon" aria-hidden="true">
-        {icon}
+      <span className="attach-icon" aria-hidden="true" ref={pic.box}>
+        {pic.shot.url ? <img className="attach-shot" src={pic.shot.url} alt={upload.name} width={32} height={32} draggable={false} onError={pic.onError} /> : icon}
       </span>
       <span className="attach-text">
         <span className="attach-name">{upload.name}</span>
