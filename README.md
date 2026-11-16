@@ -109,7 +109,7 @@ Each release's files have a build provenance attestation:
 
 | Command | What it does |
 |---|---|
-| `KITESPAN_VERSION=0.1.0 sh install.sh` | installs that release instead of the latest (also the way back to an older one) |
+| `KITESPAN_VERSION=0.1.1 sh install.sh` | installs that release instead of the latest (also the way back to an older one) |
 | `sh install.sh --list` | lists the installed versions, and which one `kitespan` starts |
 | `sh install.sh --uninstall` | removes `~/.local/bin/kitespan` and the installed versions; your chats, settings and config stay |
 

@@ -88,7 +88,7 @@ curl -fsSL https://github.com/wannaFlyKa/kitespan/releases/latest/download/insta
 
 | 命令 | 作用 |
 |---|---|
-| `KITESPAN_VERSION=0.1.0 sh install.sh` | 安装指定版本而不是最新版本（也用于退回到旧版本） |
+| `KITESPAN_VERSION=0.1.1 sh install.sh` | 安装指定版本而不是最新版本（也用于退回到旧版本） |
 | `sh install.sh --list` | 列出已安装的版本，以及 `kitespan` 启动的是哪一个 |
 | `sh install.sh --uninstall` | 删除 `~/.local/bin/kitespan` 和已安装的版本；你的对话、设置和配置都会保留 |
 
