@@ -2555,9 +2555,13 @@ export function splitBlock(e: ChatEventOf<"block">, max: number = LIMITS.blockPi
 // ---------------------------------------------------------------------------------------------------------------
 // File references (D50, D45): the one rule for the server, which writes them, and the page, which reads them back
 
-/** One single-quoted shell word: a name such as `$(touch x);y.txt` never becomes shell code. */
+/**
+ * One shell word that sh, bash, zsh and fish read back as `s`: a name such as `$(touch x);y.txt` never becomes shell
+ * code. It runs in the user's `$SHELL`, and fish reads a backslash inside single quotes as an escape, so each
+ * backslash and each single quote stands outside the quotes, after a backslash.
+ */
 export function shellQuote(s: string): string {
-  return `'${s.replaceAll("'", "'\\''")}'`;
+  return `'${s.replace(/[\\']/g, (c) => `'\\${c}'`)}'`;
 }
 
 const WHITE_SPACE = /\s/;

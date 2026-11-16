@@ -116,10 +116,11 @@ describe("the command a link types", () => {
     expect(shellArg("~/src/kitespan")).toBe("~/src/kitespan");
     expect(shellArg("~/My Work/it's")).toBe(`~/'My Work/it'\\''s'`);
     expect(shellArg("/srv/a b")).toBe("'/srv/a b'");
+    expect(shellArg("~/a\\b")).toBe("~/'a'\\\\'b'");
     expect(resumeCommand(live("sleeping"), "~/My Work").command).toStartWith("cd ~/'My Work' && claude --resume ");
   });
   test("an absolute folder is quoted as the server quotes it, so the dialog copies what the pane types", () => {
-    for (const folder of ["/srv/kitespan", "/srv/a b", "/srv/it's", "/srv/a~b", "/srv/$(touch x)", "/srv/a;b"]) {
+    for (const folder of ["/srv/kitespan", "/srv/a b", "/srv/it's", "/srv/a~b", "/srv/$(touch x)", "/srv/a;b", "/srv/a\\b", "/srv/a\\';id;echo \\'b"]) {
       expect([folder, shellArg(folder)]).toEqual([folder, shellWord(folder)]);
       for (const processOpen of [false, true]) {
         const page = resumeCommand({ ...live(processOpen ? "idle" : "sleeping"), serverState: processOpen ? "idle" : "sleeping" }, folder);
